@@ -5,11 +5,85 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+enum DifficultyLevel {
+  Easy
+  Medium
+  Hard
+}
+
+model User {
+  id        String    @id @default(uuid())
+  firstName String
+  lastName  String
+  userName  String    @unique
+  email     String    @unique
+  password  String
+  bio       String?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  recipes Recipe[]
+
+  @@map("users")
+}
+
+model Recipe {
+  id              String           @id @default(uuid())
+  title           String
+  slug            String           @unique
+  description     String?
+  instructions    String
+  prepTime        Int?
+  cookTime        Int?
+  servings        Int?
+  difficultyLevel DifficultyLevel?
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime?        @updatedAt @map("updated_at")
+  authorId        String           @map("author_id")
+
+  author      User               @relation(fields: [authorId], references: [id])
+  tags        Tag[]
+  ingredients RecipeIngredient[]
+
+  @@index([authorId])
+  @@map("recipes")
+}
+
+model Tag {
+  id    String @id @default(uuid())
+  title String @unique
+
+  recipes Recipe[]
+
+  @@map("tags")
+}
+
+model Ingredient {
+  id   String @id @default(uuid())
+  name String @unique
+
+  recipes RecipeIngredient[]
+
+  @@map("ingredients")
+}
+
+model RecipeIngredient {
+  recipeId     String  @map("recipe_id")
+  ingredientId String  @map("ingredient_id")
+  quantity     Float?
+  unit         String?
+
+  recipe     Recipe     @relation(fields: [recipeId], references: [id])
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@id([recipeId, ingredientId])
+  @@map("recipe_ingredients")
 }
