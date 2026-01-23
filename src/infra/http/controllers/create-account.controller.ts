@@ -1,4 +1,4 @@
-import { ZodValidationPipe } from '@/pipes/zod-validation-pipe'
+import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { PrismaService } from '@/prisma/prisma.service'
 import { Body, Controller, HttpCode, Post, UsePipes } from '@nestjs/common'
 import z from 'zod'
