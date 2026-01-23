@@ -1,6 +1,15 @@
+import { ChefAlreadyExistsError } from '@/domain/application/use-cases/errors/chef-already-exists-error'
+import { RegisterChefUseCase } from '@/domain/application/use-cases/register-chef'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
-import { PrismaService } from '@/prisma/prisma.service'
-import { Body, Controller, HttpCode, Post, UsePipes } from '@nestjs/common'
+import {
+  BadRequestException,
+  Body,
+  ConflictException,
+  Controller,
+  HttpCode,
+  Post,
+  UsePipes,
+} from '@nestjs/common'
 import z from 'zod'
 
 const createAccountBodySchema = z.object({
@@ -16,7 +25,7 @@ type CreateAccountBodySchema = z.infer<typeof createAccountBodySchema>
 
 @Controller('/accounts')
 export class CreateAccountController {
-  constructor(private prisma: PrismaService) {}
+  constructor(private registerChef: RegisterChefUseCase) {}
 
   @Post()
   @HttpCode(201)
@@ -24,15 +33,24 @@ export class CreateAccountController {
   async handle(@Body() body: CreateAccountBodySchema) {
     const { firstName, lastName, userName, email, password, bio } = body
 
-    await this.prisma.user.create({
-      data: {
-        firstName,
-        lastName,
-        userName,
-        email,
-        password,
-        bio,
-      },
+    const result = await this.registerChef.execute({
+      firstName,
+      lastName,
+      userName,
+      email,
+      password,
+      bio,
     })
+
+    if (result.isLeft()) {
+      const error = result.value
+
+      switch (error.constructor) {
+        case ChefAlreadyExistsError:
+          throw new ConflictException(error.message)
+        default:
+          throw new BadRequestException(error.message)
+      }
+    }
   }
 }

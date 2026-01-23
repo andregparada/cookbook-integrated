@@ -6,6 +6,7 @@ import { HashGenerator } from '../cryptography/hash-generator'
 import { ChefAttachment } from '@/domain/enterprise/entities/chef-attachment'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { ChefAttachmentsList } from '@/domain/enterprise/entities/chef-attachments-list'
+import { Injectable } from '@nestjs/common'
 
 interface RegisterChefUseCaseRequest {
   firstName: string
@@ -24,6 +25,7 @@ type RegisterChefUseCaseResponse = Either<
   }
 >
 
+@Injectable()
 export class RegisterChefUseCase {
   constructor(
     private chefsRepository: ChefsRepository,

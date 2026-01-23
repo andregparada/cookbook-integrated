@@ -22,9 +22,12 @@ describe('Create account (E2E)', () => {
 
   test('[POST] /accounts', async () => {
     const response = await request(app.getHttpServer()).post('/accounts').send({
-      name: 'John Doe',
+      firstName: 'John',
+      lastName: 'Doe',
+      userName: 'johndoe',
       email: 'johndoe@example.com',
       password: '123456',
+      bio: 'I am John Doe',
     })
 
     expect(response.statusCode).toBe(201)
