@@ -3,9 +3,6 @@ import { Either, left, right } from '@/core/either'
 import { ChefAlreadyExistsError } from './errors/chef-already-exists-error'
 import { ChefsRepository } from '../repositories/chefs-repository'
 import { HashGenerator } from '../cryptography/hash-generator'
-import { ChefAttachment } from '@/domain/enterprise/entities/chef-attachment'
-import { UniqueEntityID } from '@/core/entities/unique-entity-id'
-import { ChefAttachmentsList } from '@/domain/enterprise/entities/chef-attachments-list'
 import { Injectable } from '@nestjs/common'
 
 interface RegisterChefUseCaseRequest {
@@ -14,8 +11,8 @@ interface RegisterChefUseCaseRequest {
   userName: string
   email: string
   password: string
+  avatarId?: string
   bio?: string
-  attachmentsIds?: string[]
 }
 
 type RegisterChefUseCaseResponse = Either<
@@ -38,8 +35,8 @@ export class RegisterChefUseCase {
     userName,
     email,
     password,
+    avatarId,
     bio,
-    attachmentsIds,
   }: RegisterChefUseCaseRequest): Promise<RegisterChefUseCaseResponse> {
     const chefWithSameEmail = await this.chefsRepository.findByEmail(email)
 
@@ -56,16 +53,8 @@ export class RegisterChefUseCase {
       email,
       hashedPassword,
       bio,
+      avatarId,
     })
-
-    const chefAttachments = attachmentsIds?.map((attacnehmentId) => {
-      return ChefAttachment.create({
-        attachmentId: new UniqueEntityID(attacnehmentId),
-        chefId: chef.id,
-      })
-    })
-
-    chef.attachments = new ChefAttachmentsList(chefAttachments ?? [])
 
     await this.chefsRepository.create(chef)
 

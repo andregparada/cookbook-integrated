@@ -20,13 +20,17 @@ enum DifficultyLevel {
 }
 
 model User {
-  id        String    @id @default(uuid())
+  id        String  @id @default(uuid())
   firstName String
   lastName  String
-  userName  String    @unique
-  email     String    @unique
+  userName  String  @unique
+  email     String  @unique
   password  String
   bio       String?
+
+  avatarId  String? @unique @map("avatar_id")
+  avatar    Avatar? @relation(fields: [avatarId], references: [id])
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
@@ -86,4 +90,14 @@ model RecipeIngredient {
 
   @@id([recipeId, ingredientId])
   @@map("recipe_ingredients")
+}
+
+model Avatar {
+  id       String @id @default(uuid())
+  fileName String
+  url      String
+
+  user User?
+
+  @@map("attachments")
 }

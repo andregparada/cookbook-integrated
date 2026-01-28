@@ -1,5 +1,6 @@
 import { ChefAlreadyExistsError } from '@/domain/application/use-cases/errors/chef-already-exists-error'
 import { RegisterChefUseCase } from '@/domain/application/use-cases/register-chef'
+import { Public } from '@/infra/auth/public'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import {
   BadRequestException,
@@ -18,12 +19,14 @@ const createAccountBodySchema = z.object({
   userName: z.string(),
   email: z.string().email(),
   password: z.string(),
+  avatarId: z.string().optional(),
   bio: z.string().optional(),
 })
 
 type CreateAccountBodySchema = z.infer<typeof createAccountBodySchema>
 
 @Controller('/accounts')
+@Public()
 export class CreateAccountController {
   constructor(private registerChef: RegisterChefUseCase) {}
 
@@ -31,7 +34,8 @@ export class CreateAccountController {
   @HttpCode(201)
   @UsePipes(new ZodValidationPipe(createAccountBodySchema))
   async handle(@Body() body: CreateAccountBodySchema) {
-    const { firstName, lastName, userName, email, password, bio } = body
+    const { firstName, lastName, userName, email, password, avatarId, bio } =
+      body
 
     const result = await this.registerChef.execute({
       firstName,
@@ -39,6 +43,7 @@ export class CreateAccountController {
       userName,
       email,
       password,
+      avatarId,
       bio,
     })
 
