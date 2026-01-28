@@ -19,28 +19,63 @@ export class Chef extends Entity<ChefProps> {
     return this.props.firstName
   }
 
+  set firstName(firstName: string) {
+    this.props.firstName = firstName
+    this.touch()
+  }
+
   get lastName() {
     return this.props.lastName
+  }
+
+  set lastName(lastName: string) {
+    this.props.lastName = lastName
+    this.touch()
   }
 
   get userName() {
     return this.props.userName
   }
 
+  set userName(userName: string) {
+    this.props.userName = userName
+    this.touch()
+  }
+
   get email() {
     return this.props.email
+  }
+
+  set email(email: string) {
+    this.props.email = email
+    this.touch()
   }
 
   get hashedPassword() {
     return this.props.hashedPassword
   }
 
+  set hashedPassword(hashedPassword: string) {
+    this.props.hashedPassword = hashedPassword
+    this.touch()
+  }
+
   get avatarId() {
     return this.props.avatarId
   }
 
+  set avatarId(avatarId: string | null) {
+    this.props.avatarId = avatarId
+    this.touch()
+  }
+
   get bio() {
     return this.props.bio
+  }
+
+  set bio(bio: string | null) {
+    this.props.bio = bio
+    this.touch()
   }
 
   get createdAt() {
