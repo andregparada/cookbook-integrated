@@ -10,4 +10,4 @@ import { PrismaChefsRepository } from './prisma/repositories/prisma-chefs-reposi
   ],
   exports: [PrismaService, ChefsRepository],
 })
-export class DataBaseModule {}
+export class DatabaseModule {}
