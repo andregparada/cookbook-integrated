@@ -56,6 +56,8 @@ export class RegisterChefUseCase {
       avatarId,
     })
 
+    // TODO tratar foto de avatar
+
     await this.chefsRepository.create(chef)
 
     return right({
