@@ -17,9 +17,9 @@ const createAccountBodySchema = z.object({
   firstName: z.string(),
   lastName: z.string(),
   userName: z.string(),
-  email: z.string().email(),
+  email: z.email(),
   password: z.string(),
-  avatarId: z.string().optional(),
+  avatarId: z.uuid().optional(),
   bio: z.string().optional(),
 })
 
