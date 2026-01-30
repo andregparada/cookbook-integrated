@@ -5,10 +5,16 @@ import { RegisterChefUseCase } from '@/domain/application/use-cases/register-che
 import { CryptographyModule } from '../cryptography/cryptography.module'
 import { AuthenticateController } from './controllers/authenticate.controller'
 import { AuthenticateChefUseCase } from '@/domain/application/use-cases/authenticate-chef'
+import { EditUserController } from './controllers/edit-user.controller'
+import { EditChefUseCase } from '@/domain/application/use-cases/edit-chef'
 
 @Module({
   imports: [DatabaseModule, CryptographyModule],
-  controllers: [CreateAccountController, AuthenticateController],
-  providers: [RegisterChefUseCase, AuthenticateChefUseCase],
+  controllers: [
+    CreateAccountController,
+    AuthenticateController,
+    EditUserController,
+  ],
+  providers: [RegisterChefUseCase, AuthenticateChefUseCase, EditChefUseCase],
 })
 export class HttpModule {}
