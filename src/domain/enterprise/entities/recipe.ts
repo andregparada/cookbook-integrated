@@ -66,8 +66,18 @@ export class Recipe extends Entity<RecipeProps> {
     return this.props.tagsIds
   }
 
-  get recipeIngredients() {
+  set tagsIds(tagsIds: UniqueEntityID[]) {
+    this.props.tagsIds = tagsIds
+    this.touch()
+  }
+
+  get recipeIngredientsIds() {
     return this.props.recipeIngredientsIds
+  }
+
+  set recipeIngredientsIds(recipeIngredientsIds: UniqueEntityID[]) {
+    this.props.recipeIngredientsIds = recipeIngredientsIds
+    this.touch()
   }
 
   get createdAt() {

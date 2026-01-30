@@ -3,6 +3,13 @@ import { Either, right } from '@/core/either'
 import { Injectable } from '@nestjs/common'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { normalizeText } from '@/domain/utils/normalize-text'
+import { TagsRepository } from '../repositories/tags-repository'
+import { Tag } from '@/domain/enterprise/entities/tag'
+import { IngredientsRepository } from '../repositories/ingredients-repository'
+import { Ingredient } from '@/domain/enterprise/entities/ingredient'
+import { RecipeIngredientsRepository } from '../repositories/recipe-ingredients-repository'
+import { RecipeIngredient } from '@/domain/enterprise/entities/recipe-ingredient'
+import { RecipesRepository } from '../repositories/recipes-repository'
 
 interface RegisterRecipeUseCaseRequest {
   authorId: string
@@ -49,10 +56,6 @@ export class RegisterRecipeUseCase {
     tags,
     recipeIngredients,
   }: RegisterRecipeUseCaseRequest): Promise<RegisterRecipeUseCaseResponse> {
-    const tagsIds = await this.resolveTagsIds(tags)
-    const recipeIngredientsIds =
-      await this.resolveRecipeIngredientsIds(recipeIngredients)
-
     const recipe = Recipe.create({
       authorId: new UniqueEntityID(authorId),
       title,
@@ -62,20 +65,23 @@ export class RegisterRecipeUseCase {
       cookTimeInMinutes,
       servings,
       difficultyLevel,
-      tagsIds,
-      recipeIngredientsIds,
     })
+
+    const tagsIds = await this.resolveTagsIds(tags)
+    const recipeIngredientsIds = await this.resolveRecipeIngredientsIds(
+      recipe.id,
+      recipeIngredients,
+    )
+
+    recipe.tagsIds = tagsIds
+    recipe.recipeIngredientsIds = recipeIngredientsIds
 
     await this.recipesRepository.create(recipe)
 
     return right({ recipe })
   }
 
-  // ======================
-  // Métodos privados
-  // ======================
-
-  private async resolveTagsIds(tags?: string[]): Promise<UniqueEntityID[]> {
+  private async resolveTagsIds(tags: string[] = []): Promise<UniqueEntityID[]> {
     const tagsIds: UniqueEntityID[] = []
 
     for (const tag of tags ?? []) {
@@ -85,7 +91,11 @@ export class RegisterRecipeUseCase {
         await this.tagsRepository.findByNormalizedName(normalizedTag)
 
       if (!tagEntity) {
-        tagEntity = await this.tagsRepository.create({ name: tag })
+        tagEntity = Tag.create({
+          name: tag,
+        })
+
+        await this.tagsRepository.create(tagEntity)
       }
 
       tagsIds.push(tagEntity.id)
@@ -95,11 +105,12 @@ export class RegisterRecipeUseCase {
   }
 
   private async resolveRecipeIngredientsIds(
-    recipeIngredients?: Array<{
+    recipeId: UniqueEntityID,
+    recipeIngredients: Array<{
       ingredient: string
       amount: number
       unit: string
-    }>,
+    }> = [],
   ): Promise<UniqueEntityID[]> {
     const recipeIngredientsIds: UniqueEntityID[] = []
 
@@ -112,17 +123,21 @@ export class RegisterRecipeUseCase {
         )
 
       if (!ingredient) {
-        ingredient = await this.ingredientsRepository.create({
+        ingredient = Ingredient.create({
           name: recipeIngredient.ingredient,
         })
+
+        await this.ingredientsRepository.create(ingredient)
       }
 
-      const recipeIngredientEntity =
-        await this.recipeIngredientsRepository.create({
-          ingredientId: ingredient.id,
-          amount: recipeIngredient.amount,
-          unit: recipeIngredient.unit,
-        })
+      const recipeIngredientEntity = RecipeIngredient.create({
+        recipeId,
+        ingredientId: ingredient.id,
+        amount: recipeIngredient.amount,
+        unit: recipeIngredient.unit,
+      })
+
+      await this.recipeIngredientsRepository.create(recipeIngredientEntity)
 
       recipeIngredientsIds.push(recipeIngredientEntity.id)
     }
