@@ -3,14 +3,14 @@ import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { Optional } from '@/core/types/optional'
 import { Slug } from './value-objects/slug'
 
-export interface IngredientProps {
+export interface TagProps {
   name: string // TODO normalizar para titulo
   slug: Slug
   createdAt: Date
   updatedAt?: Date | null
 }
 
-export class Ingredient extends Entity<IngredientProps> {
+export class Tag extends Entity<TagProps> {
   get name() {
     return this.props.name
   }
@@ -32,10 +32,10 @@ export class Ingredient extends Entity<IngredientProps> {
   }
 
   static create(
-    props: Optional<IngredientProps, 'createdAt' | 'slug'>,
+    props: Optional<TagProps, 'createdAt' | 'slug'>,
     id?: UniqueEntityID,
   ) {
-    const ingredient = new Ingredient(
+    const tag = new Tag(
       {
         ...props,
         slug: props.slug ?? Slug.createFromText(props.name),
@@ -43,6 +43,6 @@ export class Ingredient extends Entity<IngredientProps> {
       },
       id,
     )
-    return ingredient
+    return tag
   }
 }

@@ -1,3 +1,5 @@
+import { normalizeText } from '@/domain/utils/normalize-text'
+
 export class Slug {
   public value: string
 
@@ -18,15 +20,7 @@ export class Slug {
    */
 
   static createFromText(text: string): Slug {
-    const slugText = text
-      .normalize('NFKD')
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, '-')
-      .replace(/[^\w-]+/g, '')
-      .replace(/_/g, '-')
-      .replace(/--+/g, '-')
-      .replace(/-$/g, '')
+    const slugText = normalizeText(text)
 
     return new Slug(slugText)
   }
