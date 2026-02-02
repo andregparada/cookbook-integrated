@@ -11,7 +11,7 @@ import { RecipeIngredientsRepository } from '../repositories/recipe-ingredients-
 import { RecipeIngredient } from '@/domain/enterprise/entities/recipe-ingredient'
 import { RecipesRepository } from '../repositories/recipes-repository'
 
-interface RegisterRecipeUseCaseRequest {
+interface CreateRecipeUseCaseRequest {
   authorId: string
   title: string
   description: string
@@ -22,13 +22,13 @@ interface RegisterRecipeUseCaseRequest {
   difficultyLevel: DifficultyLevel
   tags?: string[]
   recipeIngredients: Array<{
-    ingredient: string
+    name: string
     amount: number
     unit: string
   }>
 }
 
-type RegisterRecipeUseCaseResponse = Either<
+type CreateRecipeUseCaseResponse = Either<
   null,
   {
     recipe: Recipe
@@ -36,7 +36,7 @@ type RegisterRecipeUseCaseResponse = Either<
 >
 
 @Injectable()
-export class RegisterRecipeUseCase {
+export class CreateRecipeUseCase {
   constructor(
     private recipesRepository: RecipesRepository,
     private ingredientsRepository: IngredientsRepository,
@@ -55,7 +55,7 @@ export class RegisterRecipeUseCase {
     difficultyLevel,
     tags,
     recipeIngredients,
-  }: RegisterRecipeUseCaseRequest): Promise<RegisterRecipeUseCaseResponse> {
+  }: CreateRecipeUseCaseRequest): Promise<CreateRecipeUseCaseResponse> {
     const recipe = Recipe.create({
       authorId: new UniqueEntityID(authorId),
       title,
@@ -107,7 +107,7 @@ export class RegisterRecipeUseCase {
   private async resolveRecipeIngredientsIds(
     recipeId: UniqueEntityID,
     recipeIngredients: Array<{
-      ingredient: string
+      name: string
       amount: number
       unit: string
     }> = [],
@@ -115,7 +115,7 @@ export class RegisterRecipeUseCase {
     const recipeIngredientsIds: UniqueEntityID[] = []
 
     for (const recipeIngredient of recipeIngredients ?? []) {
-      const normalizedIngredient = normalizeText(recipeIngredient.ingredient)
+      const normalizedIngredient = normalizeText(recipeIngredient.name)
 
       let ingredient =
         await this.ingredientsRepository.findByNormalizedName(
@@ -124,7 +124,7 @@ export class RegisterRecipeUseCase {
 
       if (!ingredient) {
         ingredient = Ingredient.create({
-          name: recipeIngredient.ingredient,
+          name: recipeIngredient.name,
         })
 
         await this.ingredientsRepository.create(ingredient)

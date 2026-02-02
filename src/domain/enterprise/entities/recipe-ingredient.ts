@@ -5,7 +5,7 @@ export interface RecipeIngredientProps {
   recipeId: UniqueEntityID
   ingredientId: UniqueEntityID
   amount: number
-  unit: string
+  unit: string // TODO fazer enum de unit
 }
 
 export class RecipeIngredient extends Entity<RecipeIngredientProps> {

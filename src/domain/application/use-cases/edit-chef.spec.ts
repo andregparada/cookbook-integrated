@@ -17,7 +17,6 @@ describe('Edit Chef', () => {
 
   it('should be able to edit a chef', async () => {
     const newChef = makeChef({}, new UniqueEntityID('chef-1'))
-    new UniqueEntityID('chef-1')
 
     await inMemoryChefsRepository.create(newChef)
 
