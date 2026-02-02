@@ -1,5 +1,5 @@
 import { RecipeIngredientsRepository } from '@/domain/application/repositories/recipe-ingredients-repository'
-import { RecipeIngredient } from '@/domain/enterprise/entities/recipe-ingredient'
+import { RecipeIngredient } from '@/domain/enterprise/entities/value-objects/recipe-ingredient'
 
 export class InMemoryRecipeIngredientsRepository implements RecipeIngredientsRepository {
   public items: RecipeIngredient[] = []

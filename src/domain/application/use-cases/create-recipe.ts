@@ -8,8 +8,8 @@ import { Tag } from '@/domain/enterprise/entities/tag'
 import { IngredientsRepository } from '../repositories/ingredients-repository'
 import { Ingredient } from '@/domain/enterprise/entities/ingredient'
 import { RecipeIngredientsRepository } from '../repositories/recipe-ingredients-repository'
-import { RecipeIngredient } from '@/domain/enterprise/entities/recipe-ingredient'
 import { RecipesRepository } from '../repositories/recipes-repository'
+import { RecipeIngredient } from '@/domain/enterprise/entities/recipe-ingredient'
 
 interface CreateRecipeUseCaseRequest {
   authorId: string

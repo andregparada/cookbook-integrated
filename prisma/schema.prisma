@@ -41,7 +41,7 @@ model User {
 
 model Recipe {
   id              String           @id @default(uuid())
-  title           String
+  name            String
   slug            String           @unique
   description     String?
   instructions    String
@@ -62,8 +62,8 @@ model Recipe {
 }
 
 model Tag {
-  id    String @id @default(uuid())
-  title String @unique
+  id   String @id @default(uuid())
+  name String @unique
 
   recipes Recipe[]
 
@@ -80,15 +80,15 @@ model Ingredient {
 }
 
 model RecipeIngredient {
+  id String @id @default(uuid()) // ??? composite key?
   recipeId     String  @map("recipe_id")
   ingredientId String  @map("ingredient_id")
-  quantity     Float?
+  amount       Float?
   unit         String?
 
   recipe     Recipe     @relation(fields: [recipeId], references: [id])
   ingredient Ingredient @relation(fields: [ingredientId], references: [id])
 
-  @@id([recipeId, ingredientId])
   @@map("recipe_ingredients")
 }
 

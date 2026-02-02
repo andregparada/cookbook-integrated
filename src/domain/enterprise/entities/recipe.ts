@@ -10,7 +10,7 @@ export enum DifficultyLevel {
 }
 
 export interface RecipeProps {
-  title: string
+  name: string
   slug: Slug
   description: string
   instructions: string
@@ -26,8 +26,8 @@ export interface RecipeProps {
 }
 
 export class Recipe extends Entity<RecipeProps> {
-  get title() {
-    return this.props.title
+  get name() {
+    return this.props.name
   }
 
   get slug() {
@@ -108,7 +108,7 @@ export class Recipe extends Entity<RecipeProps> {
     const recipe = new Recipe(
       {
         ...props,
-        slug: props.slug ?? Slug.createFromText(props.title),
+        slug: props.slug ?? Slug.createFromText(props.name),
         tagsIds: props.tagsIds ?? [],
         recipeIngredientsIds: props.recipeIngredientsIds ?? [],
         prepTimeInMinutes: props.prepTimeInMinutes ?? 0,
