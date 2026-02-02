@@ -7,6 +7,8 @@ import { AuthenticateController } from './controllers/authenticate.controller'
 import { AuthenticateChefUseCase } from '@/domain/application/use-cases/authenticate-chef'
 import { EditUserController } from './controllers/edit-user.controller'
 import { EditChefUseCase } from '@/domain/application/use-cases/edit-chef'
+import { CreateRecipeController } from './controllers/create-recipe.controller'
+import { CreateRecipeUseCase } from '@/domain/application/use-cases/create-recipe'
 
 @Module({
   imports: [DatabaseModule, CryptographyModule],
@@ -14,7 +16,13 @@ import { EditChefUseCase } from '@/domain/application/use-cases/edit-chef'
     CreateAccountController,
     AuthenticateController,
     EditUserController,
+    CreateRecipeController,
   ],
-  providers: [RegisterChefUseCase, AuthenticateChefUseCase, EditChefUseCase],
+  providers: [
+    RegisterChefUseCase,
+    AuthenticateChefUseCase,
+    EditChefUseCase,
+    CreateRecipeUseCase,
+  ],
 })
 export class HttpModule {}
