@@ -7,6 +7,19 @@ import { RecipeIngredient } from '@/domain/enterprise/entities/recipe-ingredient
 @Injectable()
 export class PrismaRecipeIngredientsRepository implements RecipeIngredientsRepository {
   constructor(private prisma: PrismaService) {}
+  async findById(id: string) {
+    const recipeIngredient = await this.prisma.recipeIngredient.findUnique({
+      where: {
+        id,
+      },
+    })
+
+    if (!recipeIngredient) {
+      return null
+    }
+
+    return PrismaRecipeIngredientMapper.toDomain(recipeIngredient)
+  }
 
   async create(recipeingredient: RecipeIngredient) {
     const data = PrismaRecipeIngredientMapper.toPrisma(recipeingredient)
