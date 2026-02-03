@@ -8,6 +8,7 @@ export interface RecipeIngredientProps {
   unit: string // TODO fazer enum de unit
 }
 
+// ??? ela é uma entidade ou um value object? se um value object, como tratar os dados que envolvem id dela?
 export class RecipeIngredient extends Entity<RecipeIngredientProps> {
   get recipeId() {
     return this.props.recipeId

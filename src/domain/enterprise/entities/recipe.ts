@@ -30,6 +30,11 @@ export class Recipe extends Entity<RecipeProps> {
     return this.props.name
   }
 
+  set name(name: string) {
+    this.props.name = name
+    this.touch()
+  }
+
   get slug() {
     return this.props.slug
   }
@@ -38,24 +43,54 @@ export class Recipe extends Entity<RecipeProps> {
     return this.props.description
   }
 
+  set description(description: string) {
+    this.props.description = description
+    this.touch()
+  }
+
   get instructions() {
     return this.props.instructions
+  }
+
+  set instructions(instructions: string) {
+    this.props.instructions = instructions
+    this.touch()
   }
 
   get prepTimeInMinutes() {
     return this.props.prepTimeInMinutes
   }
 
+  set prepTimeInMinutes(prepTimeInMinutes: number | null) {
+    this.props.prepTimeInMinutes = prepTimeInMinutes
+    this.touch()
+  }
+
   get cookTimeInMinutes() {
     return this.props.cookTimeInMinutes
+  }
+
+  set cookTimeInMinutes(cookTimeInMinutes: number | null) {
+    this.props.cookTimeInMinutes = cookTimeInMinutes
+    this.touch()
   }
 
   get servings() {
     return this.props.servings
   }
 
+  set servings(servings: number | null) {
+    this.props.servings = servings
+    this.touch()
+  }
+
   get difficultyLevel() {
     return this.props.difficultyLevel
+  }
+
+  set difficultyLevel(difficultyLevel: DifficultyLevel) {
+    this.props.difficultyLevel = difficultyLevel
+    this.touch()
   }
 
   get authorId() {

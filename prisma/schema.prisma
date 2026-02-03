@@ -80,7 +80,7 @@ model Ingredient {
 }
 
 model RecipeIngredient {
-  id String @id @default(uuid()) // ??? composite key?
+  id           String  @id @default(uuid()) // ??? composite key?
   recipeId     String  @map("recipe_id")
   ingredientId String  @map("ingredient_id")
   amount       Float?
