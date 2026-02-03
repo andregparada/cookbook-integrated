@@ -29,7 +29,7 @@ describe('Create Recipe', () => {
   it('should be able to create a recipe', async () => {
     const result = await sut.execute({
       authorId: '1',
-      title: 'Recipe Title',
+      name: 'Recipe Name',
       description: 'Recipe Description',
       instructions: 'Recipe Instructions',
       prepTimeInMinutes: 15,

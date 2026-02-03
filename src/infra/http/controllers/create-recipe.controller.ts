@@ -1,19 +1,19 @@
-import { DifficultyLevel } from '@/domain/enterprise/entities/recipe'
 import z from 'zod'
 import { ZodValidationPipe } from '../pipes/zod-validation-pipe'
 import { BadRequestException, Body, Controller, Post } from '@nestjs/common'
 import { CreateRecipeUseCase } from '@/domain/application/use-cases/create-recipe'
 import { CurrentUser } from '@/infra/auth/current-user-decorator'
 import type { UserPayload } from '@/infra/auth/jwt.strategy'
+import { DifficultyLevel } from '@/domain/enterprise/entities/recipe'
 
 const createRecipeBodySchema = z.object({
-  title: z.string(),
+  name: z.string(),
   description: z.string(),
   instructions: z.string(),
   prepTimeInMinutes: z.number().int().nonnegative(),
   cookTimeInMinutes: z.number().int().nonnegative(),
   servings: z.number().int().nonnegative(),
-  difficultyLevel: z.enum(DifficultyLevel),
+  difficultyLevel: z.nativeEnum(DifficultyLevel),
   tags: z.array(z.string()).optional(),
   recipeIngredients: z.array(
     z.object({
@@ -38,7 +38,7 @@ export class CreateRecipeController {
     @CurrentUser() user: UserPayload,
   ) {
     const {
-      title,
+      name,
       description,
       instructions,
       prepTimeInMinutes,
@@ -52,7 +52,7 @@ export class CreateRecipeController {
 
     const result = await this.createRecipe.execute({
       authorId: userId,
-      title,
+      name,
       description,
       instructions,
       prepTimeInMinutes,
