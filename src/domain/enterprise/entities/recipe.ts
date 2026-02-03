@@ -10,6 +10,7 @@ export enum DifficultyLevel {
 }
 
 export interface RecipeProps {
+  authorId: UniqueEntityID
   name: string
   slug: Slug
   description: string
@@ -18,7 +19,6 @@ export interface RecipeProps {
   cookTimeInMinutes: number | null
   servings: number | null
   difficultyLevel: DifficultyLevel
-  authorId: UniqueEntityID
   tagsIds: UniqueEntityID[]
   recipeIngredientsIds: UniqueEntityID[]
   createdAt: Date
@@ -26,6 +26,10 @@ export interface RecipeProps {
 }
 
 export class Recipe extends Entity<RecipeProps> {
+  get authorId() {
+    return this.props.authorId
+  }
+
   get name() {
     return this.props.name
   }
@@ -91,10 +95,6 @@ export class Recipe extends Entity<RecipeProps> {
   set difficultyLevel(difficultyLevel: DifficultyLevel) {
     this.props.difficultyLevel = difficultyLevel
     this.touch()
-  }
-
-  get authorId() {
-    return this.props.authorId
   }
 
   get tagsIds() {

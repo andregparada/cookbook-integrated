@@ -14,7 +14,7 @@ import { TagsRepository } from '../repositories/tags-repository'
 import { RecipeIngredientsRepository } from '../repositories/recipe-ingredients-repository'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 
-interface CreateRecipeUseCaseRequest {
+interface EditRecipeUseCaseRequest {
   recipeId: string
   authorId: string
   name?: string // ??? como fazer com os dados opcionais? Eles são opcionais mesmo ou no front já vai validar que se não foi entregue o dado novo, enviará o dado antigo?
@@ -33,7 +33,7 @@ interface CreateRecipeUseCaseRequest {
   }>
 }
 
-type CreateRecipeUseCaseResponse = Either<
+type EditRecipeUseCaseResponse = Either<
   ResourceNotFoundError,
   {
     recipe: Recipe
@@ -41,7 +41,7 @@ type CreateRecipeUseCaseResponse = Either<
 >
 
 @Injectable()
-export class CreateRecipeUseCase {
+export class EditRecipeUseCase {
   constructor(
     private recipesRepository: RecipesRepository,
     private ingredientsRepository: IngredientsRepository,
@@ -60,7 +60,7 @@ export class CreateRecipeUseCase {
     difficultyLevel,
     tags = [],
     recipeIngredients = [],
-  }: CreateRecipeUseCaseRequest): Promise<CreateRecipeUseCaseResponse> {
+  }: EditRecipeUseCaseRequest): Promise<EditRecipeUseCaseResponse> {
     const recipe = await this.recipesRepository.findById(recipeId)
 
     if (!recipe) {
