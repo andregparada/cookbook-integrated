@@ -60,7 +60,7 @@ describe('Edit recipe (E2E)', () => {
         ],
       })
 
-    expect(response.statusCode).toBe(201)
+    expect(response.statusCode).toBe(204)
 
     const recipeOnDatabase = await prisma.recipe.findFirst({
       where: {

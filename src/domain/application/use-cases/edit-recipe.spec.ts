@@ -6,17 +6,17 @@ import { EditRecipeUseCase } from './edit-recipe'
 import { makeRecipe } from 'test/factories/make-recipe'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 
-let inMemoryRecipesRepository: InMemoryRecipesRepository
 let inMemoryIngredientsRepository: InMemoryIngredientsRepository
 let inMemoryTagsRepository: InMemoryTagsRepository
+let inMemoryRecipesRepository: InMemoryRecipesRepository
 let inMemoryRecipeIngredientsRepository: InMemoryRecipeIngredientsRepository
 let sut: EditRecipeUseCase
 
 describe('Edit Recipe', () => {
   beforeEach(() => {
-    inMemoryRecipesRepository = new InMemoryRecipesRepository()
     inMemoryIngredientsRepository = new InMemoryIngredientsRepository()
     inMemoryTagsRepository = new InMemoryTagsRepository()
+    inMemoryRecipesRepository = new InMemoryRecipesRepository()
     inMemoryRecipeIngredientsRepository =
       new InMemoryRecipeIngredientsRepository()
     sut = new EditRecipeUseCase(
