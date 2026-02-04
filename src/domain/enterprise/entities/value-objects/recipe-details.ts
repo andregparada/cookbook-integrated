@@ -13,9 +13,9 @@ export interface RecipeDetailsProps {
   slug: Slug
   description: string
   instructions: string
-  prepTimeInMinutes: number | null
-  cookTimeInMinutes: number | null
-  servings: number | null
+  prepTimeInMinutes?: number | null
+  cookTimeInMinutes?: number | null
+  servings?: number | null
   difficultyLevel: DifficultyLevel
   tags: Tag[]
   recipeIngredients: RecipeIngredient[]
@@ -26,6 +26,14 @@ export interface RecipeDetailsProps {
 export class RecipeDetails extends ValueObject<RecipeDetailsProps> {
   get authorId() {
     return this.props.authorId
+  }
+
+  get author() {
+    return this.props.author
+  }
+
+  get recipeId() {
+    return this.props.recipeId
   }
 
   get name() {

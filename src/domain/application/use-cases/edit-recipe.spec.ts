@@ -5,20 +5,27 @@ import { InMemoryRecipesRepository } from 'test/repositories/in-memory-recipes-r
 import { EditRecipeUseCase } from './edit-recipe'
 import { makeRecipe } from 'test/factories/make-recipe'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
+import { InMemoryChefsRepository } from 'test/repositories/in-memory-chefs-repository'
 
+let inMemoryChefsRepository: InMemoryChefsRepository
 let inMemoryIngredientsRepository: InMemoryIngredientsRepository
 let inMemoryTagsRepository: InMemoryTagsRepository
-let inMemoryRecipesRepository: InMemoryRecipesRepository
 let inMemoryRecipeIngredientsRepository: InMemoryRecipeIngredientsRepository
+let inMemoryRecipesRepository: InMemoryRecipesRepository
 let sut: EditRecipeUseCase
 
 describe('Edit Recipe', () => {
   beforeEach(() => {
+    inMemoryChefsRepository = new InMemoryChefsRepository()
     inMemoryIngredientsRepository = new InMemoryIngredientsRepository()
     inMemoryTagsRepository = new InMemoryTagsRepository()
-    inMemoryRecipesRepository = new InMemoryRecipesRepository()
     inMemoryRecipeIngredientsRepository =
       new InMemoryRecipeIngredientsRepository()
+    inMemoryRecipesRepository = new InMemoryRecipesRepository(
+      inMemoryChefsRepository,
+      inMemoryTagsRepository,
+      inMemoryRecipeIngredientsRepository,
+    )
     sut = new EditRecipeUseCase(
       inMemoryRecipesRepository,
       inMemoryIngredientsRepository,
