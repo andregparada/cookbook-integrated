@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common'
 import { PrismaService } from '../prisma.service'
 import { Recipe } from '@/domain/enterprise/entities/recipe'
 import { PrismaRecipeMapper } from '../mappers/prisma-recipe-mapper'
+import { PrismaRecipeDetailsMapper } from '../mappers/prisma-recipe-details-mapper'
 
 @Injectable()
 export class PrismaRecipesRepository implements RecipesRepository {
@@ -20,6 +21,27 @@ export class PrismaRecipesRepository implements RecipesRepository {
     }
 
     return PrismaRecipeMapper.toDomain(recipe)
+  }
+
+  async findDetailsBySlug(slug: string) {
+    const recipe = await this.prisma.recipe.findUnique({
+      where: {
+        slug,
+      },
+      include: {
+        author: true,
+        tags: true,
+        ingredients: true,
+      },
+    })
+
+    if (!recipe) {
+      return null
+    }
+
+    const recipeDetails = PrismaRecipeDetailsMapper.toDomain(recipe)
+
+    return recipeDetails
   }
 
   async create(recipe: Recipe): Promise<void> {

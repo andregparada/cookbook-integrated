@@ -2,8 +2,8 @@ import { DifficultyLevel } from '@/domain/enterprise/entities/recipe'
 import { DifficultyLevel as PrismaDifficultyLevel } from '@prisma/client'
 
 export function mapDifficultyLevelToDomain(
-  level: PrismaDifficultyLevel,
-): DifficultyLevel {
+  level: PrismaDifficultyLevel | null,
+): DifficultyLevel | null {
   switch (level) {
     case PrismaDifficultyLevel.Easy:
       return DifficultyLevel.EASY
@@ -17,8 +17,8 @@ export function mapDifficultyLevelToDomain(
 }
 
 export function mapDifficultyLevelToPrisma(
-  level: DifficultyLevel,
-): PrismaDifficultyLevel {
+  level: DifficultyLevel | null,
+): PrismaDifficultyLevel | null {
   switch (level) {
     case DifficultyLevel.EASY:
       return PrismaDifficultyLevel.Easy

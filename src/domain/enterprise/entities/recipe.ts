@@ -18,7 +18,7 @@ export interface RecipeProps {
   prepTimeInMinutes: number | null
   cookTimeInMinutes: number | null
   servings: number | null
-  difficultyLevel: DifficultyLevel
+  difficultyLevel: DifficultyLevel | null
   tagsIds: UniqueEntityID[]
   recipeIngredientsIds: UniqueEntityID[]
   createdAt: Date
@@ -92,7 +92,7 @@ export class Recipe extends Entity<RecipeProps> {
     return this.props.difficultyLevel
   }
 
-  set difficultyLevel(difficultyLevel: DifficultyLevel) {
+  set difficultyLevel(difficultyLevel: DifficultyLevel | null) {
     this.props.difficultyLevel = difficultyLevel
     this.touch()
   }

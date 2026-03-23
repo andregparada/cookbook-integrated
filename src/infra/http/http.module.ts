@@ -11,6 +11,8 @@ import { CreateRecipeController } from './controllers/create-recipe.controller'
 import { CreateRecipeUseCase } from '@/domain/application/use-cases/create-recipe'
 import { EditRecipeController } from './controllers/edit-recipe.controller'
 import { EditRecipeUseCase } from '@/domain/application/use-cases/edit-recipe'
+import { GetRecipeBySlugController } from './controllers/get-recipe-by-slug.controller'
+import { GetRecipeBySlugUseCase } from '@/domain/application/use-cases/get-recipe-by-slug'
 
 @Module({
   imports: [DatabaseModule, CryptographyModule],
@@ -20,6 +22,7 @@ import { EditRecipeUseCase } from '@/domain/application/use-cases/edit-recipe'
     EditUserController,
     CreateRecipeController,
     EditRecipeController,
+    GetRecipeBySlugController,
   ],
   providers: [
     RegisterChefUseCase,
@@ -27,6 +30,7 @@ import { EditRecipeUseCase } from '@/domain/application/use-cases/edit-recipe'
     EditChefUseCase,
     CreateRecipeUseCase,
     EditRecipeUseCase,
+    GetRecipeBySlugUseCase,
   ],
 })
 export class HttpModule {}

@@ -6,7 +6,9 @@ POST {{baseUrl}}/accounts
 Content-Type: application/json
 
 {
-    "name": "Andre Parada",
+    "firstName": "Andre",
+    "lastName": "Parada",
+    "userName": "andreparada",
     "email": "andregparada@email.com",
     "password": "123456"
 }
@@ -24,19 +26,26 @@ Content-Type: application/json
 
 ###
 
-# @name create_question
-POST {{baseUrl}}/questions
+# @name create_recipe
+POST {{baseUrl}}/recipes
 Content-Type: application/json
 Authorization: Bearer {{authToken}}
 
 {
-    "title": "Nova Pergunta 2",
-    "content":"Conteúdo da pergunta"
+    "name": "Nova Receita",
+    "description": "Descrição da receita",
+    "instructions": "Instruções da receita",
+    "prepTimeInMinutes": 30,
+    "cookTimeInMinutes": 60,
+    "servings": 4,
+    "difficultyLevel": "easy",
+    "tagsIds": [],
+    "recipeIngredients": []
 }
 
 ###
 
-# @name fetch_recent_questions
-GET {{baseUrl}}/questions?page=1
+# @name get_recipe_by_slug
+GET {{baseUrl}}/recipes/nova-receita
 Content-Type: application/json
 Authorization: Bearer {{authToken}}

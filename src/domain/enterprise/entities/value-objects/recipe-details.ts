@@ -11,12 +11,12 @@ export interface RecipeDetailsProps {
   recipeId: UniqueEntityID
   name: string
   slug: Slug
-  description: string
+  description: string | null
   instructions: string
   prepTimeInMinutes?: number | null
   cookTimeInMinutes?: number | null
   servings?: number | null
-  difficultyLevel: DifficultyLevel
+  difficultyLevel: DifficultyLevel | null
   tags: Tag[]
   recipeIngredients: RecipeIngredient[]
   createdAt: Date
