@@ -14,6 +14,7 @@ Before implementing, read and follow `.cursor/skills/cookbook-engineering/SKILL.
 - Clean Architecture: `src/core`, `src/domain`, `src/infra`
 - Foundation guide: `docs/plano-melhorias-fundacao.md`
 - Reference: `05-nest-clean` (Rocketseat)
+/home/andre/Documentos/estudo/rocketseat/Node.js/DDD e Primeiro Framework/05-nest-clean
 
 ## Principles
 

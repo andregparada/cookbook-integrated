@@ -13,7 +13,7 @@ export interface RecipeProps {
   authorId: UniqueEntityID
   name: string
   slug: Slug
-  description: string
+  description: string | null
   instructions: string
   prepTimeInMinutes: number | null
   cookTimeInMinutes: number | null
@@ -47,7 +47,7 @@ export class Recipe extends Entity<RecipeProps> {
     return this.props.description
   }
 
-  set description(description: string) {
+  set description(description: string | null) {
     this.props.description = description
     this.touch()
   }
@@ -146,9 +146,11 @@ export class Recipe extends Entity<RecipeProps> {
         slug: props.slug ?? Slug.createFromText(props.name),
         tagsIds: props.tagsIds ?? [],
         recipeIngredientsIds: props.recipeIngredientsIds ?? [],
-        prepTimeInMinutes: props.prepTimeInMinutes ?? 0,
-        cookTimeInMinutes: props.cookTimeInMinutes ?? 0,
-        servings: props.servings ?? 1,
+        prepTimeInMinutes:
+          props.prepTimeInMinutes === undefined ? 0 : props.prepTimeInMinutes,
+        cookTimeInMinutes:
+          props.cookTimeInMinutes === undefined ? 0 : props.cookTimeInMinutes,
+        servings: props.servings === undefined ? 1 : props.servings,
         createdAt: props.createdAt ?? new Date(),
       },
       id,

@@ -41,6 +41,8 @@ describe('Edit recipe (E2E)', () => {
     })
 
     const recipeId = recipe.id.toString()
+    const originalSlug = recipe.slug.value
+    const originalCreatedAt = recipe.createdAt
 
     const response = await request(app.getHttpServer())
       .put(`/recipes/${recipeId}`)
@@ -70,5 +72,7 @@ describe('Edit recipe (E2E)', () => {
     })
 
     expect(recipeOnDatabase).toBeTruthy()
+    expect(recipeOnDatabase?.slug).toBe(originalSlug)
+    expect(recipeOnDatabase?.createdAt).toEqual(originalCreatedAt)
   })
 })

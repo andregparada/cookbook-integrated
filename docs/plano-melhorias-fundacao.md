@@ -12,9 +12,8 @@
 
 1. Escolha **um item** (ou um grupo pequeno da mesma fase).
 2. Crie um plano de implementação derivado (issue / chat / PR) citando o **ID** deste documento (ex.: `MF-01`).
-3. Implemente, teste (unit + e2e afetados) e só então avance.
-4. Marque o item como feito neste arquivo quando estiver estável e jogue o setor da faze sugerida feita para o fim do arquivo num setor "tarefas concluídas".
-5. Altere o próximo passo sugerido no fim deste arquivo, logo antes de "tarefas concluídas".
+3. Implemente e teste (unit + e2e afetados).
+4. Ao concluir, siga a seção **Ao concluir um MF-XX** (fim deste documento) para atualizar o guia-mestre.
 
 ### Critério de “pronto” genérico
 
@@ -137,37 +136,6 @@ Integridade referencial e previsibilidade de edit são pré-requisitos para qual
 ### Por que melhora o projeto
 
 Elimina estados inconsistentes no banco, torna edit previsível (replace consciente da lista) e concentra I/O Prisma no lugar certo.
-
----
-
-## MF-04 — Mapper de `Recipe` incompleto no `toDomain`
-
-### O que está errado / inconsistente
-
-- `PrismaRecipeMapper.toDomain` não restaura `slug`, `createdAt`, `updatedAt`, tags nem ingredientes.
-- `Recipe.create` regenera `slug` a partir do `name` e defaulta listas/tempos — ao dar `findById` + `save` no edit, o domínio pode **reescrever** slug/createdAt e perder relações na entidade em memória.
-- Há validação rígida que lança se `description` ou `difficultyLevel` forem `null` no Prisma, enquanto o schema Prisma permite `description String?` e `difficultyLevel DifficultyLevel?` — desalinhamento domínio ↔ banco.
-
-### Onde está o problema
-
-- `src/infra/database/prisma/mappers/prisma-recipe-mapper.ts` — `toDomain` (~L10–27): não passa `slug`, `createdAt`; não mapeia relações.
-- `src/domain/enterprise/entities/recipe.ts` — `create` defaults (~L146–152).
-- `prisma/schema.prisma` — `Recipe.description` / `difficultyLevel` opcionais (~L46–51) vs mapper que exige non-null.
-
-### Por que mudar
-
-Qualquer use case que faça load → mutate → save depende de um `toDomain` fiel. Hoje o edit já está em terreno movediço.
-
-### Sugestão de implementação
-
-1. `toDomain` deve mapear **todos** os campos escalares persistidos: `id`, `authorId`, `name`, `slug` (`Slug.create(raw.slug)`), `description`, `instructions`, tempos, `servings`, `difficultyLevel`, `createdAt`, `updatedAt`.
-2. Decidir invariantes: ou o domínio aceita `description`/`difficulty` nullable (como o schema), ou a migration/schema exige NOT NULL — **uma fonte da verdade**.
-3. Relações (ingredients/tags): ou o `findById` do repositório hidrata listas (include + mapper), ou o use case carrega via repositório de ingredientes (padrão nest-clean). Documentar a escolha no plano derivado de MF-02/MF-03.
-4. Teste unitário do mapper: round-trip `toPrisma` ↔ `toDomain` preserva slug e datas.
-
-### Por que melhora o projeto
-
-Remove bugs silenciosos de persistência e permite confiar no ciclo find/save.
 
 ---
 
@@ -361,7 +329,7 @@ Contrato HTTP previsível e edit seguro; desbloqueia MF-02/MF-03 sem surpresas.
 Use esta lista ao criar novos planos de implementação:
 
 - [x] **MF-01** Autorização em `EditRecipe` (e alinhar `EditChef`)
-- [ ] **MF-04** `PrismaRecipeMapper.toDomain` completo + invariantes schema
+- [x] **MF-04** `PrismaRecipeMapper.toDomain` completo + invariantes schema
 - [ ] **MF-05** Normalização Tag/Ingredient (schema + repos + in-memory)
 - [ ] **MF-09** Semântica de opcionais no edit
 - [ ] **MF-06** Mapear erros de domínio → status HTTP
@@ -413,11 +381,18 @@ Ao criar um plano de implementação a partir deste guia, copie:
 - …
 
 ## Testes
-- Unit: …
-- E2E: …
+- Unit: adaptar use case afetado — regras de negócio
+- E2E: happy path do controller; wiring find/save (ex.: slug e `createdAt` estáveis no edit)
+- TDD: red → green nos arquivos de spec já existentes
 
 ## Critério de pronto
 - …
+
+## Ao concluir
+1. Marcar o item como `[x]` no checklist de `docs/plano-melhorias-fundacao.md`.
+2. Mover a seção do MF-XX para **Tarefas concluídas** no fim do guia-mestre.
+3. Atualizar **Próximo passo sugerido** (logo antes de Tarefas concluídas).
+4. Registrar decisão relevante em **Registro de decisões** (se houver).
 ```
 
 ---
@@ -430,18 +405,29 @@ Ao criar um plano de implementação a partir deste guia, copie:
 | 2026-07-20 | nest-clean como norte, não como checklist de cópia | Cookbook é outro domínio; copiar Redis/storage cedo demais gera complexidade sem demanda |
 | 2026-07-20 | Manter `@Injectable` nos use cases (MF-07) | Mesmo pragmatismo da referência; custo/benefício ruim para “purificar” agora |
 | 2026-07-21 | MF-01 concluído: `authorId` em `EditRecipe`, `actorId` em `EditChef` | Fechar buraco de segurança antes de MF-04/MF-09 |
+| 2026-07-21 | MF-04 concluído: domínio alinhado ao schema (`description` nullable); mapper round-trip slug/datas | find/save confiável antes de MF-02/MF-09 |
 | 2026-07-21 | Skill + rule `cookbook-engineering` | Padronizar SOLID/DDD/TDD e pirâmide de testes em todo trabalho no repo |
+
+---
+
+## Ao concluir um MF-XX
+
+Após implementar e validar um item (testes unitários + e2e afetados), a IA ou o implementador deve atualizar este guia-mestre:
+
+1. Marcar o item como `[x]` no checklist **Ordem de planos derivados**.
+2. Mover a seção completa do MF-XX (do corpo do documento) para **Tarefas concluídas**, no fim do arquivo.
+3. Atualizar **Próximo passo sugerido** (logo acima de Tarefas concluídas), removendo o item fechado e apontando o próximo da fase.
+4. Registrar decisão relevante em **Registro de decisões**, se houver escolha de design (ex.: nullable vs migration).
 
 ---
 
 ## Próximo passo sugerido
 
-Com MF-01 fechado, a ordem recomendada da **Fase A** continua:
+Com MF-01 e MF-04 fechados, a ordem recomendada da **Fase A** continua:
 
-1. **MF-04** — `PrismaRecipeMapper.toDomain` completo (find/save confiável após edit)
-2. **MF-05** — normalização Tag/Ingredient alinhada entre Prisma e in-memory
-3. **MF-09** — semântica de opcionais no edit (evitar apagar tags/ingredientes ao omitir campos)
-4. **MF-06** — mapear `NotAllowedError` → 403 e demais erros de domínio para status HTTP corretos
+1. **MF-05** — normalização Tag/Ingredient alinhada entre Prisma e in-memory
+2. **MF-09** — semântica de opcionais no edit (evitar apagar tags/ingredientes ao omitir campos)
+3. **MF-06** — mapear `NotAllowedError` → 403 e demais erros de domínio para status HTTP corretos
 
 Depois disso, avançar para **MF-02** e **MF-03** (agregado `Recipe` + sync transacional no repositório).
 
@@ -478,5 +464,27 @@ Sem essa regra, a API é insegura e os testes de domínio não documentam a pol�
 ### Por que melhora o projeto
 
 Fecha um buraco de segurança real, alinha o Cookbook ao padrão do nest-clean e deixa o contrato do use case honesto.
+
+---
+
+## MF-04 — Mapper de `Recipe` incompleto no `toDomain`
+
+### O que estava errado / inconsistente
+
+- `PrismaRecipeMapper.toDomain` não restaurava `slug`, `createdAt`, `updatedAt`, tags nem ingredientes.
+- `Recipe.create` regenerava `slug` a partir do `name` e defaultava listas/tempos — ao dar `findById` + `save` no edit, o domínio podia **reescrever** slug/createdAt e perder relações na entidade em memória.
+- Havia validação rígida que lançava se `description` ou `difficultyLevel` fossem `null` no Prisma, enquanto o schema permite ambos opcionais — desalinhamento domínio ↔ banco.
+
+### O que foi feito
+
+- `toDomain` mapeia todos os escalares persistidos, incluindo `slug`, `createdAt` e `updatedAt`.
+- Domínio alinhado ao schema: `description` nullable; enum mapper trata `null`.
+- Defaults de `Recipe.create` preservam `null` explícito em tempos/servings (default só em `undefined`).
+- E2e de edit com assert de slug e `createdAt` estáveis após rename (wiring find/save).
+- Relações (tags/ingredientes) adiadas a MF-02/MF-03.
+
+### Por que melhorou o projeto
+
+Remove bugs silenciosos de persistência e permite confiar no ciclo find/save.
 
 ---

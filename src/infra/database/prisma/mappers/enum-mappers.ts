@@ -11,6 +11,8 @@ export function mapDifficultyLevelToDomain(
       return DifficultyLevel.MEDIUM
     case PrismaDifficultyLevel.Hard:
       return DifficultyLevel.HARD
+    case null:
+      return null
     default:
       throw new Error(`Invalid difficulty level: ${level}`)
   }
@@ -26,6 +28,8 @@ export function mapDifficultyLevelToPrisma(
       return PrismaDifficultyLevel.Medium
     case DifficultyLevel.HARD:
       return PrismaDifficultyLevel.Hard
+    case null:
+      return null
     default:
       throw new Error(`Invalid difficulty level: ${level}`)
   }
