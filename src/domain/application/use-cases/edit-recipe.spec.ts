@@ -6,6 +6,8 @@ import { EditRecipeUseCase } from './edit-recipe'
 import { makeRecipe } from 'test/factories/make-recipe'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { InMemoryChefsRepository } from 'test/repositories/in-memory-chefs-repository'
+import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
+import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 
 let inMemoryChefsRepository: InMemoryChefsRepository
 let inMemoryIngredientsRepository: InMemoryIngredientsRepository
@@ -44,9 +46,9 @@ describe('Edit Recipe', () => {
 
     await inMemoryRecipesRepository.create(newRecipe)
 
-    // acrescentar tags e ingredients
+    // TODO acrescentar ingredientes e tags no teste
 
-    await sut.execute({
+    const result = await sut.execute({
       recipeId: newRecipe.id.toValue(),
       authorId: 'author-1',
       name: 'New Name',
@@ -59,6 +61,7 @@ describe('Edit Recipe', () => {
       ],
     })
 
+    expect(result.isRight()).toBe(true)
     expect(inMemoryRecipesRepository.items[0]).toMatchObject({
       name: 'New Name',
       description: 'New Description',
@@ -66,5 +69,38 @@ describe('Edit Recipe', () => {
     })
   })
 
-  // TODO fazer mais testes aqui, se necessário
+  it('should not be able to edit a recipe from another chef', async () => {
+    const newRecipe = makeRecipe(
+      {
+        authorId: new UniqueEntityID('author-1'),
+        name: 'Original Name',
+      },
+      new UniqueEntityID('recipe-1'),
+    )
+
+    await inMemoryRecipesRepository.create(newRecipe)
+
+    const result = await sut.execute({
+      recipeId: newRecipe.id.toValue(),
+      authorId: 'author-2',
+      name: 'New Name',
+    })
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(NotAllowedError)
+    expect(inMemoryRecipesRepository.items[0]).toMatchObject({
+      name: 'Original Name',
+    })
+  })
+
+  it('should not be able to edit a non-existing recipe', async () => {
+    const result = await sut.execute({
+      recipeId: 'non-existing-recipe-id',
+      authorId: 'author-1',
+      name: 'New Name',
+    })
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(ResourceNotFoundError)
+  })
 })

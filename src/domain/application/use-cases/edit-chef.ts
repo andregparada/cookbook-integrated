@@ -7,6 +7,7 @@ import { ChefsRepository } from '../repositories/chefs-repository'
 import { HashGenerator } from '../cryptography/hash-generator'
 
 interface EditChefUseCaseRequest {
+  actorId: string
   chefId: string
   firstName?: string
   lastName?: string
@@ -32,6 +33,7 @@ export class EditChefUseCase {
   ) {}
 
   async execute({
+    actorId,
     chefId,
     firstName,
     lastName,
@@ -45,6 +47,10 @@ export class EditChefUseCase {
 
     if (!chef) {
       return left(new ResourceNotFoundError())
+    }
+
+    if (actorId !== chef.id.toString()) {
+      return left(new NotAllowedError())
     }
 
     chef.firstName = firstName ?? chef.firstName

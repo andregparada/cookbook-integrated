@@ -41,6 +41,7 @@ export class EditUserController {
     const userId = user.sub
 
     const result = await this.editUser.execute({
+      actorId: userId,
       chefId: userId,
       firstName,
       lastName,

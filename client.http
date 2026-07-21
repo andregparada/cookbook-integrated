@@ -6,10 +6,10 @@ POST {{baseUrl}}/accounts
 Content-Type: application/json
 
 {
-    "firstName": "Andre",
-    "lastName": "Parada",
-    "userName": "andreparada",
-    "email": "andregparada@email.com",
+    "firstName": "John",
+    "lastName": "Doe",
+    "userName": "johndoe",
+    "email": "johndoe@email.com",
     "password": "123456"
 }
 
@@ -26,13 +26,14 @@ Content-Type: application/json
 
 ###
 
+// ??? receita com mesmo nome
 # @name create_recipe
 POST {{baseUrl}}/recipes
 Content-Type: application/json
 Authorization: Bearer {{authToken}}
 
 {
-    "name": "Nova Receita",
+    "name": "Outra Receita",
     "description": "Descrição da receita",
     "instructions": "Instruções da receita",
     "prepTimeInMinutes": 30,

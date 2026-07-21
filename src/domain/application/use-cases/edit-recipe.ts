@@ -12,6 +12,7 @@ import { RecipesRepository } from '../repositories/recipes-repository'
 import { IngredientsRepository } from '../repositories/ingredients-repository'
 import { TagsRepository } from '../repositories/tags-repository'
 import { RecipeIngredientsRepository } from '../repositories/recipe-ingredients-repository'
+import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 
 interface EditRecipeUseCaseRequest {
@@ -34,7 +35,7 @@ interface EditRecipeUseCaseRequest {
 }
 
 type EditRecipeUseCaseResponse = Either<
-  ResourceNotFoundError,
+  ResourceNotFoundError | NotAllowedError,
   {
     recipe: Recipe
   }
@@ -51,6 +52,7 @@ export class EditRecipeUseCase {
 
   async execute({
     recipeId,
+    authorId,
     name,
     description,
     instructions,
@@ -65,6 +67,10 @@ export class EditRecipeUseCase {
 
     if (!recipe) {
       return left(new ResourceNotFoundError())
+    }
+
+    if (authorId !== recipe.authorId.toString()) {
+      return left(new NotAllowedError())
     }
 
     const tagsIds = await this.resolveTagsIds(tags)

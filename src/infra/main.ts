@@ -8,6 +8,8 @@ async function bootstrap() {
     // { logger: false }
   )
 
+  app.enableCors()
+
   const envService = app.get(EnvService)
   const port = envService.get('PORT')
 

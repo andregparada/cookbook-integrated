@@ -1,0 +1,30 @@
+---
+description: Cookbook engineering standards — SOLID, DDD, TDD, naming, test pyramid
+alwaysApply: true
+---
+
+# Cookbook Engineering
+
+Follow `.cursor/skills/cookbook-engineering/SKILL.md` for full detail.
+
+## Quick rules
+
+- **SOLID + DDD**: `core` / `domain` / `infra`; use cases orchestrate; ports in domain, adapters in infra
+- **Reuse**: search existing use cases, factories, and in-memory repos before adding code
+- **Naming**: English, semantic, precise — length is not a concern
+- **Scalability**: ports/adapters; bounded contexts only when side-effects demand it
+- **TDD**: red → green; adapt existing specs; quality over quantity
+
+## Test pyramid (mandatory)
+
+- **Unit (use case)**: business rules — `NotAllowedError`, `ResourceNotFoundError`, orchestration (same as `05-nest-clean`)
+- **E2E (controller)**: happy path only — route + auth + validation + DB persistence wiring
+- **Do not** duplicate use-case failure branches in e2e (e.g. "another chef cannot edit" belongs in `edit-recipe.spec.ts`, not in e2e)
+
+Exception: e2e negative cases only when the rule lives in infra (guards, HTTP error mapping after MF-06).
+
+## References
+
+- Skill: `.cursor/skills/cookbook-engineering/SKILL.md`
+- Foundation plan: `docs/plano-melhorias-fundacao.md`
+- Subagent: `/backend-engineer`
