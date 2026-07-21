@@ -4,16 +4,16 @@ import { InMemoryRecipesRepository } from 'test/repositories/in-memory-recipes-r
 import { makeRecipe } from 'test/factories/make-recipe'
 import { InMemoryChefsRepository } from 'test/repositories/in-memory-chefs-repository'
 import { makeChef } from 'test/factories/make-chef'
-import { Slug } from '@/domain/enterprise/entities/value-objects/slug'
-import { GetRecipeBySlugUseCase } from './get-recipe-by-slug'
+import { GetRecipeByIdUseCase } from './get-recipe-by-id'
+import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 
 let inMemoryChefsRepository: InMemoryChefsRepository
 let inMemoryTagsRepository: InMemoryTagsRepository
 let inMemoryRecipeIngredientsRepository: InMemoryRecipeIngredientsRepository
 let inMemoryRecipesRepository: InMemoryRecipesRepository
-let sut: GetRecipeBySlugUseCase
+let sut: GetRecipeByIdUseCase
 
-describe('Get Recipe By Slug', () => {
+describe('Get Recipe By Id', () => {
   beforeEach(() => {
     inMemoryChefsRepository = new InMemoryChefsRepository()
     inMemoryTagsRepository = new InMemoryTagsRepository()
@@ -24,34 +24,40 @@ describe('Get Recipe By Slug', () => {
       inMemoryTagsRepository,
       inMemoryRecipeIngredientsRepository,
     )
-    sut = new GetRecipeBySlugUseCase(inMemoryRecipesRepository)
+    sut = new GetRecipeByIdUseCase(inMemoryRecipesRepository)
   })
 
-  it('should be able to get a recipe by slug', async () => {
+  it('should be able to get a recipe by id', async () => {
     const chef = makeChef({ userName: 'John_Doe' })
 
     inMemoryChefsRepository.items.push(chef)
 
     const newRecipe = makeRecipe({
       authorId: chef.id,
-      slug: Slug.create('example-recipe'),
     })
 
     inMemoryRecipesRepository.create(newRecipe)
 
-    // acrescentar tags e ingredients
-
     const result = await sut.execute({
-      slug: 'example-recipe',
+      id: newRecipe.id.toString(),
     })
 
+    expect(result.isRight()).toBe(true)
     expect(result.value).toMatchObject({
       recipe: expect.objectContaining({
         name: newRecipe.name,
         author: 'John_Doe',
+        slug: newRecipe.slug,
       }),
     })
   })
 
-  // TODO fazer mais testes aqui, se necessário
+  it('should return ResourceNotFoundError when recipe does not exist', async () => {
+    const result = await sut.execute({
+      id: 'non-existent-recipe-id',
+    })
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(ResourceNotFoundError)
+  })
 })

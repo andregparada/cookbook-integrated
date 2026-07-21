@@ -23,10 +23,10 @@ export class PrismaRecipesRepository implements RecipesRepository {
     return PrismaRecipeMapper.toDomain(recipe)
   }
 
-  async findDetailsBySlug(slug: string) {
+  async findDetailsById(id: string) {
     const recipe = await this.prisma.recipe.findUnique({
       where: {
-        slug,
+        id,
       },
       include: {
         author: true,
@@ -39,9 +39,7 @@ export class PrismaRecipesRepository implements RecipesRepository {
       return null
     }
 
-    const recipeDetails = PrismaRecipeDetailsMapper.toDomain(recipe)
-
-    return recipeDetails
+    return PrismaRecipeDetailsMapper.toDomain(recipe)
   }
 
   async create(recipe: Recipe): Promise<void> {

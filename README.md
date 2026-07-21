@@ -16,7 +16,7 @@ Nasceu da necessidade do próprio criador: um lugar confiável para guardar rece
 - Cadastro e autenticação de chefs (JWT)
 - Criação e edição de receitas (nome, descrição, instruções, tempos, porções, dificuldade)
 - Associação com **tags** e **ingredientes** (quantidade + unidade)
-- Consulta de receita por **slug**
+- Consulta de receita por **id** (slug permanece no payload para URLs públicas no estilo `{id}-{slug}`)
 - Persistência em PostgreSQL via Prisma
 - Testes unitários (Vitest + repositórios in-memory) e e2e
 
@@ -83,7 +83,7 @@ Há também um `client.http` na raiz para experimentar endpoints manualmente.
 
 ## Roadmap (alto nível)
 
-1. Consolidar a fundação (autorização, agregado de receita, busca/filtros, consistência de persistência) — ver o [plano de melhorias](docs/plano-melhorias-fundacao.md)
+1. Consolidar a fundação (autorização, agregado de receita, busca/filtros, consistência de persistência) — ver o [plano de melhorias](docs/plano-melhorias-fundacao.md) e a [análise de regras de negócio](docs/analise-regras-negocio.md)
 2. Entregar uma **pesquisa com filtros** à altura do uso pessoal diário
 3. Só então investir em compartilhamento e rede social leve entre chefs amadores
 

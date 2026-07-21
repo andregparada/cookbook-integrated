@@ -42,7 +42,7 @@ model User {
 model Recipe {
   id              String           @id @default(uuid())
   name            String
-  slug            String           @unique
+  slug            String
   description     String?
   instructions    String
   prepTime        Int?

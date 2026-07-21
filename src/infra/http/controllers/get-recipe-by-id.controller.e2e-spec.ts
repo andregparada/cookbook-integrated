@@ -6,9 +6,8 @@ import { ChefFactory } from 'test/factories/make-chef'
 import { RecipeFactory } from 'test/factories/make-recipe'
 import request from 'supertest'
 import { DatabaseModule } from '@/infra/database/database.module'
-import { Slug } from '@/domain/enterprise/entities/value-objects/slug'
 
-describe('Get recipe by slug (E2E', () => {
+describe('Get recipe by id (E2E)', () => {
   let app: INestApplication
   let chefFactory: ChefFactory
   let recipeFactory: RecipeFactory
@@ -29,21 +28,20 @@ describe('Get recipe by slug (E2E', () => {
     await app.init()
   })
 
-  test('[GET] /recipes/:slug', async () => {
+  test('[GET] /recipes/:id', async () => {
     const user = await chefFactory.makePrismaChef({
       userName: 'johndoe',
     })
 
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
-    await recipeFactory.makePrismaRecipe({
+    const recipe = await recipeFactory.makePrismaRecipe({
       authorId: user.id,
       name: 'Receita 01',
-      slug: Slug.create('receita-01'),
     })
 
     const response = await request(app.getHttpServer())
-      .get(`/recipes/receita-01`)
+      .get(`/recipes/${recipe.id.toString()}`)
       .set('Authorization', `Bearer ${accessToken}`)
 
     expect(response.statusCode).toBe(200)
@@ -51,6 +49,9 @@ describe('Get recipe by slug (E2E', () => {
       recipe: expect.objectContaining({
         name: 'Receita 01',
         author: 'johndoe',
+        slug: expect.objectContaining({
+          value: recipe.slug.value,
+        }),
       }),
     })
   })

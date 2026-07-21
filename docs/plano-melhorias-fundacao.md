@@ -188,7 +188,7 @@ Garante catálogo limpo, testes fiéis à produção e remove uma armadilha clá
 
 - `src/infra/http/controllers/edit-recipe.controller.ts` (~L80–82).
 - `src/infra/http/controllers/create-recipe.controller.ts` (~L66–68).
-- Demais controllers de mutação/leitura que repetem o padrão (`edit-user`, `authenticate`, `get-recipe-by-slug`, etc.).
+- Demais controllers de mutação/leitura que repetem o padrão (`edit-user`, `authenticate`, `get-recipe-by-id`, etc.).
 - Erros de domínio: `src/core/errors/errors/resource-not-found-error.ts`, `not-allowed-error.ts`, `src/domain/application/use-cases/errors/*`.
 
 ### Por que mudar
@@ -347,7 +347,7 @@ Não detalhar implementação agora; apenas backlog consciente:
 1. **Domain events reais** — ex.: `RecipeCreatedEvent` / alteração de slug → invalidar cache ou notificar; infra `src/infra/events` + subscribers em outro contexto.
 2. **Bounded context** — se surgir notificação, busca ou moderação, extrair `domain/cookbook` (ou similar) e eventualmente `domain/notification`, como `forum` / `notification` no nest-clean.
 3. **Storage de avatar** — porta `Uploader` no application + adaptador S3/local (nest-clean `storage`).
-4. **Cache de detalhes por slug** — só se `get-recipe-by-slug` exigir escala (nest-clean usa Redis em `findDetailsBySlug`).
+4. **Cache de detalhes por id** — só se `get-recipe-by-id` exigir escala (nest-clean usa Redis em detalhes; aqui a chave canônica é o id, com slug só para URL pública).
 5. **Paginação** — `PaginationParams` em `src/core/repositories` já existe; usar em listagens futuras.
 
 Cada um desses deve virar um plano próprio **somente** quando a fundação (MF-01…MF-09 / MF-02–03) estiver estável.

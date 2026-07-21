@@ -24,8 +24,8 @@ export class InMemoryRecipesRepository implements RecipesRepository {
     return recipe
   }
 
-  async findDetailsBySlug(slug: string) {
-    const recipe = this.items.find((item) => item.slug.value === slug)
+  async findDetailsById(id: string) {
+    const recipe = this.items.find((item) => item.id.toString() === id)
 
     if (!recipe) {
       return null

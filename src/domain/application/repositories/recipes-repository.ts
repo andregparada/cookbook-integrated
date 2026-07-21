@@ -3,7 +3,7 @@ import { RecipeDetails } from '@/domain/enterprise/entities/value-objects/recipe
 
 export abstract class RecipesRepository {
   abstract findById(id: string): Promise<Recipe | null>
-  abstract findDetailsBySlug(slug: string): Promise<RecipeDetails | null>
+  abstract findDetailsById(id: string): Promise<RecipeDetails | null>
   abstract create(recipe: Recipe): Promise<void>
   abstract save(recipe: Recipe): Promise<void>
 }

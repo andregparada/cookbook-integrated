@@ -4,11 +4,11 @@ import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-e
 import { Injectable } from '@nestjs/common'
 import { RecipeDetails } from '@/domain/enterprise/entities/value-objects/recipe-details'
 
-interface GetRecipeBySlugUseCaseRequest {
-  slug: string
+interface GetRecipeByIdUseCaseRequest {
+  id: string
 }
 
-type GetRecipeBySlugUseCaseResponse = Either<
+type GetRecipeByIdUseCaseResponse = Either<
   ResourceNotFoundError,
   {
     recipe: RecipeDetails
@@ -16,13 +16,13 @@ type GetRecipeBySlugUseCaseResponse = Either<
 >
 
 @Injectable()
-export class GetRecipeBySlugUseCase {
+export class GetRecipeByIdUseCase {
   constructor(private recipesRepository: RecipesRepository) {}
 
   async execute({
-    slug,
-  }: GetRecipeBySlugUseCaseRequest): Promise<GetRecipeBySlugUseCaseResponse> {
-    const recipe = await this.recipesRepository.findDetailsBySlug(slug)
+    id,
+  }: GetRecipeByIdUseCaseRequest): Promise<GetRecipeByIdUseCaseResponse> {
+    const recipe = await this.recipesRepository.findDetailsById(id)
 
     if (!recipe) {
       return left(new ResourceNotFoundError())

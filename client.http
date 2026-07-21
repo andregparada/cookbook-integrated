@@ -46,7 +46,7 @@ Authorization: Bearer {{authToken}}
 
 ###
 
-# @name get_recipe_by_slug
-GET {{baseUrl}}/recipes/nova-receita
+# @name get_recipe_by_id
+GET {{baseUrl}}/recipes/{{recipeId}}
 Content-Type: application/json
 Authorization: Bearer {{authToken}}
