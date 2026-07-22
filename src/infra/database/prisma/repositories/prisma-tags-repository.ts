@@ -1,5 +1,6 @@
 import { TagsRepository } from '@/domain/application/repositories/tags-repository'
 import { Injectable } from '@nestjs/common'
+import { NormalizedName } from '@/domain/enterprise/entities/value-objects/normalized-name'
 import { PrismaService } from '../prisma.service'
 import { Tag } from '@/domain/enterprise/entities/tag'
 import { PrismaTagMapper } from '../mappers/prisma-tag-mapper'
@@ -8,10 +9,10 @@ import { PrismaTagMapper } from '../mappers/prisma-tag-mapper'
 export class PrismaTagsRepository implements TagsRepository {
   constructor(private prisma: PrismaService) {}
 
-  async findByNormalizedName(normalizedName: string) {
+  async findByNormalizedName(normalizedName: NormalizedName) {
     const tag = await this.prisma.tag.findUnique({
       where: {
-        name: normalizedName,
+        normalizedName: normalizedName.value,
       },
     })
 

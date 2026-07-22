@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { Either, left, right } from '@/core/either'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
-import { normalizeText } from '@/domain/utils/normalize-text'
+import { NormalizedName } from '@/domain/enterprise/entities/value-objects/normalized-name'
 
 import { DifficultyLevel, Recipe } from '../../enterprise/entities/recipe'
 import { RecipeIngredient } from '@/domain/enterprise/entities/recipe-ingredient'
@@ -111,7 +111,7 @@ export class EditRecipeUseCase {
     const tagsIds: UniqueEntityID[] = []
 
     for (const tag of tags) {
-      const normalizedName = normalizeText(tag)
+      const normalizedName = NormalizedName.createFromText(tag)
 
       let tagEntity =
         await this.tagsRepository.findByNormalizedName(normalizedName)
@@ -138,7 +138,7 @@ export class EditRecipeUseCase {
     const recipeIngredientEntities: RecipeIngredient[] = []
 
     for (const input of recipeIngredients) {
-      const normalizedName = normalizeText(input.name)
+      const normalizedName = NormalizedName.createFromText(input.name)
 
       // ??? aqui precisa de uma validação para ver se já existe esse recipeIngredient ou eu vou repor a lista inteira? e se isso, o recipeIngredient que não fizer mais parte deveria ser deletado do banco de dados...
 

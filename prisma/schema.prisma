@@ -62,8 +62,9 @@ model Recipe {
 }
 
 model Tag {
-  id   String @id @default(uuid())
-  name String @unique
+  id             String @id @default(uuid())
+  name           String
+  normalizedName String @unique @map("normalized_name")
 
   recipes Recipe[]
 
@@ -71,8 +72,9 @@ model Tag {
 }
 
 model Ingredient {
-  id   String @id @default(uuid())
-  name String @unique
+  id             String @id @default(uuid())
+  name           String
+  normalizedName String @unique @map("normalized_name")
 
   recipes RecipeIngredient[]
 

@@ -1,12 +1,13 @@
 import { IngredientsRepository } from '@/domain/application/repositories/ingredients-repository'
 import { Ingredient } from '@/domain/enterprise/entities/ingredient'
+import { NormalizedName } from '@/domain/enterprise/entities/value-objects/normalized-name'
 
 export class InMemoryIngredientsRepository implements IngredientsRepository {
   public items: Ingredient[] = []
 
-  async findByNormalizedName(normalizedName: string) {
+  async findByNormalizedName(normalizedName: NormalizedName) {
     const ingredient = this.items.find(
-      (item) => item.slug.value === normalizedName,
+      (item) => item.normalizedName.value === normalizedName.value,
     )
 
     if (!ingredient) {

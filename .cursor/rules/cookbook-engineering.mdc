@@ -19,7 +19,8 @@ Follow `.cursor/skills/cookbook-engineering/SKILL.md` for full detail.
 
 - **Unit (use case)**: business rules — `NotAllowedError`, `ResourceNotFoundError`, orchestration (same as `05-nest-clean`)
 - **E2E (controller)**: happy path only — route + auth + validation + DB persistence wiring
-- **Do not** duplicate use-case failure branches in e2e (e.g. "another chef cannot edit" belongs in `edit-recipe.spec.ts`, not in e2e)
+- **Do not** duplicate use-case branches in e2e (auth, dedup, ownership → unit specs)
+- **Factories**: `makeRecipe` = entity; `makeCreateRecipeUseCaseRequest` = use-case input (see skill)
 
 Exception: e2e negative cases only when the rule lives in infra (guards, HTTP error mapping after MF-06).
 

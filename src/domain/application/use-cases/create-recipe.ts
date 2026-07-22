@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { Either, right } from '@/core/either'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
-import { normalizeText } from '@/domain/utils/normalize-text'
+import { NormalizedName } from '@/domain/enterprise/entities/value-objects/normalized-name'
 
 import { DifficultyLevel, Recipe } from '../../enterprise/entities/recipe'
 import { RecipeIngredient } from '@/domain/enterprise/entities/recipe-ingredient'
@@ -13,7 +13,7 @@ import { IngredientsRepository } from '../repositories/ingredients-repository'
 import { TagsRepository } from '../repositories/tags-repository'
 import { RecipeIngredientsRepository } from '../repositories/recipe-ingredients-repository'
 
-interface CreateRecipeUseCaseRequest {
+export interface CreateRecipeUseCaseRequest {
   authorId: string
   name: string
   description: string
@@ -96,7 +96,7 @@ export class CreateRecipeUseCase {
     const tagsIds: UniqueEntityID[] = []
 
     for (const tag of tags) {
-      const normalizedName = normalizeText(tag)
+      const normalizedName = NormalizedName.createFromText(tag)
 
       let tagEntity =
         await this.tagsRepository.findByNormalizedName(normalizedName)
@@ -123,7 +123,7 @@ export class CreateRecipeUseCase {
     const recipeIngredientEntities: RecipeIngredient[] = []
 
     for (const input of recipeIngredients) {
-      const normalizedName = normalizeText(input.name)
+      const normalizedName = NormalizedName.createFromText(input.name)
 
       let ingredient =
         await this.ingredientsRepository.findByNormalizedName(normalizedName)

@@ -37,11 +37,11 @@ erDiagram
   }
   Tag {
     string name
-    slug slug
+    string normalizedName
   }
   Ingredient {
     string name
-    slug slug
+    string normalizedName
   }
   RecipeIngredient {
     id recipeId
@@ -82,14 +82,14 @@ Campos de conteúdo (`name`, `description`, `instructions`, tempos, `servings`, 
 | Tags | Lista de IDs; find-or-create | Opcionais — **manter** |
 | Ingredientes | Via `RecipeIngredient` (amount + unit) | Obrigatórios na prática de uso (mín. 1) — **explicitar** |
 | `instructions` | Texto livre | **Manter** na Fase 1; steps estruturados só se a busca/UX pedir |
-| `slug` | Gerado no create; não atualiza no rename | Slug estável após create; URL pública `{id}-{slug}` como o README já sugere |
+| `slug` (Recipe) | Gerado no create; não atualiza no rename | Slug estável após create; URL pública `{id}-{slug}` como o README já sugere |
 | Defaults | `prep/cook = 0`, `servings = 1` se omitidos | Preferir `null` = “não informado” e `0` só se for valor real; evita filtro “tempo 0” mentiroso |
 | Autoria | Edit só pelo autor | **Manter**; create deve sempre amarrar `authorId` ao ator autenticado |
 | Visibilidade | Tudo público na leitura | Fase 1 pessoal: aceitável; antes da rede, decidir `private \| public` (ou draft) |
 
 ### Ingredient + RecipeIngredient — modelo N:N correto
 
-- **Ingredient** = catálogo global (`name` + `slug`), compartilhado entre receitas
+- **Ingredient** = catálogo global (`name` + `normalizedName`), compartilhado entre receitas
 - **RecipeIngredient** = linha da receita (`amount`, `unit`) — relação com dados
 
 Isso é exatamente o que o produto descreve (“ingredientes com inúmeras receitas”). **Não tiraria.**
@@ -172,9 +172,10 @@ Em cima do Chef/Recipe atuais:
 ## O que trocaria (clareza de regra, não de stack)
 
 1. **Defaults de tempo/porções** → `null` quando não informado
-2. **Slug** → estável após create; URL pública `{id}-{slug}`
-3. **`RecipeIngredient`** → entidade do agregado (não VO); sync create/update/delete na edição da receita (regra: a lista enviada **substitui** o conjunto da receita)
-4. **Tags na edição** → omitir = não mexer; enviar lista = substituir conjunto (regra de negócio; ver MF-09 no plano técnico para alinhar implementação)
+2. **Slug (Recipe)** → estável após create; URL pública `{id}-{slug}`
+3. **`normalizedName` (Tag/Ingredient)** → chave canônica para dedup e filtros em query (`?ingredients=ovo`)
+4. **`RecipeIngredient`** → entidade do agregado (não VO); sync create/update/delete na edição da receita (regra: a lista enviada **substitui** o conjunto da receita)
+5. **Tags na edição** → omitir = não mexer; enviar lista = substituir conjunto (regra de negócio; ver MF-09 no plano técnico para alinhar implementação)
 
 ---
 

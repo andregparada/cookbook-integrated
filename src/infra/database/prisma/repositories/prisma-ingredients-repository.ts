@@ -2,16 +2,17 @@ import { IngredientsRepository } from '@/domain/application/repositories/ingredi
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from '../prisma.service'
 import { Ingredient } from '@/domain/enterprise/entities/ingredient'
+import { NormalizedName } from '@/domain/enterprise/entities/value-objects/normalized-name'
 import { PrismaIngredientMapper } from '../mappers/prisma-ingredient-mapper'
 
 @Injectable()
 export class PrismaIngredientsRepository implements IngredientsRepository {
   constructor(private prisma: PrismaService) {}
 
-  async findByNormalizedName(normalizedName: string) {
+  async findByNormalizedName(normalizedName: NormalizedName) {
     const ingredient = await this.prisma.ingredient.findUnique({
       where: {
-        name: normalizedName,
+        normalizedName: normalizedName.value,
       },
     })
 

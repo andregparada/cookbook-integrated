@@ -1,5 +1,6 @@
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { Tag } from '@/domain/enterprise/entities/tag'
+import { NormalizedName } from '@/domain/enterprise/entities/value-objects/normalized-name'
 import { Prisma, Tag as PrismaTag } from '@prisma/client'
 
 export class PrismaTagMapper {
@@ -7,6 +8,7 @@ export class PrismaTagMapper {
     return Tag.create(
       {
         name: raw.name,
+        normalizedName: NormalizedName.create(raw.normalizedName),
       },
       new UniqueEntityID(raw.id),
     )
@@ -16,6 +18,7 @@ export class PrismaTagMapper {
     return {
       id: tag.id.toString(),
       name: tag.name,
+      normalizedName: tag.normalizedName.value,
     }
   }
 }

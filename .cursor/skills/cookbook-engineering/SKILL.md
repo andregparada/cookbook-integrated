@@ -33,6 +33,19 @@ Read this skill when implementing or reviewing backend work in the Cookbook.
 - Extend an existing spec or factory instead of duplicating setup
 - Reuse established patterns (e.g. MF-01: `authorId` / `actorId` + inline `NotAllowedError` check)
 
+### Test factories (`test/factories/`)
+
+Distinguish **what** you are building:
+
+| Helper | Use in | Example |
+|--------|--------|---------|
+| `makeRecipe` / `RecipeFactory` | Domain entity or Prisma seed (e2e) | recipe already in DB |
+| `makeCreateRecipeUseCaseRequest` | Unit specs calling `CreateRecipeUseCase.execute` | in-memory repos, business rules |
+| `makeChef` / `ChefFactory` | Chef entity or auth in e2e | JWT + persisted user |
+
+- Do **not** inline large request objects in specs when a factory exists — use `makeXxxRequest(override)` and override only what the test cares about.
+- E2E may keep a minimal inline JSON body for the HTTP happy path; business-rule variants belong in unit specs with factories.
+
 ## Scalability without over-engineering
 
 - Ports and adapters allow swapping Prisma, adding cache or events later
@@ -64,9 +77,11 @@ Follow the same split as `05-nest-clean`:
 **Examples**
 
 - Authorization (`authorId !== recipe.authorId`) → **unit only** in `edit-recipe.spec.ts`
+- Ingredient/tag dedup (`Ovo` vs `ovo`) → **unit only** in `create-recipe.spec.ts`
 - `PUT /recipes/:id` returns 204 and persists → **e2e only** in `edit-recipe.controller.e2e-spec.ts`
+- `[POST] /recipes` returns 201 and recipe row exists → **e2e only** (one happy path; no dedup branch)
 
-Do **not** duplicate use-case failure branches in e2e unless the rule lives in infra (e.g. a Nest guard, or MF-06 HTTP status mapping worth asserting at the boundary).
+Do **not** duplicate use-case branches in e2e — including success paths for rules already covered in unit specs (dedup, ownership, validation of domain invariants).
 
 **When e2e negative cases are justified**
 

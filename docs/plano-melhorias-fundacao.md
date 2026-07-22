@@ -139,43 +139,6 @@ Elimina estados inconsistentes no banco, torna edit previsível (replace conscie
 
 ---
 
-## MF-05 — Normalização de Tag / Ingredient (busca vs persistência)
-
-### O que está errado / inconsistente
-
-- Use cases normalizam o texto (`normalizeText`) e chamam `findByNormalizedName`.
-- `PrismaTagsRepository` / `PrismaIngredientsRepository` buscam `where: { name: normalizedName }`.
-- Na criação, `Tag.create` / `Ingredient.create` gravam o **nome original** (e slug derivado); o unique no Prisma é em `name`, não em um campo normalizado.
-- Repositórios in-memory buscam por `item.slug.value` — **comportamento diferente** do Prisma → testes unitários podem passar e produção falhar (ou o contrário).
-
-### Onde está o problema
-
-- `src/domain/application/use-cases/create-recipe.ts` / `edit-recipe.ts` — `resolveTagsIds` / `resolveRecipeIngredients` + `normalizeText`.
-- `src/infra/database/prisma/repositories/prisma-tags-repository.ts` (~L11–15).
-- `src/infra/database/prisma/repositories/prisma-ingredients-repository.ts` (mesmo padrão).
-- `test/repositories/in-memory-tags-repository.ts` e `test/repositories/in-memory-ingredients--repository.ts` — busca por slug.
-- `prisma/schema.prisma` — `Tag.name` / `Ingredient.name` `@unique`, sem coluna `slug`/`normalizedName` nas tabelas Tag/Ingredient (embora a entidade de domínio tenha `slug`).
-
-### Por que mudar
-
-Deduplicação de tags/ingredientes é regra de negócio central do create/edit. Se a busca não bate com o que foi salvo, o sistema cria duplicatas (“Ovo” vs “ovo”).
-
-### Sugestão de implementação
-
-1. **Alinhar contrato:** persistir e buscar pelo mesmo identificador canônico.
-   - Opção A (próxima do domínio atual): adicionar `slug` (ou `normalizedName`) no schema Prisma com `@unique`; `findByNormalizedName` filtra por esse campo; `name` fica display.
-   - Opção B: na criação, persistir `name` já normalizado (pior UX de display).
-2. Preferir **Opção A**.
-3. Fazer in-memory e Prisma usarem a **mesma** regra (slug/normalized).
-4. Ajustar mappers `PrismaTagMapper` / `PrismaIngredientMapper`.
-5. Migration + testes cobrindo “Ovo” e “ovo” resolvem para o mesmo registro.
-
-### Por que melhora o projeto
-
-Garante catálogo limpo, testes fiéis à produção e remove uma armadilha clássica domínio vs ORM.
-
----
-
 ## MF-06 — Mapeamento de erros de domínio → HTTP
 
 ### O que está errado / inconsistente
@@ -330,7 +293,7 @@ Use esta lista ao criar novos planos de implementação:
 
 - [x] **MF-01** Autorização em `EditRecipe` (e alinhar `EditChef`)
 - [x] **MF-04** `PrismaRecipeMapper.toDomain` completo + invariantes schema
-- [ ] **MF-05** Normalização Tag/Ingredient (schema + repos + in-memory)
+- [x] **MF-05** Normalização Tag/Ingredient (schema + repos + in-memory)
 - [ ] **MF-09** Semântica de opcionais no edit
 - [ ] **MF-06** Mapear erros de domínio → status HTTP
 - [ ] **MF-08** Higiene (dead code, typos, vocabulário Chef/User)
@@ -406,7 +369,7 @@ Ao criar um plano de implementação a partir deste guia, copie:
 | 2026-07-20 | Manter `@Injectable` nos use cases (MF-07) | Mesmo pragmatismo da referência; custo/benefício ruim para “purificar” agora |
 | 2026-07-21 | MF-01 concluído: `authorId` em `EditRecipe`, `actorId` em `EditChef` | Fechar buraco de segurança antes de MF-04/MF-09 |
 | 2026-07-21 | MF-04 concluído: domínio alinhado ao schema (`description` nullable); mapper round-trip slug/datas | find/save confiável antes de MF-02/MF-09 |
-| 2026-07-21 | Skill + rule `cookbook-engineering` | Padronizar SOLID/DDD/TDD e pirâmide de testes em todo trabalho no repo |
+| 2026-07-22 | MF-05 concluído: `Slug` só em Recipe (URL); `NormalizedName` em Tag/Ingredient; coluna `normalized_name` no Prisma | Vocabulário preciso; dedup alinhada entre domínio, in-memory e Prisma |
 
 ---
 
@@ -423,15 +386,36 @@ Após implementar e validar um item (testes unitários + e2e afetados), a IA ou 
 
 ## Próximo passo sugerido
 
-Com MF-01 e MF-04 fechados, a ordem recomendada da **Fase A** continua:
+Com MF-01, MF-04 e MF-05 fechados, a ordem recomendada da **Fase A** continua:
 
-1. **MF-05** — normalização Tag/Ingredient alinhada entre Prisma e in-memory
-2. **MF-09** — semântica de opcionais no edit (evitar apagar tags/ingredientes ao omitir campos)
-3. **MF-06** — mapear `NotAllowedError` → 403 e demais erros de domínio para status HTTP corretos
+1. **MF-09** — semântica de opcionais no edit (evitar apagar tags/ingredientes ao omitir campos)
+2. **MF-06** — mapear `NotAllowedError` → 403 e demais erros de domínio para status HTTP corretos
+3. **MF-08** — higiene (dead code, typos, vocabulário Chef/User)
 
 Depois disso, avançar para **MF-02** e **MF-03** (agregado `Recipe` + sync transacional no repositório).
 
 ## Tarefas concluídas
+
+## MF-05 — Normalização de Tag / Ingredient (busca vs persistência)
+
+### O que estava errado / inconsistente
+
+- Use cases normalizavam o texto e chamavam `findByNormalizedName`, mas Prisma buscava por `name` e persistia o display name original.
+- Tag/Ingredient usavam `Slug` no domínio para dedup — vocabulário incorreto (slug é para URL de Recipe).
+- In-memory buscava por `slug.value`; Prisma por `name` normalizado — testes e produção divergiam.
+
+### O que foi feito
+
+- **Fase 0 (vocabulário):** VO `NormalizedName` para Tag/Ingredient; `Slug` restrito a Recipe/RecipeDetails; ports tipados com `NormalizedName`.
+- **Fase 1 (persistência):** coluna `normalized_name` `@unique` no Prisma; `@unique` removido de `name`; mappers e repos Prisma buscam/gravam por `normalizedName`.
+- Migration `20260722131500_add_normalized_name_to_tags_and_ingredients`.
+- Testes unitários de dedup (`Ovo` / `ovo`); e2e mantém só happy path de `[POST] /recipes`.
+
+### Por que melhorou o projeto
+
+Catálogo limpo, contrato Liskov entre in-memory e Prisma, vocabulário alinhado ao produto (slug = URL; normalizedName = filtros em query).
+
+---
 
 ## MF-01 — Autorização em mutações (dono do recurso)
 
