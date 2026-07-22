@@ -15,19 +15,18 @@ import { RecipeIngredientsRepository } from '../repositories/recipe-ingredients-
 import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 
-interface EditRecipeUseCaseRequest {
+export interface EditRecipeUseCaseRequest {
   recipeId: string
   authorId: string
-  name?: string // ??? como fazer com os dados opcionais? Eles são opcionais mesmo ou no front já vai validar que se não foi entregue o dado novo, enviará o dado antigo?
+  name?: string
   description?: string
   instructions?: string
   prepTimeInMinutes?: number
   cookTimeInMinutes?: number
   servings?: number
   difficultyLevel?: DifficultyLevel
-  tags?: string[]
-  recipeIngredients?: Array<{
-    recipeIngredientId?: string // ??? esse campo é necessário aqui?
+  tags: string[]
+  recipeIngredients: Array<{
     name: string
     amount: number
     unit: string
@@ -60,8 +59,8 @@ export class EditRecipeUseCase {
     cookTimeInMinutes,
     servings,
     difficultyLevel,
-    tags = [],
-    recipeIngredients = [],
+    tags,
+    recipeIngredients,
   }: EditRecipeUseCaseRequest): Promise<EditRecipeUseCaseResponse> {
     const recipe = await this.recipesRepository.findById(recipeId)
 
@@ -89,7 +88,6 @@ export class EditRecipeUseCase {
     recipe.difficultyLevel = difficultyLevel ?? recipe.difficultyLevel
     recipe.tagsIds = tagsIds
     recipe.recipeIngredientsIds = recipeIngredientEntities.map((ri) => ri.id)
-    // ??? como lidar com os recipeIngredients aqui? substituir todos os antigos pelos novos?
 
     await this.recipesRepository.save(recipe)
 
@@ -101,7 +99,6 @@ export class EditRecipeUseCase {
       if (!recipeIngredientAlreadyExists) {
         await this.recipeIngredientsRepository.create(recipeIngredient)
       }
-      // ??? facço aqui a validação para ver se já existe esse recipeIngredient ou eu vou repor a lista inteira? e se isso, o recipeIngredient que não fizer mais parte deveria ser deletado do banco de dados...
     }
 
     return right({ recipe })
@@ -139,8 +136,6 @@ export class EditRecipeUseCase {
 
     for (const input of recipeIngredients) {
       const normalizedName = NormalizedName.createFromText(input.name)
-
-      // ??? aqui precisa de uma validação para ver se já existe esse recipeIngredient ou eu vou repor a lista inteira? e se isso, o recipeIngredient que não fizer mais parte deveria ser deletado do banco de dados...
 
       let ingredient =
         await this.ingredientsRepository.findByNormalizedName(normalizedName)

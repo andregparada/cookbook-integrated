@@ -75,4 +75,24 @@ describe('Edit recipe (E2E)', () => {
     expect(recipeOnDatabase?.slug).toBe(originalSlug)
     expect(recipeOnDatabase?.createdAt).toEqual(originalCreatedAt)
   })
+
+  test('[PUT] /recipes/:id should reject body without required arrays', async () => {
+    const user = await chefFactory.makePrismaChef()
+
+    const accessToken = jwt.sign({ sub: user.id.toString() })
+
+    const recipe = await recipeFactory.makePrismaRecipe({
+      authorId: user.id,
+    })
+
+    const response = await request(app.getHttpServer())
+      .put(`/recipes/${recipe.id.toString()}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        name: 'New Recipe',
+        recipeIngredients: [{ name: 'Ingredient 1', amount: 2, unit: 'cups' }],
+      })
+
+    expect(response.statusCode).toBe(400)
+  })
 })

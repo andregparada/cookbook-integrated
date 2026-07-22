@@ -41,9 +41,12 @@ Distinguish **what** you are building:
 |--------|--------|---------|
 | `makeRecipe` / `RecipeFactory` | Domain entity or Prisma seed (e2e) | recipe already in DB |
 | `makeCreateRecipeUseCaseRequest` | Unit specs calling `CreateRecipeUseCase.execute` | in-memory repos, business rules |
+| `makeEditRecipeUseCaseRequest` | Unit specs calling `EditRecipeUseCase.execute` | in-memory repos, business rules |
+| `makeTagsInput` / `makeRecipeIngredientsInput` | Shared list defaults for use-case request factories | override only when the test asserts tag/ingredient behavior |
 | `makeChef` / `ChefFactory` | Chef entity or auth in e2e | JWT + persisted user |
 
-- Do **not** inline large request objects in specs when a factory exists — use `makeXxxRequest(override)` and override only what the test cares about.
+- Do **not** inline large request objects in specs when a factory exists — use `makeXxxRequest(override)` and override **only** what the test cares about (ids, fields under assertion, or the branch being exercised).
+- `makeRecipe` stores relation **IDs** (`tagsIds`, `recipeIngredientsIds`); use-case factories store **inputs** (`tags`, `recipeIngredients`). Do not mix the two shapes in `makeRecipeScalars`.
 - E2E may keep a minimal inline JSON body for the HTTP happy path; business-rule variants belong in unit specs with factories.
 
 ## Scalability without over-engineering
@@ -96,3 +99,21 @@ Do **not** duplicate use-case branches in e2e — including success paths for ru
 - [ ] Clear English naming
 - [ ] Reuse of existing core/domain/infra code verified
 - [ ] Minimal scope — no unrelated refactors
+
+## Verification (mandatory before finishing)
+
+Run in order and fix failures before marking work done:
+
+```bash
+pnpm lint        # ESLint
+pnpm typecheck   # tsc --noEmit
+pnpm build       # nest build
+pnpm test        # unit tests (vitest)
+pnpm test:e2e    # e2e when HTTP/Prisma wiring changed (requires Postgres)
+```
+
+- **lint** — style, imports, unused vars
+- **typecheck** — TypeScript errors across `src/` and `test/`
+- **build** — Nest compilation to `dist/`
+- **test** — unit specs for business rules
+- **test:e2e** — required when controllers, pipes, guards, or Prisma adapters changed; skip only when the change is purely domain with no infra touch

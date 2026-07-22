@@ -26,10 +26,15 @@ Before implementing, read and follow `.cursor/skills/cookbook-engineering/SKILL.
 ## Commands
 
 ```bash
+pnpm lint              # ESLint
+pnpm typecheck         # tsc --noEmit
+pnpm build             # nest build
 pnpm test              # unit tests
 pnpm test:e2e          # e2e (requires Postgres)
 pnpm start:dev         # dev server
 pnpm prisma migrate dev
 ```
+
+Before finishing any task, run **lint → typecheck → build → test** (and **test:e2e** when infra/HTTP/Prisma changed). See `.cursor/skills/cookbook-engineering/SKILL.md` → Verification.
 
 Use `nest generate` only when creating new Nest artifacts (modules, controllers).

@@ -21,17 +21,14 @@ const editRecipeBodySchema = z.object({
   cookTimeInMinutes: z.number().optional(),
   servings: z.number().optional(),
   difficultyLevel: z.nativeEnum(DifficultyLevel).optional(),
-  tags: z.array(z.string()).optional(),
-  recipeIngredients: z
-    .array(
-      z.object({
-        recipeIngredientId: z.string().uuid().optional(),
-        name: z.string(),
-        amount: z.number(),
-        unit: z.string(),
-      }),
-    )
-    .optional(),
+  tags: z.array(z.string()),
+  recipeIngredients: z.array(
+    z.object({
+      name: z.string(),
+      amount: z.number(),
+      unit: z.string(),
+    }),
+  ),
 })
 
 const bodyValidationPipe = new ZodValidationPipe(editRecipeBodySchema)

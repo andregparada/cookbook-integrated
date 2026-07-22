@@ -5,6 +5,7 @@ import {
   RecipeProps,
 } from '@/domain/enterprise/entities/recipe'
 import { CreateRecipeUseCaseRequest } from '@/domain/application/use-cases/create-recipe'
+import { EditRecipeUseCaseRequest } from '@/domain/application/use-cases/edit-recipe'
 import { PrismaRecipeMapper } from '@/infra/database/prisma/mappers/prisma-recipe-mapper'
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { faker } from '@faker-js/faker'
@@ -21,6 +22,9 @@ type RecipeScalars = Pick<
   | 'difficultyLevel'
 >
 
+type RecipeIngredientInput =
+  CreateRecipeUseCaseRequest['recipeIngredients'][number]
+
 function makeRecipeScalars(): RecipeScalars {
   return {
     name: faker.food.dish(),
@@ -35,6 +39,17 @@ function makeRecipeScalars(): RecipeScalars {
       DifficultyLevel.HARD,
     ]),
   }
+}
+
+export function makeTagsInput(): string[] {
+  return ['tag1', 'tag2']
+}
+
+export function makeRecipeIngredientsInput(): RecipeIngredientInput[] {
+  return [
+    { name: faker.food.ingredient(), amount: 2, unit: 'cups' },
+    { name: faker.food.ingredient(), amount: 1, unit: 'tbsp' },
+  ]
 }
 
 export function makeRecipe(
@@ -62,10 +77,21 @@ export function makeCreateRecipeUseCaseRequest(
   return {
     authorId: new UniqueEntityID().toString(),
     ...makeRecipeScalars(),
-    recipeIngredients: [
-      { name: faker.food.ingredient(), amount: 2, unit: 'cups' },
-      { name: faker.food.ingredient(), amount: 1, unit: 'tbsp' },
-    ],
+    recipeIngredients: makeRecipeIngredientsInput(),
+    ...override,
+  }
+}
+
+/** Input for `EditRecipeUseCase.execute` (unit specs). Not the domain entity — use `makeRecipe` for that. */
+export function makeEditRecipeUseCaseRequest(
+  override: Partial<EditRecipeUseCaseRequest> = {},
+): EditRecipeUseCaseRequest {
+  return {
+    recipeId: new UniqueEntityID().toString(),
+    authorId: new UniqueEntityID().toString(),
+    ...makeRecipeScalars(),
+    tags: makeTagsInput(),
+    recipeIngredients: makeRecipeIngredientsInput(),
     ...override,
   }
 }

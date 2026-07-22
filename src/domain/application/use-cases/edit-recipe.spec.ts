@@ -3,11 +3,17 @@ import { InMemoryIngredientsRepository } from 'test/repositories/in-memory-ingre
 import { InMemoryTagsRepository } from 'test/repositories/in-memory-tags-repository'
 import { InMemoryRecipesRepository } from 'test/repositories/in-memory-recipes-repository'
 import { EditRecipeUseCase } from './edit-recipe'
-import { makeRecipe } from 'test/factories/make-recipe'
+import {
+  makeEditRecipeUseCaseRequest,
+  makeRecipe,
+} from 'test/factories/make-recipe'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { InMemoryChefsRepository } from 'test/repositories/in-memory-chefs-repository'
 import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
+import { Tag } from '@/domain/enterprise/entities/tag'
+import { Ingredient } from '@/domain/enterprise/entities/ingredient'
+import { RecipeIngredient } from '@/domain/enterprise/entities/recipe-ingredient'
 
 let inMemoryChefsRepository: InMemoryChefsRepository
 let inMemoryIngredientsRepository: InMemoryIngredientsRepository
@@ -46,20 +52,15 @@ describe('Edit Recipe', () => {
 
     await inMemoryRecipesRepository.create(newRecipe)
 
-    // TODO acrescentar ingredientes e tags no teste
-
-    const result = await sut.execute({
-      recipeId: newRecipe.id.toValue(),
-      authorId: 'author-1',
-      name: 'New Name',
-      description: 'New Description',
-      instructions: 'New Instructions',
-      tags: ['tag1', 'tag2'],
-      recipeIngredients: [
-        { name: 'Ingredient 1', amount: 2, unit: 'cups' },
-        { name: 'Ingredient 2', amount: 1, unit: 'tbsp' },
-      ],
-    })
+    const result = await sut.execute(
+      makeEditRecipeUseCaseRequest({
+        recipeId: newRecipe.id.toValue(),
+        authorId: 'author-1',
+        name: 'New Name',
+        description: 'New Description',
+        instructions: 'New Instructions',
+      }),
+    )
 
     expect(result.isRight()).toBe(true)
     expect(inMemoryRecipesRepository.items[0]).toMatchObject({
@@ -67,6 +68,85 @@ describe('Edit Recipe', () => {
       description: 'New Description',
       instructions: 'New Instructions',
     })
+    expect(inMemoryRecipesRepository.items[0].tagsIds).toHaveLength(2)
+    expect(inMemoryTagsRepository.items).toHaveLength(2)
+    expect(inMemoryRecipeIngredientsRepository.items).toHaveLength(2)
+  })
+
+  it('should clear tags and recipe ingredients when empty arrays are sent', async () => {
+    const tag1 = Tag.create({ name: 'tag1' })
+    const tag2 = Tag.create({ name: 'tag2' })
+    await inMemoryTagsRepository.create(tag1)
+    await inMemoryTagsRepository.create(tag2)
+
+    const ingredient = Ingredient.create({ name: 'flour' })
+    await inMemoryIngredientsRepository.create(ingredient)
+
+    const recipeIngredient = RecipeIngredient.create({
+      recipeId: new UniqueEntityID('recipe-1'),
+      ingredientId: ingredient.id,
+      amount: 2,
+      unit: 'cups',
+    })
+    await inMemoryRecipeIngredientsRepository.create(recipeIngredient)
+
+    const newRecipe = makeRecipe(
+      {
+        authorId: new UniqueEntityID('author-1'),
+        tagsIds: [tag1.id, tag2.id],
+        recipeIngredientsIds: [recipeIngredient.id],
+      },
+      new UniqueEntityID('recipe-1'),
+    )
+
+    await inMemoryRecipesRepository.create(newRecipe)
+
+    const result = await sut.execute(
+      makeEditRecipeUseCaseRequest({
+        recipeId: newRecipe.id.toValue(),
+        authorId: 'author-1',
+        tags: [],
+        recipeIngredients: [],
+      }),
+    )
+
+    expect(result.isRight()).toBe(true)
+    expect(inMemoryRecipesRepository.items[0].tagsIds).toHaveLength(0)
+    expect(
+      inMemoryRecipesRepository.items[0].recipeIngredientsIds,
+    ).toHaveLength(0)
+  })
+
+  it('should preserve scalar fields when they are omitted from the request', async () => {
+    const newRecipe = makeRecipe(
+      {
+        authorId: new UniqueEntityID('author-1'),
+        name: 'Original Name',
+        description: 'Original Description',
+      },
+      new UniqueEntityID('recipe-1'),
+    )
+
+    await inMemoryRecipesRepository.create(newRecipe)
+
+    const result = await sut.execute(
+      makeEditRecipeUseCaseRequest({
+        recipeId: newRecipe.id.toValue(),
+        authorId: 'author-1',
+        name: 'New Name',
+        description: undefined,
+        tags: ['dinner'],
+        recipeIngredients: [{ name: 'Salt', amount: 1, unit: 'tsp' }],
+      }),
+    )
+
+    expect(result.isRight()).toBe(true)
+    expect(inMemoryRecipesRepository.items[0]).toMatchObject({
+      name: 'New Name',
+      description: 'Original Description',
+    })
+    expect(inMemoryRecipesRepository.items[0].tagsIds).toHaveLength(1)
+    expect(inMemoryRecipeIngredientsRepository.items).toHaveLength(1)
   })
 
   it('should not be able to edit a recipe from another chef', async () => {
@@ -80,11 +160,12 @@ describe('Edit Recipe', () => {
 
     await inMemoryRecipesRepository.create(newRecipe)
 
-    const result = await sut.execute({
-      recipeId: newRecipe.id.toValue(),
-      authorId: 'author-2',
-      name: 'New Name',
-    })
+    const result = await sut.execute(
+      makeEditRecipeUseCaseRequest({
+        recipeId: newRecipe.id.toValue(),
+        authorId: 'author-2',
+      }),
+    )
 
     expect(result.isLeft()).toBe(true)
     expect(result.value).toBeInstanceOf(NotAllowedError)
@@ -94,11 +175,12 @@ describe('Edit Recipe', () => {
   })
 
   it('should not be able to edit a non-existing recipe', async () => {
-    const result = await sut.execute({
-      recipeId: 'non-existing-recipe-id',
-      authorId: 'author-1',
-      name: 'New Name',
-    })
+    const result = await sut.execute(
+      makeEditRecipeUseCaseRequest({
+        recipeId: 'non-existing-recipe-id',
+        authorId: 'author-1',
+      }),
+    )
 
     expect(result.isLeft()).toBe(true)
     expect(result.value).toBeInstanceOf(ResourceNotFoundError)

@@ -244,49 +244,6 @@ Base legível para os próximos planos; menos surpresa ao navegar o código.
 
 ---
 
-## MF-09 — Semântica de campos opcionais no edit (partial update)
-
-### O que está errado / inconsistente
-
-- Em `EditRecipeUseCase`, `tags = []` e `recipeIngredients = []` como **default de desestruturação** fazem com que **omitir** o campo no body seja tratado como “lista vazia”.
-- Isso pode **apagar** todas as tags/ingredientes sem o cliente ter pedido.
-- Os `???` no próprio request (`name?: string`, `recipeIngredientId?: string`) mostram regra de negócio não fechada.
-- No nest-clean, `EditQuestion` exige `title`, `content` e `attachmentsIds` completos (replace explícito da lista de attachments) — modelo “PUT full replace” de campos mandatórios, não PATCH parcial ambíguo.
-
-### Onde está o problema
-
-- `src/domain/application/use-cases/edit-recipe.ts` (~L17–33, L52–62 defaults, L84–86).
-- `src/infra/http/controllers/edit-recipe.controller.ts` — schema Zod com tudo `.optional()` (~L16–34).
-
-### Por que mudar
-
-Comportamento de API ambíguo gera bugs difíceis de reproduzir e conflita com a expectativa de “editar só o que mandei”.
-
-### Sugestão de implementação
-
-Escolher **um** contrato e documentar:
-
-| Estratégia | Comportamento | Quando usar |
-|------------|---------------|-------------|
-| **A — Replace explícito (estilo nest-clean)** | Body sempre envia campos principais + arrays completos; omitir array não é permitido (ou é required) | API simples, frontend controla estado completo |
-| **B — PATCH semântico** | `undefined` = não altera; `[]` = limpa; array com itens = substitui | API parcial flexível |
-
-**Recomendação fundação:** começar com **A** para `tags` e `recipeIngredients` (required no Zod no PUT), e campos escalares podem permanecer opcionais com `?? recipe.campo` **sem** default `[]` na desestruturação.
-
-Implementação mínima:
-
-1. Remover `= []` dos defaults de `tags` / `recipeIngredients`.
-2. Se `tags === undefined`, não chamar `resolveTagsIds` nem atribuir `recipe.tagsIds`.
-3. Se `recipeIngredients === undefined`, não mexer na lista de ingredientes.
-4. Se enviados, fazer replace completo via WatchedList (MF-02/MF-03).
-5. Atualizar e2e/unit para cobrir “omitir tags não apaga”.
-
-### Por que melhora o projeto
-
-Contrato HTTP previsível e edit seguro; desbloqueia MF-02/MF-03 sem surpresas.
-
----
-
 ## Ordem de planos derivados (checklist)
 
 Use esta lista ao criar novos planos de implementação:
@@ -294,7 +251,7 @@ Use esta lista ao criar novos planos de implementação:
 - [x] **MF-01** Autorização em `EditRecipe` (e alinhar `EditChef`)
 - [x] **MF-04** `PrismaRecipeMapper.toDomain` completo + invariantes schema
 - [x] **MF-05** Normalização Tag/Ingredient (schema + repos + in-memory)
-- [ ] **MF-09** Semântica de opcionais no edit
+- [x] **MF-09** Semântica de opcionais no edit
 - [ ] **MF-06** Mapear erros de domínio → status HTTP
 - [ ] **MF-08** Higiene (dead code, typos, vocabulário Chef/User)
 - [ ] **MF-07** Registrar decisão `@Injectable` (sem refatoração, salvo mudança de meta)
@@ -347,9 +304,18 @@ Ao criar um plano de implementação a partir deste guia, copie:
 - Unit: adaptar use case afetado — regras de negócio
 - E2E: happy path do controller; wiring find/save (ex.: slug e `createdAt` estáveis no edit)
 - TDD: red → green nos arquivos de spec já existentes
+- Factories: override só o que o teste asserta ou exercita
+
+## Verificação (obrigatória antes de concluir)
+
+```bash
+pnpm lint && pnpm typecheck && pnpm build && pnpm test
+# + pnpm test:e2e quando controller/pipe/guard/Prisma mudou (requer Postgres)
+```
 
 ## Critério de pronto
 - …
+- lint, typecheck, build e testes unitários verdes; e2e quando infra mudou
 
 ## Ao concluir
 1. Marcar o item como `[x]` no checklist de `docs/plano-melhorias-fundacao.md`.
@@ -370,6 +336,7 @@ Ao criar um plano de implementação a partir deste guia, copie:
 | 2026-07-21 | MF-01 concluído: `authorId` em `EditRecipe`, `actorId` em `EditChef` | Fechar buraco de segurança antes de MF-04/MF-09 |
 | 2026-07-21 | MF-04 concluído: domínio alinhado ao schema (`description` nullable); mapper round-trip slug/datas | find/save confiável antes de MF-02/MF-09 |
 | 2026-07-22 | MF-05 concluído: `Slug` só em Recipe (URL); `NormalizedName` em Tag/Ingredient; coluna `normalized_name` no Prisma | Vocabulário preciso; dedup alinhada entre domínio, in-memory e Prisma |
+| 2026-07-22 | MF-09: estratégia A no PUT — `tags` e `recipeIngredients` required; escalares opcionais com `?? recipe.campo`; `[]` limpa explicitamente | Contrato previsível estilo nest-clean; omitir array não apaga silenciosamente |
 
 ---
 
@@ -386,15 +353,38 @@ Após implementar e validar um item (testes unitários + e2e afetados), a IA ou 
 
 ## Próximo passo sugerido
 
-Com MF-01, MF-04 e MF-05 fechados, a ordem recomendada da **Fase A** continua:
+Com MF-01, MF-04, MF-05 e MF-09 fechados, a ordem recomendada da **Fase A** continua:
 
-1. **MF-09** — semântica de opcionais no edit (evitar apagar tags/ingredientes ao omitir campos)
-2. **MF-06** — mapear `NotAllowedError` → 403 e demais erros de domínio para status HTTP corretos
-3. **MF-08** — higiene (dead code, typos, vocabulário Chef/User)
+1. **MF-06** — mapear `NotAllowedError` → 403 e demais erros de domínio para status HTTP corretos
+2. **MF-08** — higiene (dead code, typos, vocabulário Chef/User)
 
 Depois disso, avançar para **MF-02** e **MF-03** (agregado `Recipe` + sync transacional no repositório).
 
 ## Tarefas concluídas
+
+## MF-09 — Semântica de campos opcionais no edit (partial update)
+
+### O que estava errado / inconsistente
+
+- Em `EditRecipeUseCase`, `tags = []` e `recipeIngredients = []` como default de desestruturação faziam omitir o campo no body ser tratado como lista vazia.
+- Isso podia apagar todas as tags/ingredientes sem o cliente ter pedido.
+- Os `???` no request e `recipeIngredientId?` mostravam regra de negócio não fechada.
+- No nest-clean, `EditQuestion` exige arrays completos (replace explícito) — modelo PUT, não PATCH ambíguo.
+
+### O que foi feito
+
+- **Estratégia A (replace explícito):** `tags` e `recipeIngredients` required no Zod do PUT e no `EditRecipeUseCaseRequest`; omitir → 400 (validação).
+- Escalares permanecem opcionais com `field ?? recipe.field`.
+- Removidos defaults `= []`, `recipeIngredientId` do body e comentários `???`.
+- Factory `makeEditRecipeUseCaseRequest` para unit specs.
+- Unit: replace com arrays, `[]` limpa no domínio, escalares omitidos preservados, auth/not-found.
+- E2E: happy path mantido; body sem `tags` → 400.
+
+### Por que melhorou o projeto
+
+Contrato HTTP previsível e edit seguro; desbloqueia MF-02/MF-03 sem surpresas de apagamento silencioso.
+
+---
 
 ## MF-05 — Normalização de Tag / Ingredient (busca vs persistência)
 
