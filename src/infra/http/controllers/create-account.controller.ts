@@ -1,16 +1,8 @@
-import { ChefAlreadyExistsError } from '@/domain/application/use-cases/errors/chef-already-exists-error'
 import { RegisterChefUseCase } from '@/domain/application/use-cases/register-chef'
 import { Public } from '@/infra/auth/public'
+import { mapDomainErrorToHttpException } from '@/infra/http/errors/map-domain-error-to-http-exception'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
-import {
-  BadRequestException,
-  Body,
-  ConflictException,
-  Controller,
-  HttpCode,
-  Post,
-  UsePipes,
-} from '@nestjs/common'
+import { Body, Controller, HttpCode, Post, UsePipes } from '@nestjs/common'
 import z from 'zod'
 
 const createAccountBodySchema = z.object({
@@ -48,14 +40,7 @@ export class CreateAccountController {
     })
 
     if (result.isLeft()) {
-      const error = result.value
-
-      switch (error.constructor) {
-        case ChefAlreadyExistsError:
-          throw new ConflictException(error.message)
-        default:
-          throw new BadRequestException(error.message)
-      }
+      throw mapDomainErrorToHttpException(result.value)
     }
   }
 }

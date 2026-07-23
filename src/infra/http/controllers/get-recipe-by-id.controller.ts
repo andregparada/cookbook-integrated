@@ -1,5 +1,6 @@
 import { GetRecipeByIdUseCase } from '@/domain/application/use-cases/get-recipe-by-id'
-import { BadRequestException, Controller, Get, Param } from '@nestjs/common'
+import { mapDomainErrorToHttpException } from '@/infra/http/errors/map-domain-error-to-http-exception'
+import { Controller, Get, Param } from '@nestjs/common'
 import { RecipeDetailsPresenter } from '../presenters/receipe-details-presenter'
 
 @Controller('/recipes/:id')
@@ -13,7 +14,7 @@ export class GetRecipeByIdController {
     })
 
     if (result.isLeft()) {
-      throw new BadRequestException()
+      throw mapDomainErrorToHttpException(result.value)
     }
 
     return { recipe: RecipeDetailsPresenter.toHTTP(result.value.recipe) }

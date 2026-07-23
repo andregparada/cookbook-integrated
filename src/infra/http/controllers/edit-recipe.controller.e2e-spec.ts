@@ -4,9 +4,13 @@ import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { INestApplication } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { Test } from '@nestjs/testing'
+import { randomUUID } from 'node:crypto'
 import request from 'supertest'
 import { ChefFactory } from 'test/factories/make-chef'
-import { RecipeFactory } from 'test/factories/make-recipe'
+import {
+  makeEditRecipeHttpBody,
+  RecipeFactory,
+} from 'test/factories/make-recipe'
 
 describe('Edit recipe (E2E)', () => {
   let app: INestApplication
@@ -44,30 +48,19 @@ describe('Edit recipe (E2E)', () => {
     const originalSlug = recipe.slug.value
     const originalCreatedAt = recipe.createdAt
 
+    const editRecipeBody = makeEditRecipeHttpBody()
+
     const response = await request(app.getHttpServer())
       .put(`/recipes/${recipeId}`)
       .set('Authorization', `Bearer ${accessToken}`)
-      .send({
-        name: 'New Recipe',
-        description: 'This is a new recipe',
-        instructions: '1. Do this. 2. Do that.',
-        prepTimeInMinutes: 15,
-        cookTimeInMinutes: 30,
-        servings: 4,
-        difficultyLevel: 'medium',
-        tags: ['dinner', 'easy'],
-        recipeIngredients: [
-          { name: 'Ingredient 1', amount: 2, unit: 'cups' },
-          { name: 'Ingredient 2', amount: 1, unit: 'tbsp' },
-        ],
-      })
+      .send(editRecipeBody)
 
     expect(response.statusCode).toBe(204)
 
     const recipeOnDatabase = await prisma.recipe.findFirst({
       where: {
-        name: 'New Recipe',
-        description: 'This is a new recipe',
+        name: editRecipeBody.name,
+        description: editRecipeBody.description,
       },
     })
 
@@ -94,5 +87,17 @@ describe('Edit recipe (E2E)', () => {
       })
 
     expect(response.statusCode).toBe(400)
+  })
+
+  test('[PUT] /recipes/:id should return 404 when recipe does not exist', async () => {
+    const user = await chefFactory.makePrismaChef()
+    const accessToken = jwt.sign({ sub: user.id.toString() })
+
+    const response = await request(app.getHttpServer())
+      .put(`/recipes/${randomUUID()}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(makeEditRecipeHttpBody())
+
+    expect(response.statusCode).toBe(404)
   })
 })

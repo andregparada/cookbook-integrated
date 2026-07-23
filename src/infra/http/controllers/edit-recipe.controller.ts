@@ -1,11 +1,5 @@
-import {
-  BadRequestException,
-  Body,
-  Controller,
-  HttpCode,
-  Param,
-  Put,
-} from '@nestjs/common'
+import { Body, Controller, HttpCode, Param, Put } from '@nestjs/common'
+import { mapDomainErrorToHttpException } from '@/infra/http/errors/map-domain-error-to-http-exception'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import z from 'zod'
 import { CurrentUser } from '@/infra/auth/current-user-decorator'
@@ -75,7 +69,7 @@ export class EditRecipeController {
     })
 
     if (result.isLeft()) {
-      throw new BadRequestException()
+      throw mapDomainErrorToHttpException(result.value)
     }
   }
 }

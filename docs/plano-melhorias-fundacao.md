@@ -139,42 +139,6 @@ Elimina estados inconsistentes no banco, torna edit previsível (replace conscie
 
 ---
 
-## MF-06 — Mapeamento de erros de domínio → HTTP
-
-### O que está errado / inconsistente
-
-- Controllers tratam qualquer `result.isLeft()` com `BadRequestException` (400), inclusive not found e (futuramente) not allowed.
-- O cliente não distingue “receita inexistente”, “sem permissão” e “payload inválido”.
-- O próprio nest-clean, em vários controllers, ainda usa `BadRequestException` genérico — aqui o Cookbook pode **melhorar além da referência** sem fugir da arquitetura.
-
-### Onde está o problema
-
-- `src/infra/http/controllers/edit-recipe.controller.ts` (~L80–82).
-- `src/infra/http/controllers/create-recipe.controller.ts` (~L66–68).
-- Demais controllers de mutação/leitura que repetem o padrão (`edit-user`, `authenticate`, `get-recipe-by-id`, etc.).
-- Erros de domínio: `src/core/errors/errors/resource-not-found-error.ts`, `not-allowed-error.ts`, `src/domain/application/use-cases/errors/*`.
-
-### Por que mudar
-
-Contrato HTTP claro facilita frontend, e2e e debugging. Com MF-01, se NotAllowed continuar como 400, a autorização “funciona” no domínio mas some na API.
-
-### Sugestão de implementação
-
-1. Nos controllers (ou num helper/presenter de erro), mapear por `instanceof`:
-   - `ResourceNotFoundError` → `NotFoundException` (404)
-   - `NotAllowedError` → `ForbiddenException` (403)
-   - `WrongCredentialsError` → `UnauthorizedException` (401)
-   - `ChefAlreadyExistsError` → `ConflictException` (409)
-   - fallback → `BadRequestException` (400)
-2. Opcional: filtro Nest global de exceções depois — não é obrigatório na fundação.
-3. Atualizar e2e para assertir status codes.
-
-### Por que melhora o projeto
-
-API mais profissional e alinhada ao significado dos erros que o domínio já modela com `Either`.
-
----
-
 ## MF-07 — Acoplamento `@Injectable()` nos use cases (decisão consciente)
 
 ### O que está errado / inconsistente
@@ -252,7 +216,7 @@ Use esta lista ao criar novos planos de implementação:
 - [x] **MF-04** `PrismaRecipeMapper.toDomain` completo + invariantes schema
 - [x] **MF-05** Normalização Tag/Ingredient (schema + repos + in-memory)
 - [x] **MF-09** Semântica de opcionais no edit
-- [ ] **MF-06** Mapear erros de domínio → status HTTP
+- [x] **MF-06** Mapear erros de domínio → status HTTP
 - [ ] **MF-08** Higiene (dead code, typos, vocabulário Chef/User)
 - [ ] **MF-07** Registrar decisão `@Injectable` (sem refatoração, salvo mudança de meta)
 - [ ] **MF-02** `Recipe` AggregateRoot + `RecipeIngredientList`
@@ -337,6 +301,7 @@ pnpm lint && pnpm typecheck && pnpm build && pnpm test
 | 2026-07-21 | MF-04 concluído: domínio alinhado ao schema (`description` nullable); mapper round-trip slug/datas | find/save confiável antes de MF-02/MF-09 |
 | 2026-07-22 | MF-05 concluído: `Slug` só em Recipe (URL); `NormalizedName` em Tag/Ingredient; coluna `normalized_name` no Prisma | Vocabulário preciso; dedup alinhada entre domínio, in-memory e Prisma |
 | 2026-07-22 | MF-09: estratégia A no PUT — `tags` e `recipeIngredients` required; escalares opcionais com `?? recipe.campo`; `[]` limpa explicitamente | Contrato previsível estilo nest-clean; omitir array não apaga silenciosamente |
+| 2026-07-23 | MF-06: helper `mapDomainErrorToHttpException` com `instanceof`; sem filtro global na fundação | Contrato HTTP 404/403/401/409 alinhado ao domínio; melhoria além do nest-clean |
 
 ---
 
@@ -353,14 +318,39 @@ Após implementar e validar um item (testes unitários + e2e afetados), a IA ou 
 
 ## Próximo passo sugerido
 
-Com MF-01, MF-04, MF-05 e MF-09 fechados, a ordem recomendada da **Fase A** continua:
+Com MF-01, MF-04, MF-05, MF-09 e MF-06 fechados, a ordem recomendada da **Fase A** continua:
 
-1. **MF-06** — mapear `NotAllowedError` → 403 e demais erros de domínio para status HTTP corretos
-2. **MF-08** — higiene (dead code, typos, vocabulário Chef/User)
+1. **MF-08** — higiene (dead code, typos, vocabulário Chef/User)
 
 Depois disso, avançar para **MF-02** e **MF-03** (agregado `Recipe` + sync transacional no repositório).
 
 ## Tarefas concluídas
+
+## MF-06 — Mapeamento de erros de domínio → HTTP
+
+### O que estava errado / inconsistente
+
+- Controllers tratavam qualquer `result.isLeft()` com `BadRequestException` (400), inclusive not found e not allowed.
+- O cliente não distinguia “receita inexistente”, “sem permissão” e “payload inválido”.
+- Auth/register já mapeavam 401/409 via `switch` local, sem padrão compartilhado.
+
+### O que foi feito
+
+- Helper `mapDomainErrorToHttpException` em `src/infra/http/errors/` com `instanceof`:
+  - `ResourceNotFoundError` → 404
+  - `NotAllowedError` → 403
+  - `WrongCredentialsError` → 401
+  - `ChefAlreadyExistsError` → 409
+  - fallback → 400
+- Wire nos 6 controllers que tratam `isLeft()` (edit/get recipe, edit user, create recipe, authenticate, create account).
+- Unit do helper; e2e 403/404 em edit-recipe e 404 em get-recipe-by-id.
+- Sem filtro Nest global na fundação.
+
+### Por que melhorou o projeto
+
+Contrato HTTP claro para frontend, e2e e debugging; distinção de autorização e not found exposta na API.
+
+---
 
 ## MF-09 — Semântica de campos opcionais no edit (partial update)
 

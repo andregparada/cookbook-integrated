@@ -2,6 +2,7 @@ import { AppModule } from '@/infra/app.module'
 import { INestApplication } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { Test } from '@nestjs/testing'
+import { randomUUID } from 'node:crypto'
 import { ChefFactory } from 'test/factories/make-chef'
 import { RecipeFactory } from 'test/factories/make-recipe'
 import request from 'supertest'
@@ -54,5 +55,16 @@ describe('Get recipe by id (E2E)', () => {
         }),
       }),
     })
+  })
+
+  test('[GET] /recipes/:id should return 404 when recipe does not exist', async () => {
+    const user = await chefFactory.makePrismaChef()
+    const accessToken = jwt.sign({ sub: user.id.toString() })
+
+    const response = await request(app.getHttpServer())
+      .get(`/recipes/${randomUUID()}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+
+    expect(response.statusCode).toBe(404)
   })
 })

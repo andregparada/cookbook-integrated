@@ -1,11 +1,11 @@
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
+import { CreateRecipeUseCaseRequest } from '@/domain/application/use-cases/create-recipe'
+import { EditRecipeUseCaseRequest } from '@/domain/application/use-cases/edit-recipe'
 import {
   DifficultyLevel,
   Recipe,
   RecipeProps,
 } from '@/domain/enterprise/entities/recipe'
-import { CreateRecipeUseCaseRequest } from '@/domain/application/use-cases/create-recipe'
-import { EditRecipeUseCaseRequest } from '@/domain/application/use-cases/edit-recipe'
 import { PrismaRecipeMapper } from '@/infra/database/prisma/mappers/prisma-recipe-mapper'
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { faker } from '@faker-js/faker'
@@ -24,6 +24,11 @@ type RecipeScalars = Pick<
 
 type RecipeIngredientInput =
   CreateRecipeUseCaseRequest['recipeIngredients'][number]
+
+export type EditRecipeHttpBody = Omit<
+  EditRecipeUseCaseRequest,
+  'recipeId' | 'authorId'
+>
 
 function makeRecipeScalars(): RecipeScalars {
   return {
@@ -89,6 +94,17 @@ export function makeEditRecipeUseCaseRequest(
   return {
     recipeId: new UniqueEntityID().toString(),
     authorId: new UniqueEntityID().toString(),
+    ...makeRecipeScalars(),
+    tags: makeTagsInput(),
+    recipeIngredients: makeRecipeIngredientsInput(),
+    ...override,
+  }
+}
+
+export function makeEditRecipeHttpBody(
+  override: Partial<EditRecipeHttpBody> = {},
+): EditRecipeHttpBody {
+  return {
     ...makeRecipeScalars(),
     tags: makeTagsInput(),
     recipeIngredients: makeRecipeIngredientsInput(),

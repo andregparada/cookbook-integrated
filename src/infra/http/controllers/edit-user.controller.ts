@@ -1,10 +1,5 @@
-import {
-  BadRequestException,
-  Body,
-  Controller,
-  HttpCode,
-  Put,
-} from '@nestjs/common'
+import { Body, Controller, HttpCode, Put } from '@nestjs/common'
+import { mapDomainErrorToHttpException } from '@/infra/http/errors/map-domain-error-to-http-exception'
 import { CurrentUser } from '@/infra/auth/current-user-decorator'
 import type { UserPayload } from '@/infra/auth/jwt.strategy'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
@@ -53,7 +48,7 @@ export class EditUserController {
     })
 
     if (result.isLeft()) {
-      throw new BadRequestException()
+      throw mapDomainErrorToHttpException(result.value)
     }
   }
 }

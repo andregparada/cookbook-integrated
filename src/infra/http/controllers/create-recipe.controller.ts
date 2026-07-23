@@ -1,6 +1,7 @@
 import z from 'zod'
 import { ZodValidationPipe } from '../pipes/zod-validation-pipe'
-import { BadRequestException, Body, Controller, Post } from '@nestjs/common'
+import { Body, Controller, Post } from '@nestjs/common'
+import { mapDomainErrorToHttpException } from '@/infra/http/errors/map-domain-error-to-http-exception'
 import { CreateRecipeUseCase } from '@/domain/application/use-cases/create-recipe'
 import { CurrentUser } from '@/infra/auth/current-user-decorator'
 import type { UserPayload } from '@/infra/auth/jwt.strategy'
@@ -64,7 +65,7 @@ export class CreateRecipeController {
     })
 
     if (result.isLeft()) {
-      throw new BadRequestException()
+      throw mapDomainErrorToHttpException(result.value)
     }
   }
 }

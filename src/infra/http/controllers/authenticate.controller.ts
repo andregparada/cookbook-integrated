@@ -1,16 +1,9 @@
-import {
-  BadRequestException,
-  Body,
-  Controller,
-  Post,
-  UnauthorizedException,
-  UsePipes,
-} from '@nestjs/common'
+import { Body, Controller, Post, UsePipes } from '@nestjs/common'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { z } from 'zod'
 import { Public } from '@/infra/auth/public'
 import { AuthenticateChefUseCase } from '@/domain/application/use-cases/authenticate-chef'
-import { WrongCredentialsError } from '@/domain/application/use-cases/errors/wrong-credentials-error'
+import { mapDomainErrorToHttpException } from '@/infra/http/errors/map-domain-error-to-http-exception'
 
 const authenticateBodySchema = z.object({
   email: z.string().email(),
@@ -32,14 +25,7 @@ export class AuthenticateController {
     const result = await this.authenticateChef.execute({ email, password })
 
     if (result.isLeft()) {
-      const error = result.value
-
-      switch (error.constructor) {
-        case WrongCredentialsError:
-          throw new UnauthorizedException(error.message)
-        default:
-          throw new BadRequestException(error.message)
-      }
+      throw mapDomainErrorToHttpException(result.value)
     }
 
     const { accessToken } = result.value
