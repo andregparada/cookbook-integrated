@@ -2,15 +2,15 @@ import { InMemoryChefsRepository } from 'test/repositories/in-memory-chefs-repos
 import { RegisterChefUseCase } from './register-chef'
 import { FakeHasher } from 'test/cryptography/fake-hasher'
 
-let inMemomoryyChefsRepository: InMemoryChefsRepository
+let inMemoryChefsRepository: InMemoryChefsRepository
 let fakeHasher: FakeHasher
 let sut: RegisterChefUseCase
 
 describe('Register Chef', () => {
   beforeEach(() => {
-    inMemomoryyChefsRepository = new InMemoryChefsRepository()
+    inMemoryChefsRepository = new InMemoryChefsRepository()
     fakeHasher = new FakeHasher()
-    sut = new RegisterChefUseCase(inMemomoryyChefsRepository, fakeHasher)
+    sut = new RegisterChefUseCase(inMemoryChefsRepository, fakeHasher)
   })
 
   it('should be able to register a new chef', async () => {
@@ -25,7 +25,7 @@ describe('Register Chef', () => {
     const hashedPassword = await fakeHasher.hash('123456')
 
     expect(result.isRight()).toBe(true)
-    expect(inMemomoryyChefsRepository.items[0].hashedPassword).toEqual(
+    expect(inMemoryChefsRepository.items[0].hashedPassword).toEqual(
       hashedPassword,
     )
   })

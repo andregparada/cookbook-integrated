@@ -39,6 +39,13 @@ src/
 
 O domínio não depende do banco nem do framework além do necessário para injeção de dependência; a infra conecta essas regras às tecnologias escolhidas.
 
+### Vocabulário e convenções
+
+- **Domínio e TypeScript (ports/adapters):** `Chef`, `ChefsRepository`, `PrismaChefsRepository` — alinhado ao nest-clean (`Student` + `PrismaStudentsRepository`).
+- **Persistência:** modelo Prisma `User` / tabela `users` (identidade e auth); o mapper traduz para `Chef`.
+- **HTTP público:** `POST /accounts` (`CreateAccountController` → `RegisterChefUseCase`) e `PUT /user/me` (`EditChefController`); JWT usa `CurrentUser` / `UserPayload` (convenção Nest).
+- **`DifficultyLevel`:** domínio `easy` | `medium` | `hard`; Prisma `Easy` | `Medium` | `Hard` — conversão em `src/infra/database/prisma/mappers/enum-mappers.ts`.
+
 ## Pré-requisitos
 
 - Node.js (LTS recomendado)

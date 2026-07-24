@@ -5,7 +5,7 @@ import { RegisterChefUseCase } from '@/domain/application/use-cases/register-che
 import { CryptographyModule } from '../cryptography/cryptography.module'
 import { AuthenticateController } from './controllers/authenticate.controller'
 import { AuthenticateChefUseCase } from '@/domain/application/use-cases/authenticate-chef'
-import { EditUserController } from './controllers/edit-user.controller'
+import { EditChefController } from './controllers/edit-chef.controller'
 import { EditChefUseCase } from '@/domain/application/use-cases/edit-chef'
 import { CreateRecipeController } from './controllers/create-recipe.controller'
 import { CreateRecipeUseCase } from '@/domain/application/use-cases/create-recipe'
@@ -19,7 +19,7 @@ import { GetRecipeByIdUseCase } from '@/domain/application/use-cases/get-recipe-
   controllers: [
     CreateAccountController,
     AuthenticateController,
-    EditUserController,
+    EditChefController,
     CreateRecipeController,
     EditRecipeController,
     GetRecipeByIdController,

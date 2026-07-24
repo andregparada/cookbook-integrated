@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common'
 import { PrismaService } from './prisma/prisma.service'
 import { ChefsRepository } from '@/domain/application/repositories/chefs-repository'
-import { PrismaUsersRepository } from './prisma/repositories/prisma-users-repository'
+import { PrismaChefsRepository } from './prisma/repositories/prisma-chefs-repository'
 import { RecipesRepository } from '@/domain/application/repositories/recipes-repository'
 import { PrismaRecipesRepository } from './prisma/repositories/prisma-recipes-repository'
 import { IngredientsRepository } from '@/domain/application/repositories/ingredients-repository'
@@ -14,7 +14,7 @@ import { RecipeIngredientsRepository } from '@/domain/application/repositories/r
 @Module({
   providers: [
     PrismaService,
-    { provide: ChefsRepository, useClass: PrismaUsersRepository },
+    { provide: ChefsRepository, useClass: PrismaChefsRepository },
     { provide: RecipesRepository, useClass: PrismaRecipesRepository },
     { provide: IngredientsRepository, useClass: PrismaIngredientsRepository },
     { provide: TagsRepository, useClass: PrismaTagsRepository },

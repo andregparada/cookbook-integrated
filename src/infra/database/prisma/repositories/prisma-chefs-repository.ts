@@ -5,7 +5,7 @@ import { Chef } from '@/domain/enterprise/entities/chef'
 import { PrismaChefMapper } from '../mappers/prisma-chef-mapper'
 
 @Injectable()
-export class PrismaUsersRepository implements ChefsRepository {
+export class PrismaChefsRepository implements ChefsRepository {
   constructor(private prisma: PrismaService) {}
 
   async findById(id: string): Promise<Chef | null> {

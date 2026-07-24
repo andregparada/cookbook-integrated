@@ -72,14 +72,14 @@ Depois B: **MF-02 → MF-03** (agregado primeiro, transação/sync no repositór
 
 - `Recipe` estende `Entity`, não `AggregateRoot`, embora ingredientes e tags façam parte do ciclo de vida da receita.
 - O agregado guarda apenas **IDs** (`tagsIds`, `recipeIngredientsIds`), não as entidades da lista — a regra de “o que entrou / saiu” fica no use case.
-- `WatchedList`, `AggregateRoot` e `DomainEvents` já existem em `src/core/` (incluindo typo `wawtched-list.ts`) e **não são usados** pelo domínio de receitas — infra DDD morta.
+- `WatchedList`, `AggregateRoot` e `DomainEvents` já existem em `src/core/` e **não são usados** pelo domínio de receitas — infra DDD morta.
 - Os comentários `???` em `edit-recipe.ts` mostram incerteza sobre sync de ingredientes — sintoma de modelo incompleto.
 
 ### Onde está o problema
 
 - `src/domain/enterprise/entities/recipe.ts` — `export class Recipe extends Entity<RecipeProps>`; props com `tagsIds` / `recipeIngredientsIds` (~L22–23, L100–116).
 - `src/domain/application/use-cases/create-recipe.ts` e `edit-recipe.ts` — orquestram create de tags/ingredients/`RecipeIngredient` fora do agregado.
-- `src/core/entities/aggregate-root.ts`, `src/core/entities/wawtched-list.ts`, `src/core/events/domain-events.ts` — prontos, sem consumidores no domínio.
+- `src/core/entities/aggregate-root.ts`, `src/core/entities/watched-list.ts`, `src/core/events/domain-events.ts` — prontos, sem consumidores no domínio.
 - Referência: nest-clean `question.ts` (`AggregateRoot` + `QuestionAttachmentList`) e `question-attachment-list.ts`.
 
 ### Por que mudar
@@ -94,7 +94,7 @@ Enquanto a receita não for o agregado, todo edit/create vai continuar duplicand
    - carregar ingredientes atuais via `RecipeIngredientsRepository.findManyByRecipeId`;
    - montar lista, `update(novos)`, atribuir à receita;
    - `recipesRepository.save(recipe)`.
-4. Corrigir o nome do arquivo `wawtched-list.ts` → `watched-list.ts` (ver MF-08) no mesmo esforço ou imediatamente antes.
+4. Corrigir o nome do arquivo `watched-list.ts` (feito no MF-08) no mesmo esforço ou imediatamente antes.
 5. Ainda **não** é obrigatório disparar domain events neste item — só estruturar o agregado para MF-03 e planos futuros.
 
 ### Por que melhora o projeto
@@ -172,42 +172,6 @@ Evita refatoração estética agora; deixa a dívida (se houver) consciente e al
 
 ---
 
-## MF-08 — Higiene: dead code, typos e vocabulário
-
-### O que está errado / inconsistente
-
-- Bloco enorme de código comentado no final de `create-recipe.ts` (~L150–299).
-- Typo no core: `src/core/entities/wawtched-list.ts` (também herdado do material Rocketseat).
-- Typo no presenter: `src/infra/http/presenters/receipe-details-presenter.ts` (“receipe”).
-- Vocabulário misto **Chef** (domínio) vs **User** (Prisma/`edit-user.controller`/`PrismaUsersRepository`) vs “account” nos controllers de registro.
-- `DifficultyLevel` no domínio (`easy` / `medium` / `hard`) vs Prisma (`Easy` / `Medium` / `Hard`) — mitigado por `enum-mappers.ts`, mas aumenta carga cognitiva.
-- Nome de arquivo de teste: `test/repositories/in-memory-ingredients--repository.ts` (dois hífens).
-
-### Onde está o problema
-
-Arquivos citados acima; binding em `src/infra/database/database.module.ts` (`ChefsRepository` → `PrismaUsersRepository`); rotas/controllers `edit-user`, `create-account`.
-
-### Por que mudar
-
-Higiene reduz atrito em todo PR futuro. Vocabulário único evita “qual repositório eu importo?”. Typos quebram busca e imports.
-
-### Sugestão de implementação
-
-1. Apagar código comentado em `create-recipe.ts` (histórico fica no git).
-2. Renomear `wawtched-list.ts` → `watched-list.ts` e atualizar imports/specs.
-3. Renomear presenter `receipe-*` → `recipe-*`.
-4. **Decisão de vocabulário (escolher uma e aplicar):**
-   - **Opção recomendada:** domínio e application usam `Chef`; infra Prisma mantém tabela `users` (legado/OK) mas classes de infra preferem `PrismaChefsRepository` + mapper já `PrismaChefMapper`; HTTP pode expor `/chefs` ou manter `/accounts` com documentação — o importante é nomes de classes/arquivos no TypeScript.
-   - Alternativa: renomear domínio para `User` (mais trabalho, alinhado ao schema).
-5. Documentar o mapeamento de `DifficultyLevel` numa linha no README ou neste doc; não é obrigatório unificar enums Prisma/domínio na fundação se o mapper estiver testado.
-6. Corrigir `in-memory-ingredients--repository.ts`.
-
-### Por que melhora o projeto
-
-Base legível para os próximos planos; menos surpresa ao navegar o código.
-
----
-
 ## Ordem de planos derivados (checklist)
 
 Use esta lista ao criar novos planos de implementação:
@@ -217,7 +181,7 @@ Use esta lista ao criar novos planos de implementação:
 - [x] **MF-05** Normalização Tag/Ingredient (schema + repos + in-memory)
 - [x] **MF-09** Semântica de opcionais no edit
 - [x] **MF-06** Mapear erros de domínio → status HTTP
-- [ ] **MF-08** Higiene (dead code, typos, vocabulário Chef/User)
+- [x] **MF-08** Higiene (dead code, typos, vocabulário Chef/User)
 - [ ] **MF-07** Registrar decisão `@Injectable` (sem refatoração, salvo mudança de meta)
 - [ ] **MF-02** `Recipe` AggregateRoot + `RecipeIngredientList`
 - [ ] **MF-03** Sync + transaction em `PrismaRecipesRepository` (+ dispatch de events quando houver subscriber)
@@ -302,6 +266,7 @@ pnpm lint && pnpm typecheck && pnpm build && pnpm test
 | 2026-07-22 | MF-05 concluído: `Slug` só em Recipe (URL); `NormalizedName` em Tag/Ingredient; coluna `normalized_name` no Prisma | Vocabulário preciso; dedup alinhada entre domínio, in-memory e Prisma |
 | 2026-07-22 | MF-09: estratégia A no PUT — `tags` e `recipeIngredients` required; escalares opcionais com `?? recipe.campo`; `[]` limpa explicitamente | Contrato previsível estilo nest-clean; omitir array não apaga silenciosamente |
 | 2026-07-23 | MF-06: helper `mapDomainErrorToHttpException` com `instanceof`; sem filtro global na fundação | Contrato HTTP 404/403/401/409 alinhado ao domínio; melhoria além do nest-clean |
+| 2026-07-24 | MF-08: vocabulário `Chef` em domínio/infra TS; Prisma `users`; rotas `POST /accounts` e `PUT /user/me`; `DifficultyLevel` via `enum-mappers` | Higiene e alinhamento ao nest-clean (`PrismaStudentsRepository`); sem renomear schema JWT |
 
 ---
 
@@ -318,13 +283,33 @@ Após implementar e validar um item (testes unitários + e2e afetados), a IA ou 
 
 ## Próximo passo sugerido
 
-Com MF-01, MF-04, MF-05, MF-09 e MF-06 fechados, a ordem recomendada da **Fase A** continua:
+Com MF-08 fechado, a ordem recomendada continua:
 
-1. **MF-08** — higiene (dead code, typos, vocabulário Chef/User)
-
-Depois disso, avançar para **MF-02** e **MF-03** (agregado `Recipe` + sync transacional no repositório).
+1. **MF-07** — registrar decisão `@Injectable` no guia (sem refatoração)
+2. **MF-02** e **MF-03** — agregado `Recipe` + sync transacional no repositório
 
 ## Tarefas concluídas
+
+## MF-08 — Higiene: dead code, typos e vocabulário
+
+### O que estava errado / inconsistente
+
+- Typos em arquivos (`wawtched-list`, `receipe-details`, `ingredients--`).
+- Infra/HTTP misturavam `User`/`account` com domínio `Chef` (`PrismaUsersRepository`, `EditUserController`).
+- `DifficultyLevel` domínio vs Prisma sem documentação explícita.
+- Código comentado em `create-recipe.ts` já havia sido removido no MF-09.
+
+### O que foi feito
+
+- Renomeados `watched-list.ts`, `recipe-details-presenter.ts`, `in-memory-ingredients-repository.ts` e imports.
+- `PrismaChefsRepository` + `CreateAccountController` / `EditChefController` (rotas `/accounts` e `/user/me` inalteradas).
+- Vocabulário e `DifficultyLevel` documentados no README; typo em `register-chef.spec.ts` corrigido.
+
+### Por que melhorou o projeto
+
+Base legível para MF-02/MF-03; menos atrito em busca e imports; adapters TypeScript alinhados ao domínio.
+
+---
 
 ## MF-06 — Mapeamento de erros de domínio → HTTP
 

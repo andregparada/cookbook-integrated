@@ -1,6 +1,6 @@
 import { CreateRecipeUseCase } from './create-recipe'
 import { InMemoryRecipeIngredientsRepository } from 'test/repositories/in-memory-recipe-ingredients-repository'
-import { InMemoryIngredientsRepository } from 'test/repositories/in-memory-ingredients--repository'
+import { InMemoryIngredientsRepository } from 'test/repositories/in-memory-ingredients-repository'
 import { InMemoryTagsRepository } from 'test/repositories/in-memory-tags-repository'
 import { InMemoryRecipesRepository } from 'test/repositories/in-memory-recipes-repository'
 import { InMemoryChefsRepository } from 'test/repositories/in-memory-chefs-repository'

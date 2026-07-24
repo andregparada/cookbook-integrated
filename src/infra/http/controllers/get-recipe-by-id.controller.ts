@@ -1,7 +1,7 @@
 import { GetRecipeByIdUseCase } from '@/domain/application/use-cases/get-recipe-by-id'
 import { mapDomainErrorToHttpException } from '@/infra/http/errors/map-domain-error-to-http-exception'
 import { Controller, Get, Param } from '@nestjs/common'
-import { RecipeDetailsPresenter } from '../presenters/receipe-details-presenter'
+import { RecipeDetailsPresenter } from '../presenters/recipe-details-presenter'
 
 @Controller('/recipes/:id')
 export class GetRecipeByIdController {

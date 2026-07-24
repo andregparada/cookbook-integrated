@@ -6,7 +6,7 @@ import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import z from 'zod'
 import { EditChefUseCase } from '@/domain/application/use-cases/edit-chef'
 
-const editUserBodySchema = z.object({
+const editChefBodySchema = z.object({
   firstName: z.string().optional(),
   lastName: z.string().optional(),
   userName: z.string().optional(),
@@ -16,18 +16,18 @@ const editUserBodySchema = z.object({
   bio: z.string().optional(),
 })
 
-const bodyValidationPipe = new ZodValidationPipe(editUserBodySchema)
+const bodyValidationPipe = new ZodValidationPipe(editChefBodySchema)
 
-type EditUserBodySchema = z.infer<typeof editUserBodySchema>
+type EditChefBodySchema = z.infer<typeof editChefBodySchema>
 
 @Controller('/user/me')
-export class EditUserController {
-  constructor(private editUser: EditChefUseCase) {}
+export class EditChefController {
+  constructor(private editChef: EditChefUseCase) {}
 
   @Put()
   @HttpCode(204)
   async handle(
-    @Body(bodyValidationPipe) body: EditUserBodySchema,
+    @Body(bodyValidationPipe) body: EditChefBodySchema,
     @CurrentUser() user: UserPayload,
   ) {
     const { firstName, lastName, userName, email, password, avatarId, bio } =
@@ -35,7 +35,7 @@ export class EditUserController {
 
     const userId = user.sub
 
-    const result = await this.editUser.execute({
+    const result = await this.editChef.execute({
       actorId: userId,
       chefId: userId,
       firstName,

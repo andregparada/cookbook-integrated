@@ -7,7 +7,7 @@ import { Test } from '@nestjs/testing'
 import request from 'supertest'
 import { ChefFactory } from 'test/factories/make-chef'
 
-describe('Edit user (E2E)', () => {
+describe('Edit chef (E2E)', () => {
   let app: INestApplication
   let chefFactory: ChefFactory
   let prisma: PrismaService
