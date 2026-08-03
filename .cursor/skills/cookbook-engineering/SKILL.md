@@ -16,6 +16,8 @@ Read this skill when implementing or reviewing backend work in the Cookbook.
 - Layers: `src/core` → `src/domain` → `src/infra`
 - Domain has entities, use cases, and repository ports; infra has Prisma, HTTP, JWT
 - Use cases orchestrate; entities hold invariants; mappers translate at the boundary
+- `@Injectable()` on use cases is intentional project standard (MF-07); do not remove without a dedicated plan — same pragmatism as `05-nest-clean`
+- Meaningful decoupling is ports/adapters + pure entities (`core`, `enterprise`), not absence of the decorator; unit tests use `new UseCase(inMemoryRepos)` without Nest
 - Foundation guide: [docs/plano-melhorias-fundacao.md](../../docs/plano-melhorias-fundacao.md)
 - Long-term reference: `05-nest-clean` (aggregates, `WatchedList`, `Either`, domain events)
 

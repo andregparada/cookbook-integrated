@@ -37,11 +37,12 @@ src/
   infra/      # Nest, Prisma, JWT, controllers HTTP
 ```
 
-O domínio não depende do banco nem do framework além do necessário para injeção de dependência; a infra conecta essas regras às tecnologias escolhidas.
+`core` e `enterprise` não dependem do Nest nem do banco; a camada `application` aceita apenas o decorator `@Injectable()` para composição no container Nest; entidades e ports permanecem puros. A infra conecta essas regras às tecnologias escolhidas.
 
 ### Vocabulário e convenções
 
-- **Domínio e TypeScript (ports/adapters):** `Chef`, `ChefsRepository`, `PrismaChefsRepository` — alinhado ao nest-clean (`Student` + `PrismaStudentsRepository`).
+- **`@Injectable` nos use cases:** classes em `domain/application/use-cases` usam `@Injectable()` para DI do Nest — decisão intencional (MF-07), alinhada ao nest-clean. Testes unitários instanciam com `new` + repositórios in-memory, sem container Nest. Reavaliar só se surgir runtime fora do Nest (CLI/workers) ou pacote `domain` publicável — aí: classes puras + `useFactory` na infra.
+- **Domínio e TypeScript (ports/adapters):** `Chef`, `ChefsRepository`, `PrismaChefsRepository` — alinhado ao nest-clean (`Student` + `PrismaStudentsRepository`); binding de ports em `DatabaseModule` via `useClass`.
 - **Persistência:** modelo Prisma `User` / tabela `users` (identidade e auth); o mapper traduz para `Chef`.
 - **HTTP público:** `POST /accounts` (`CreateAccountController` → `RegisterChefUseCase`) e `PUT /user/me` (`EditChefController`); JWT usa `CurrentUser` / `UserPayload` (convenção Nest).
 - **`DifficultyLevel`:** domínio `easy` | `medium` | `hard`; Prisma `Easy` | `Medium` | `Hard` — conversão em `src/infra/database/prisma/mappers/enum-mappers.ts`.

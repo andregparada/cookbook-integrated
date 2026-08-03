@@ -139,39 +139,6 @@ Elimina estados inconsistentes no banco, torna edit previsível (replace conscie
 
 ---
 
-## MF-07 — Acoplamento `@Injectable()` nos use cases (decisão consciente)
-
-### O que está errado / inconsistente
-
-- Use cases no `domain/application` importam `@nestjs/common` e usam `@Injectable()`.
-- Isso acopla a camada de aplicação ao framework. Funciona e é o mesmo pragmatismo do nest-clean — **não é bug**, mas é uma decisão que deve ficar explícita.
-
-### Onde está o problema
-
-- Todos os use cases sob `src/domain/application/use-cases/*.ts` (ex.: `create-recipe.ts` L1, L40; `edit-recipe.ts`; `authenticate-chef.ts`; etc.).
-- Registro em `src/infra/http/http.module.ts` como `providers`.
-
-### Por que mudar (ou documentar)
-
-Se a meta de longo prazo for domínio 100% livre de Nest, o custo de refatorar depois cresce com o número de use cases. Se a meta for pragmatismo igual ao nest-clean, documentar evita debates repetidos.
-
-### Sugestão de implementação
-
-**Recomendação para o Cookbook (fundação):** manter `@Injectable()` nos use cases, **igual ao nest-clean**, e registrar esta decisão aqui como padrão do projeto.
-
-Só replanejar remoção do decorator se no futuro houver:
-
-- execução dos use cases fora do Nest (CLI, workers sem DI Nest), ou
-- pacote de domínio publicado separadamente.
-
-Se um dia remover: classes puras no domain + `useClass` / factory no `HttpModule`.
-
-### Por que melhora o projeto
-
-Evita refatoração estética agora; deixa a dívida (se houver) consciente e alinhada à referência de longo prazo.
-
----
-
 ## Ordem de planos derivados (checklist)
 
 Use esta lista ao criar novos planos de implementação:
@@ -182,7 +149,7 @@ Use esta lista ao criar novos planos de implementação:
 - [x] **MF-09** Semântica de opcionais no edit
 - [x] **MF-06** Mapear erros de domínio → status HTTP
 - [x] **MF-08** Higiene (dead code, typos, vocabulário Chef/User)
-- [ ] **MF-07** Registrar decisão `@Injectable` (sem refatoração, salvo mudança de meta)
+- [x] **MF-07** Registrar decisão `@Injectable` (sem refatoração, salvo mudança de meta)
 - [ ] **MF-02** `Recipe` AggregateRoot + `RecipeIngredientList`
 - [ ] **MF-03** Sync + transaction em `PrismaRecipesRepository` (+ dispatch de events quando houver subscriber)
 
@@ -267,6 +234,7 @@ pnpm lint && pnpm typecheck && pnpm build && pnpm test
 | 2026-07-22 | MF-09: estratégia A no PUT — `tags` e `recipeIngredients` required; escalares opcionais com `?? recipe.campo`; `[]` limpa explicitamente | Contrato previsível estilo nest-clean; omitir array não apaga silenciosamente |
 | 2026-07-23 | MF-06: helper `mapDomainErrorToHttpException` com `instanceof`; sem filtro global na fundação | Contrato HTTP 404/403/401/409 alinhado ao domínio; melhoria além do nest-clean |
 | 2026-07-24 | MF-08: vocabulário `Chef` em domínio/infra TS; Prisma `users`; rotas `POST /accounts` e `PUT /user/me`; `DifficultyLevel` via `enum-mappers` | Higiene e alinhamento ao nest-clean (`PrismaStudentsRepository`); sem renomear schema JWT |
+| 2026-08-03 | MF-07 concluído: `@Injectable` permanece padrão em use cases | Formalizado em README/SKILL; sem refatoração na fundação |
 
 ---
 
@@ -283,12 +251,31 @@ Após implementar e validar um item (testes unitários + e2e afetados), a IA ou 
 
 ## Próximo passo sugerido
 
-Com MF-08 fechado, a ordem recomendada continua:
+Com MF-07 fechado, a ordem recomendada continua:
 
-1. **MF-07** — registrar decisão `@Injectable` no guia (sem refatoração)
-2. **MF-02** e **MF-03** — agregado `Recipe` + sync transacional no repositório
+1. **MF-02** — `Recipe` como `AggregateRoot` com `RecipeIngredientList`
+2. **MF-03** — sync + transaction em `PrismaRecipesRepository` (+ dispatch de events quando houver subscriber)
 
 ## Tarefas concluídas
+
+## MF-07 — Acoplamento `@Injectable()` nos use cases (decisão consciente)
+
+### O que estava errado / inconsistente
+
+- Use cases em `domain/application` importavam `@nestjs/common` e usavam `@Injectable()` sem decisão formal fechada no guia.
+- Risco de refatoração estética (“purificar” o domínio) sem ganho real.
+
+### O que foi feito
+
+- Decisão documentada: manter `@Injectable()` nos 6 use cases, igual ao nest-clean.
+- README (`Vocabulário e convenções`) e skill `cookbook-engineering` atualizados.
+- Nenhuma refatoração de código; registro em `HttpModule` inalterado.
+
+### Por que melhorou o projeto
+
+Dívida consciente e alinhada à referência; evita overengineering; desacoplamento relevante permanece em ports/adapters e entidades puras.
+
+---
 
 ## MF-08 — Higiene: dead code, typos e vocabulário
 
