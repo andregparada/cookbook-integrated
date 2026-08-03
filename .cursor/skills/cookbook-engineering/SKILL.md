@@ -48,7 +48,7 @@ Distinguish **what** you are building:
 | `makeChef` / `ChefFactory` | Chef entity or auth in e2e | JWT + persisted user |
 
 - Do **not** inline large request objects in specs when a factory exists — use `makeXxxRequest(override)` and override **only** what the test cares about (ids, fields under assertion, or the branch being exercised).
-- `makeRecipe` stores relation **IDs** (`tagsIds`, `recipeIngredientsIds`); use-case factories store **inputs** (`tags`, `recipeIngredients`). Do not mix the two shapes in `makeRecipeScalars`.
+- `makeRecipe` / `RecipeFactory` stores `ingredients: RecipeIngredientList` (and `tagsIds`); use-case factories store **inputs** (`tags`, `recipeIngredients`). Do not mix the two shapes in `makeRecipeScalars`.
 - E2E may keep a minimal inline JSON body for the HTTP happy path; business-rule variants belong in unit specs with factories.
 
 ## Scalability without over-engineering

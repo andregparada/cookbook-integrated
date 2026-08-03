@@ -14,6 +14,7 @@ import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-e
 import { Tag } from '@/domain/enterprise/entities/tag'
 import { Ingredient } from '@/domain/enterprise/entities/ingredient'
 import { RecipeIngredient } from '@/domain/enterprise/entities/recipe-ingredient'
+import { RecipeIngredientList } from '@/domain/enterprise/entities/recipe-ingredient-list'
 
 let inMemoryChefsRepository: InMemoryChefsRepository
 let inMemoryIngredientsRepository: InMemoryIngredientsRepository
@@ -88,13 +89,12 @@ describe('Edit Recipe', () => {
       amount: 2,
       unit: 'cups',
     })
-    await inMemoryRecipeIngredientsRepository.create(recipeIngredient)
 
     const newRecipe = makeRecipe(
       {
         authorId: new UniqueEntityID('author-1'),
         tagsIds: [tag1.id, tag2.id],
-        recipeIngredientsIds: [recipeIngredient.id],
+        ingredients: new RecipeIngredientList([recipeIngredient]),
       },
       new UniqueEntityID('recipe-1'),
     )
@@ -113,8 +113,56 @@ describe('Edit Recipe', () => {
     expect(result.isRight()).toBe(true)
     expect(inMemoryRecipesRepository.items[0].tagsIds).toHaveLength(0)
     expect(
-      inMemoryRecipesRepository.items[0].recipeIngredientsIds,
+      inMemoryRecipesRepository.items[0].ingredients.getItems(),
     ).toHaveLength(0)
+    expect(inMemoryRecipeIngredientsRepository.items).toHaveLength(0)
+  })
+
+  it('should update amount and unit for the same ingredient without duplicating rows', async () => {
+    const ingredient = Ingredient.create({ name: 'Salt' })
+    await inMemoryIngredientsRepository.create(ingredient)
+
+    const recipeIngredient = RecipeIngredient.create({
+      recipeId: new UniqueEntityID('recipe-1'),
+      ingredientId: ingredient.id,
+      amount: 1,
+      unit: 'tsp',
+    })
+
+    const newRecipe = makeRecipe(
+      {
+        authorId: new UniqueEntityID('author-1'),
+        ingredients: new RecipeIngredientList([recipeIngredient]),
+      },
+      new UniqueEntityID('recipe-1'),
+    )
+
+    await inMemoryRecipesRepository.create(newRecipe)
+
+    const result = await sut.execute(
+      makeEditRecipeUseCaseRequest({
+        recipeId: newRecipe.id.toValue(),
+        authorId: 'author-1',
+        tags: [],
+        recipeIngredients: [{ name: 'Salt', amount: 2, unit: 'tbsp' }],
+      }),
+    )
+
+    expect(result.isRight()).toBe(true)
+    expect(
+      inMemoryRecipesRepository.items[0].ingredients.getItems(),
+    ).toHaveLength(1)
+    expect(
+      inMemoryRecipesRepository.items[0].ingredients.getItems()[0],
+    ).toMatchObject({
+      amount: 2,
+      unit: 'tbsp',
+    })
+    expect(inMemoryRecipeIngredientsRepository.items).toHaveLength(1)
+    expect(inMemoryRecipeIngredientsRepository.items[0]).toMatchObject({
+      amount: 2,
+      unit: 'tbsp',
+    })
   })
 
   it('should preserve scalar fields when they are omitted from the request', async () => {

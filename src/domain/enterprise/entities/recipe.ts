@@ -1,6 +1,7 @@
-import { Entity } from '@/core/entities/entity'
+import { AggregateRoot } from '@/core/entities/aggregate-root'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { Optional } from '@/core/types/optional'
+import { RecipeIngredientList } from './recipe-ingredient-list'
 import { Slug } from './value-objects/slug'
 
 export enum DifficultyLevel {
@@ -20,12 +21,12 @@ export interface RecipeProps {
   servings: number | null
   difficultyLevel: DifficultyLevel | null
   tagsIds: UniqueEntityID[]
-  recipeIngredientsIds: UniqueEntityID[]
+  ingredients: RecipeIngredientList
   createdAt: Date
   updatedAt?: Date | null
 }
 
-export class Recipe extends Entity<RecipeProps> {
+export class Recipe extends AggregateRoot<RecipeProps> {
   get authorId() {
     return this.props.authorId
   }
@@ -106,12 +107,12 @@ export class Recipe extends Entity<RecipeProps> {
     this.touch()
   }
 
-  get recipeIngredientsIds() {
-    return this.props.recipeIngredientsIds
+  get ingredients() {
+    return this.props.ingredients
   }
 
-  set recipeIngredientsIds(recipeIngredientsIds: UniqueEntityID[]) {
-    this.props.recipeIngredientsIds = recipeIngredientsIds
+  set ingredients(ingredients: RecipeIngredientList) {
+    this.props.ingredients = ingredients
     this.touch()
   }
 
@@ -133,7 +134,7 @@ export class Recipe extends Entity<RecipeProps> {
       | 'slug'
       | 'createdAt'
       | 'tagsIds'
-      | 'recipeIngredientsIds'
+      | 'ingredients'
       | 'prepTimeInMinutes'
       | 'cookTimeInMinutes'
       | 'servings'
@@ -145,7 +146,7 @@ export class Recipe extends Entity<RecipeProps> {
         ...props,
         slug: props.slug ?? Slug.createFromText(props.name),
         tagsIds: props.tagsIds ?? [],
-        recipeIngredientsIds: props.recipeIngredientsIds ?? [],
+        ingredients: props.ingredients ?? new RecipeIngredientList(),
         prepTimeInMinutes:
           props.prepTimeInMinutes === undefined ? 0 : props.prepTimeInMinutes,
         cookTimeInMinutes:

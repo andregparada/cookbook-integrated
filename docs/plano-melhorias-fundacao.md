@@ -42,8 +42,8 @@ O Cookbook hoje espelha a **base** do `05-nest-clean` (`core` + `domain` + `infr
 | Conceito no nest-clean | Situação no Cookbook | Direção futura |
 |------------------------|----------------------|----------------|
 | Bounded contexts (`forum`, `notification`) | Um único `domain/` plano | Quando houver side-effects (notificações, busca, storage), extrair contextos |
-| `AggregateRoot` + `WatchedList` em `Question`/`Answer` | `Recipe` é `Entity`; listas são arrays de IDs | Promover `Recipe` a agregado com listas observadas |
-| Repositório do agregado sincroniza `getNewItems` / `getRemovedItems` | Create/edit gravam ingredientes em loops soltos | `RecipesRepository.save/create` orquestra o grafo |
+| `AggregateRoot` + `WatchedList` em `Question`/`Answer` | `Recipe` é `AggregateRoot` com `RecipeIngredientList`; tags ainda `tagsIds` | Sync Prisma transacional no MF-03 |
+| Repositório do agregado sincroniza `getNewItems` / `getRemovedItems` | In-memory sync feito; Prisma ainda só linha `Recipe` | `PrismaRecipesRepository` no MF-03 |
 | `DomainEvents.dispatchEventsForAggregate` após persistir | Infra de eventos existe, sem uso real | Ativar quando houver o primeiro subscriber útil |
 | Autorização no use case (`authorId !== …`) | Parcial / ausente em edição de receita | Padronizar em todo fluxo de mutação |
 | Storage, cache Redis, subscribers | Ainda não | Só depois da fundação de domínio/persistência |
@@ -66,55 +66,15 @@ Depois B: **MF-02 → MF-03** (agregado primeiro, transação/sync no repositór
 
 ---
 
-## MF-02 — `Recipe` como `AggregateRoot` com `WatchedList`
-
-### O que está errado / inconsistente
-
-- `Recipe` estende `Entity`, não `AggregateRoot`, embora ingredientes e tags façam parte do ciclo de vida da receita.
-- O agregado guarda apenas **IDs** (`tagsIds`, `recipeIngredientsIds`), não as entidades da lista — a regra de “o que entrou / saiu” fica no use case.
-- `WatchedList`, `AggregateRoot` e `DomainEvents` já existem em `src/core/` e **não são usados** pelo domínio de receitas — infra DDD morta.
-- Os comentários `???` em `edit-recipe.ts` mostram incerteza sobre sync de ingredientes — sintoma de modelo incompleto.
-
-### Onde está o problema
-
-- `src/domain/enterprise/entities/recipe.ts` — `export class Recipe extends Entity<RecipeProps>`; props com `tagsIds` / `recipeIngredientsIds` (~L22–23, L100–116).
-- `src/domain/application/use-cases/create-recipe.ts` e `edit-recipe.ts` — orquestram create de tags/ingredients/`RecipeIngredient` fora do agregado.
-- `src/core/entities/aggregate-root.ts`, `src/core/entities/watched-list.ts`, `src/core/events/domain-events.ts` — prontos, sem consumidores no domínio.
-- Referência: nest-clean `question.ts` (`AggregateRoot` + `QuestionAttachmentList`) e `question-attachment-list.ts`.
-
-### Por que mudar
-
-Enquanto a receita não for o agregado, todo edit/create vai continuar duplicando lógica, esquecendo deletes e espalhando persistência. O nest-clean mostra o caminho estável: lista observada + `update()` + repositório que aplica new/removed.
-
-### Sugestão de implementação
-
-1. Criar `RecipeIngredientList extends WatchedList<RecipeIngredient>` (e, se fizer sentido no mesmo passo ou no seguinte, lista de tags — tags podem permanecer como relação N:N resolvida no repositório; priorizar ingredientes, que têm amount/unit).
-2. Alterar `Recipe` para `extends AggregateRoot<RecipeProps>` com `ingredients: RecipeIngredientList` (em vez de só IDs).
-3. Em `EditRecipeUseCase` (espelhar `EditQuestionUseCase`):
-   - carregar ingredientes atuais via `RecipeIngredientsRepository.findManyByRecipeId`;
-   - montar lista, `update(novos)`, atribuir à receita;
-   - `recipesRepository.save(recipe)`.
-4. Corrigir o nome do arquivo `watched-list.ts` (feito no MF-08) no mesmo esforço ou imediatamente antes.
-5. Ainda **não** é obrigatório disparar domain events neste item — só estruturar o agregado para MF-03 e planos futuros.
-
-### Por que melhora o projeto
-
-Centraliza a regra de composição da receita, elimina os `???` do edit, prepara sync idempotente e deixa o domínio no mesmo patamar do nest-clean para o próximo passo de features.
-
----
-
 ## MF-03 — Persistência atômica e sync no repositório do agregado
 
 ### O que está errado / inconsistente
 
-- `CreateRecipeUseCase` cria a receita e, em seguida, cada `RecipeIngredient` em um `for` com `await` separado — falha no meio deixa dados órfãos/incompletos.
-- `EditRecipeUseCase` só faz `create` se o ingrediente “não existe” por id novo; **não remove** os que saíram da lista; com `RecipeIngredient.create` sempre gera **novo id**, a checagem por id quase nunca reaproveita o existente.
 - `PrismaRecipesRepository.create/save` persistem só a linha `Recipe` (sem tags/ingredients no grafo do agregado).
+- Falta transação atômica; falha no meio pode deixar dados órfãos/incompletos.
 
 ### Onde está o problema
 
-- `src/domain/application/use-cases/create-recipe.ts` (~L86–90) — loop de `recipeIngredientsRepository.create`.
-- `src/domain/application/use-cases/edit-recipe.ts` (~L88–99, L124–157) — sync incompleto; comentários `???`.
 - `src/infra/database/prisma/repositories/prisma-recipes-repository.ts` (~L47–64) — `create`/`save` apenas `prisma.recipe`.
 - Referência: nest-clean `prisma-questions-repository.ts` `create`/`save` — `createMany` / `deleteMany` com `getNewItems()` / `getRemovedItems()`, e `DomainEvents.dispatchEventsForAggregate` após persistir.
 
@@ -129,7 +89,7 @@ Integridade referencial e previsibilidade de edit são pré-requisitos para qual
    - `createMany` nos `ingredients.getNewItems()` (e connect de tags, se aplicável);
    - `deleteMany` nos `getRemovedItems()`;
    - preferir `prisma.$transaction` (ou `Promise.all` apenas se a atomicidade for garantida de outra forma — **preferir transaction** no Cookbook).
-2. Remover do use case a responsabilidade de chamar `recipeIngredientsRepository.create` item a item; o use case só monta o agregado e chama `save`/`create`.
+2. Use cases já montam o agregado e chamam só `save`/`create` (MF-02); manter assim.
 3. Manter `RecipeIngredientsRepository` para queries auxiliares (`findManyByRecipeId`), como no nest-clean com attachments.
 4. Quando houver o primeiro evento de domínio útil, disparar `DomainEvents.dispatchEventsForAggregate(recipe.id)` **depois** do commit (padrão nest-clean).
 
@@ -150,7 +110,7 @@ Use esta lista ao criar novos planos de implementação:
 - [x] **MF-06** Mapear erros de domínio → status HTTP
 - [x] **MF-08** Higiene (dead code, typos, vocabulário Chef/User)
 - [x] **MF-07** Registrar decisão `@Injectable` (sem refatoração, salvo mudança de meta)
-- [ ] **MF-02** `Recipe` AggregateRoot + `RecipeIngredientList`
+- [x] **MF-02** `Recipe` AggregateRoot + `RecipeIngredientList`
 - [ ] **MF-03** Sync + transaction em `PrismaRecipesRepository` (+ dispatch de events quando houver subscriber)
 
 ---
@@ -235,6 +195,7 @@ pnpm lint && pnpm typecheck && pnpm build && pnpm test
 | 2026-07-23 | MF-06: helper `mapDomainErrorToHttpException` com `instanceof`; sem filtro global na fundação | Contrato HTTP 404/403/401/409 alinhado ao domínio; melhoria além do nest-clean |
 | 2026-07-24 | MF-08: vocabulário `Chef` em domínio/infra TS; Prisma `users`; rotas `POST /accounts` e `PUT /user/me`; `DifficultyLevel` via `enum-mappers` | Higiene e alinhamento ao nest-clean (`PrismaStudentsRepository`); sem renomear schema JWT |
 | 2026-08-03 | MF-07 concluído: `@Injectable` permanece padrão em use cases | Formalizado em README/SKILL; sem refatoração na fundação |
+| 2026-08-03 | MF-02: `Recipe` como `AggregateRoot` com `RecipeIngredientList`; `compareItems` por ingredientId+amount+unit; tags permanecem `tagsIds` | In-memory sync no agregado; Prisma transacional no MF-03 |
 
 ---
 
@@ -251,12 +212,33 @@ Após implementar e validar um item (testes unitários + e2e afetados), a IA ou 
 
 ## Próximo passo sugerido
 
-Com MF-07 fechado, a ordem recomendada continua:
+Com MF-02 fechado, o próximo item da fase B é:
 
-1. **MF-02** — `Recipe` como `AggregateRoot` com `RecipeIngredientList`
-2. **MF-03** — sync + transaction em `PrismaRecipesRepository` (+ dispatch de events quando houver subscriber)
+1. **MF-03** — sync + transaction em `PrismaRecipesRepository` (+ dispatch de events quando houver subscriber)
 
 ## Tarefas concluídas
+
+## MF-02 — `Recipe` como `AggregateRoot` com `RecipeIngredientList`
+
+### O que estava errado / inconsistente
+
+- `Recipe` era `Entity` com `recipeIngredientsIds`; regra de composição e sync ficava nos use cases.
+- Create/edit persistiam ingredientes em loops soltos; edit não removia itens da lista.
+
+### O que foi feito
+
+- `RecipeIngredientList extends WatchedList<RecipeIngredient>` com `compareItems` por `ingredientId` + `amount` + `unit`.
+- `Recipe extends AggregateRoot` com `ingredients: RecipeIngredientList`; removido `recipeIngredientsIds`.
+- `CreateRecipeUseCase` e `EditRecipeUseCase` montam o agregado e delegam a `recipesRepository.create/save` (padrão `EditQuestionUseCase`).
+- Porta `RecipeIngredientsRepository` ampliada (`findManyByRecipeId`, `createMany`, `deleteMany`); sync in-memory em `InMemoryRecipesRepository`.
+- `PrismaRecipeIngredientsRepository` com métodos novos (uso pleno no MF-03).
+- Specs e `makeRecipe` atualizados; caso de update amount/unit no edit.
+
+### Por que melhorou o projeto
+
+Agregado explícito, diff new/removed para sync, base para MF-03 (Prisma transacional) sem domain events ainda.
+
+---
 
 ## MF-07 — Acoplamento `@Injectable()` nos use cases (decisão consciente)
 

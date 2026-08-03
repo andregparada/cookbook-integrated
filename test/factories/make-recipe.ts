@@ -6,6 +6,7 @@ import {
   Recipe,
   RecipeProps,
 } from '@/domain/enterprise/entities/recipe'
+import { RecipeIngredientList } from '@/domain/enterprise/entities/recipe-ingredient-list'
 import { PrismaRecipeMapper } from '@/infra/database/prisma/mappers/prisma-recipe-mapper'
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { faker } from '@faker-js/faker'
@@ -66,7 +67,7 @@ export function makeRecipe(
       authorId: new UniqueEntityID(),
       ...makeRecipeScalars(),
       tagsIds: [],
-      recipeIngredientsIds: [],
+      ingredients: new RecipeIngredientList(),
       ...override,
     },
     id,

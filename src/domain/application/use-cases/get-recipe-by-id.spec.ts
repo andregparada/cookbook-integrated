@@ -36,7 +36,7 @@ describe('Get Recipe By Id', () => {
       authorId: chef.id,
     })
 
-    inMemoryRecipesRepository.create(newRecipe)
+    await inMemoryRecipesRepository.create(newRecipe)
 
     const result = await sut.execute({
       id: newRecipe.id.toString(),

@@ -5,6 +5,7 @@ import { NormalizedName } from '@/domain/enterprise/entities/value-objects/norma
 
 import { DifficultyLevel, Recipe } from '../../enterprise/entities/recipe'
 import { RecipeIngredient } from '@/domain/enterprise/entities/recipe-ingredient'
+import { RecipeIngredientList } from '@/domain/enterprise/entities/recipe-ingredient-list'
 import { Ingredient } from '@/domain/enterprise/entities/ingredient'
 import { Tag } from '@/domain/enterprise/entities/tag'
 
@@ -74,11 +75,21 @@ export class EditRecipeUseCase {
 
     const tagsIds = await this.resolveTagsIds(tags)
 
+    const currentRecipeIngredients =
+      await this.recipeIngredientsRepository.findManyByRecipeId(recipeId)
+
+    const recipeIngredientList = new RecipeIngredientList(
+      currentRecipeIngredients,
+    )
+
     const recipeIngredientEntities = await this.resolveRecipeIngredients(
       recipe.id,
       recipeIngredients,
     )
 
+    recipeIngredientList.update(recipeIngredientEntities)
+
+    recipe.ingredients = recipeIngredientList
     recipe.name = name ?? recipe.name
     recipe.description = description ?? recipe.description
     recipe.instructions = instructions ?? recipe.instructions
@@ -87,19 +98,8 @@ export class EditRecipeUseCase {
     recipe.servings = servings ?? recipe.servings
     recipe.difficultyLevel = difficultyLevel ?? recipe.difficultyLevel
     recipe.tagsIds = tagsIds
-    recipe.recipeIngredientsIds = recipeIngredientEntities.map((ri) => ri.id)
 
     await this.recipesRepository.save(recipe)
-
-    for (const recipeIngredient of recipeIngredientEntities) {
-      const recipeIngredientAlreadyExists =
-        await this.recipeIngredientsRepository.findById(
-          recipeIngredient.id.toString(),
-        )
-      if (!recipeIngredientAlreadyExists) {
-        await this.recipeIngredientsRepository.create(recipeIngredient)
-      }
-    }
 
     return right({ recipe })
   }

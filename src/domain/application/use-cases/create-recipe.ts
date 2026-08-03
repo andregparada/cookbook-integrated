@@ -5,13 +5,13 @@ import { NormalizedName } from '@/domain/enterprise/entities/value-objects/norma
 
 import { DifficultyLevel, Recipe } from '../../enterprise/entities/recipe'
 import { RecipeIngredient } from '@/domain/enterprise/entities/recipe-ingredient'
+import { RecipeIngredientList } from '@/domain/enterprise/entities/recipe-ingredient-list'
 import { Ingredient } from '@/domain/enterprise/entities/ingredient'
 import { Tag } from '@/domain/enterprise/entities/tag'
 
 import { RecipesRepository } from '../repositories/recipes-repository'
 import { IngredientsRepository } from '../repositories/ingredients-repository'
 import { TagsRepository } from '../repositories/tags-repository'
-import { RecipeIngredientsRepository } from '../repositories/recipe-ingredients-repository'
 
 export interface CreateRecipeUseCaseRequest {
   authorId: string
@@ -43,7 +43,6 @@ export class CreateRecipeUseCase {
     private recipesRepository: RecipesRepository,
     private ingredientsRepository: IngredientsRepository,
     private tagsRepository: TagsRepository,
-    private recipeIngredientsRepository: RecipeIngredientsRepository,
   ) {}
 
   async execute({
@@ -78,16 +77,12 @@ export class CreateRecipeUseCase {
         servings,
         difficultyLevel,
         tagsIds,
-        recipeIngredientsIds: recipeIngredientEntities.map((ri) => ri.id),
+        ingredients: new RecipeIngredientList(recipeIngredientEntities),
       },
       recipeId,
     )
 
     await this.recipesRepository.create(recipe)
-
-    for (const recipeIngredient of recipeIngredientEntities) {
-      await this.recipeIngredientsRepository.create(recipeIngredient)
-    }
 
     return right({ recipe })
   }

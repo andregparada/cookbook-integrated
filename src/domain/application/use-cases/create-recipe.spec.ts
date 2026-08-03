@@ -31,7 +31,6 @@ describe('Create Recipe', () => {
       inMemoryRecipesRepository,
       inMemoryIngredientsRepository,
       inMemoryTagsRepository,
-      inMemoryRecipeIngredientsRepository,
     )
   })
 
@@ -41,6 +40,8 @@ describe('Create Recipe', () => {
     )
 
     expect(result.isRight()).toBe(true)
+    expect(result.value?.recipe.ingredients.getItems()).toHaveLength(2)
+    expect(inMemoryRecipeIngredientsRepository.items).toHaveLength(2)
   })
 
   it('should reuse an existing tag when only casing differs', async () => {

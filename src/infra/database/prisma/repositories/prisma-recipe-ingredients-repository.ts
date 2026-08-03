@@ -7,6 +7,7 @@ import { RecipeIngredient } from '@/domain/enterprise/entities/recipe-ingredient
 @Injectable()
 export class PrismaRecipeIngredientsRepository implements RecipeIngredientsRepository {
   constructor(private prisma: PrismaService) {}
+
   async findById(id: string) {
     const recipeIngredient = await this.prisma.recipeIngredient.findUnique({
       where: {
@@ -21,11 +22,37 @@ export class PrismaRecipeIngredientsRepository implements RecipeIngredientsRepos
     return PrismaRecipeIngredientMapper.toDomain(recipeIngredient)
   }
 
-  async create(recipeingredient: RecipeIngredient) {
-    const data = PrismaRecipeIngredientMapper.toPrisma(recipeingredient)
+  async findManyByRecipeId(recipeId: string) {
+    const recipeIngredients = await this.prisma.recipeIngredient.findMany({
+      where: {
+        recipeId,
+      },
+    })
 
-    await this.prisma.recipeIngredient.create({
-      data,
+    return recipeIngredients.map(PrismaRecipeIngredientMapper.toDomain)
+  }
+
+  async createMany(items: RecipeIngredient[]) {
+    if (items.length === 0) {
+      return
+    }
+
+    await this.prisma.recipeIngredient.createMany({
+      data: items.map(PrismaRecipeIngredientMapper.toPrisma),
+    })
+  }
+
+  async deleteMany(items: RecipeIngredient[]) {
+    if (items.length === 0) {
+      return
+    }
+
+    await this.prisma.recipeIngredient.deleteMany({
+      where: {
+        id: {
+          in: items.map((item) => item.id.toString()),
+        },
+      },
     })
   }
 }

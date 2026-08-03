@@ -45,13 +45,7 @@ export class InMemoryRecipesRepository implements RecipesRepository {
       return recipe.tagsIds.some((tagId) => tagId.equals(tag.id))
     })
 
-    const recipeIngredients = this.recipeIngredientsRepository.items.filter(
-      (recipeIngredient) => {
-        return recipe.recipeIngredientsIds.some((riId) =>
-          riId.equals(recipeIngredient.id),
-        )
-      },
-    )
+    const recipeIngredients = recipe.ingredients.getItems()
 
     return RecipeDetails.create({
       authorId: author.id,
@@ -74,11 +68,25 @@ export class InMemoryRecipesRepository implements RecipesRepository {
 
   async create(recipe: Recipe) {
     this.items.push(recipe)
+
+    await this.recipeIngredientsRepository.createMany(
+      recipe.ingredients.getItems(),
+    )
   }
 
   async save(recipe: Recipe) {
-    const recipeIndex = this.items.findIndex((item) => item.id === recipe.id)
+    const recipeIndex = this.items.findIndex((item) =>
+      item.id.equals(recipe.id),
+    )
 
     this.items[recipeIndex] = recipe
+
+    await this.recipeIngredientsRepository.createMany(
+      recipe.ingredients.getNewItems(),
+    )
+
+    await this.recipeIngredientsRepository.deleteMany(
+      recipe.ingredients.getRemovedItems(),
+    )
   }
 }

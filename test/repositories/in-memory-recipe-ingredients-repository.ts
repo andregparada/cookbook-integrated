@@ -16,7 +16,17 @@ export class InMemoryRecipeIngredientsRepository implements RecipeIngredientsRep
     return recipeIngredient
   }
 
-  async create(recipeIngredient: RecipeIngredient) {
-    this.items.push(recipeIngredient)
+  async findManyByRecipeId(recipeId: string) {
+    return this.items.filter((item) => item.recipeId.toString() === recipeId)
+  }
+
+  async createMany(items: RecipeIngredient[]) {
+    this.items.push(...items)
+  }
+
+  async deleteMany(items: RecipeIngredient[]) {
+    this.items = this.items.filter((item) => {
+      return !items.some((toDelete) => toDelete.equals(item))
+    })
   }
 }
