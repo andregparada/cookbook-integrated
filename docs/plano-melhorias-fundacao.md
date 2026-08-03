@@ -42,8 +42,8 @@ O Cookbook hoje espelha a **base** do `05-nest-clean` (`core` + `domain` + `infr
 | Conceito no nest-clean | Situação no Cookbook | Direção futura |
 |------------------------|----------------------|----------------|
 | Bounded contexts (`forum`, `notification`) | Um único `domain/` plano | Quando houver side-effects (notificações, busca, storage), extrair contextos |
-| `AggregateRoot` + `WatchedList` em `Question`/`Answer` | `Recipe` é `AggregateRoot` com `RecipeIngredientList`; tags ainda `tagsIds` | Sync Prisma transacional no MF-03 |
-| Repositório do agregado sincroniza `getNewItems` / `getRemovedItems` | In-memory sync feito; Prisma ainda só linha `Recipe` | `PrismaRecipesRepository` no MF-03 |
+| `AggregateRoot` + `WatchedList` em `Question`/`Answer` | `Recipe` é `AggregateRoot` com `RecipeIngredientList`; tags ainda `tagsIds` | Concluído (MF-02/MF-03) |
+| Repositório do agregado sincroniza `getNewItems` / `getRemovedItems` | In-memory e Prisma sincronizam ingredientes + tags M2M | Concluído (MF-03) |
 | `DomainEvents.dispatchEventsForAggregate` após persistir | Infra de eventos existe, sem uso real | Ativar quando houver o primeiro subscriber útil |
 | Autorização no use case (`authorId !== …`) | Parcial / ausente em edição de receita | Padronizar em todo fluxo de mutação |
 | Storage, cache Redis, subscribers | Ainda não | Só depois da fundação de domínio/persistência |
@@ -66,39 +66,6 @@ Depois B: **MF-02 → MF-03** (agregado primeiro, transação/sync no repositór
 
 ---
 
-## MF-03 — Persistência atômica e sync no repositório do agregado
-
-### O que está errado / inconsistente
-
-- `PrismaRecipesRepository.create/save` persistem só a linha `Recipe` (sem tags/ingredients no grafo do agregado).
-- Falta transação atômica; falha no meio pode deixar dados órfãos/incompletos.
-
-### Onde está o problema
-
-- `src/infra/database/prisma/repositories/prisma-recipes-repository.ts` (~L47–64) — `create`/`save` apenas `prisma.recipe`.
-- Referência: nest-clean `prisma-questions-repository.ts` `create`/`save` — `createMany` / `deleteMany` com `getNewItems()` / `getRemovedItems()`, e `DomainEvents.dispatchEventsForAggregate` após persistir.
-
-### Por que mudar
-
-Integridade referencial e previsibilidade de edit são pré-requisitos para qualquer feature em cima de receitas (busca, favoritos, versões). Transação e sync no adaptador Prisma mantêm o domínio limpo.
-
-### Sugestão de implementação
-
-1. Dependendo de MF-02: `PrismaRecipesRepository.create/save` devem:
-   - persistir a receita;
-   - `createMany` nos `ingredients.getNewItems()` (e connect de tags, se aplicável);
-   - `deleteMany` nos `getRemovedItems()`;
-   - preferir `prisma.$transaction` (ou `Promise.all` apenas se a atomicidade for garantida de outra forma — **preferir transaction** no Cookbook).
-2. Use cases já montam o agregado e chamam só `save`/`create` (MF-02); manter assim.
-3. Manter `RecipeIngredientsRepository` para queries auxiliares (`findManyByRecipeId`), como no nest-clean com attachments.
-4. Quando houver o primeiro evento de domínio útil, disparar `DomainEvents.dispatchEventsForAggregate(recipe.id)` **depois** do commit (padrão nest-clean).
-
-### Por que melhora o projeto
-
-Elimina estados inconsistentes no banco, torna edit previsível (replace consciente da lista) e concentra I/O Prisma no lugar certo.
-
----
-
 ## Ordem de planos derivados (checklist)
 
 Use esta lista ao criar novos planos de implementação:
@@ -111,7 +78,7 @@ Use esta lista ao criar novos planos de implementação:
 - [x] **MF-08** Higiene (dead code, typos, vocabulário Chef/User)
 - [x] **MF-07** Registrar decisão `@Injectable` (sem refatoração, salvo mudança de meta)
 - [x] **MF-02** `Recipe` AggregateRoot + `RecipeIngredientList`
-- [ ] **MF-03** Sync + transaction em `PrismaRecipesRepository` (+ dispatch de events quando houver subscriber)
+- [x] **MF-03** Sync + transaction em `PrismaRecipesRepository` (+ dispatch de events quando houver subscriber)
 
 ---
 
@@ -196,6 +163,7 @@ pnpm lint && pnpm typecheck && pnpm build && pnpm test
 | 2026-07-24 | MF-08: vocabulário `Chef` em domínio/infra TS; Prisma `users`; rotas `POST /accounts` e `PUT /user/me`; `DifficultyLevel` via `enum-mappers` | Higiene e alinhamento ao nest-clean (`PrismaStudentsRepository`); sem renomear schema JWT |
 | 2026-08-03 | MF-07 concluído: `@Injectable` permanece padrão em use cases | Formalizado em README/SKILL; sem refatoração na fundação |
 | 2026-08-03 | MF-02: `Recipe` como `AggregateRoot` com `RecipeIngredientList`; `compareItems` por ingredientId+amount+unit; tags permanecem `tagsIds` | In-memory sync no agregado; Prisma transacional no MF-03 |
+| 2026-08-03 | MF-03: `$transaction` em `PrismaRecipesRepository`; ingredientes via WatchedList diff; tags via `set` em `tagsIds`; sem `DomainEvents` até subscriber real | Integridade atômica do grafo; use cases inalterados |
 
 ---
 
@@ -212,11 +180,34 @@ Após implementar e validar um item (testes unitários + e2e afetados), a IA ou 
 
 ## Próximo passo sugerido
 
-Com MF-02 fechado, o próximo item da fase B é:
+Fundação (MF-01…MF-09, MF-02, MF-03) concluída. Próximos itens sob demanda — ver **Planos futuros**:
 
-1. **MF-03** — sync + transaction em `PrismaRecipesRepository` (+ dispatch de events quando houver subscriber)
+1. **Domain events reais** — primeiro subscriber útil + `dispatchEventsForAggregate` no repositório
+2. Features de produto (listagem com paginação, busca, favoritos) em planos próprios
 
 ## Tarefas concluídas
+
+## MF-03 — Persistência atômica e sync no repositório do agregado
+
+### O que estava errado / inconsistente
+
+- `PrismaRecipesRepository.create/save` persistiam só a linha `Recipe` (sem tags/ingredients no grafo do agregado).
+- Falta de transação atômica; falha no meio podia deixar dados órfãos/incompletos.
+
+### O que foi feito
+
+- `create`/`save` em `prisma.$transaction`: receita + `recipe_ingredients` + M2M de tags.
+- Create: `createMany` de `ingredients.getItems()`; tags via `tags: { set }`.
+- Save: `update` scalars + `tags: { set }`; `createMany(getNewItems())` / `deleteMany(getRemovedItems())`.
+- `RecipeIngredientsRepository` mantido para `findManyByRecipeId` no edit (padrão nest-clean attachments).
+- E2E create/edit assertam tags e ingredientes persistidos.
+- `DomainEvents.dispatchEventsForAggregate` adiado até o primeiro subscriber real.
+
+### Por que melhorou o projeto
+
+Elimina estados inconsistentes no banco, torna edit previsível (replace consciente da lista) e concentra I/O Prisma no adaptador do agregado.
+
+---
 
 ## MF-02 — `Recipe` como `AggregateRoot` com `RecipeIngredientList`
 

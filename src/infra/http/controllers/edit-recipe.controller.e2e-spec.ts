@@ -62,11 +62,19 @@ describe('Edit recipe (E2E)', () => {
         name: editRecipeBody.name,
         description: editRecipeBody.description,
       },
+      include: {
+        tags: true,
+        ingredients: true,
+      },
     })
 
     expect(recipeOnDatabase).toBeTruthy()
     expect(recipeOnDatabase?.slug).toBe(originalSlug)
     expect(recipeOnDatabase?.createdAt).toEqual(originalCreatedAt)
+    expect(recipeOnDatabase?.tags).toHaveLength(editRecipeBody.tags.length)
+    expect(recipeOnDatabase?.ingredients).toHaveLength(
+      editRecipeBody.recipeIngredients.length,
+    )
   })
 
   test('[PUT] /recipes/:id should reject body without required arrays', async () => {

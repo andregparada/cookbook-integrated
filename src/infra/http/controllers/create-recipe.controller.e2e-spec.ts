@@ -57,8 +57,14 @@ describe('Create recipe (E2E)', () => {
       where: {
         authorId: user.id.toString(),
       },
+      include: {
+        tags: true,
+        ingredients: true,
+      },
     })
 
     expect(recipeOnDatabase).toBeTruthy()
+    expect(recipeOnDatabase?.tags).toHaveLength(2)
+    expect(recipeOnDatabase?.ingredients).toHaveLength(2)
   })
 })
