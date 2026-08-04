@@ -7,12 +7,14 @@ import { InMemoryChefsRepository } from 'test/repositories/in-memory-chefs-repos
 import { Tag } from '@/domain/enterprise/entities/tag'
 import { Ingredient } from '@/domain/enterprise/entities/ingredient'
 import { makeCreateRecipeUseCaseRequest } from 'test/factories/make-recipe'
+import { RecipeCatalogResolver } from '../services/recipe-catalog-resolver'
 
 let inMemoryChefsRepository: InMemoryChefsRepository
 let inMemoryRecipesRepository: InMemoryRecipesRepository
 let inMemoryIngredientsRepository: InMemoryIngredientsRepository
 let inMemoryTagsRepository: InMemoryTagsRepository
 let inMemoryRecipeIngredientsRepository: InMemoryRecipeIngredientsRepository
+let catalogResolver: RecipeCatalogResolver
 let sut: CreateRecipeUseCase
 
 describe('Create Recipe', () => {
@@ -27,11 +29,11 @@ describe('Create Recipe', () => {
       inMemoryTagsRepository,
       inMemoryRecipeIngredientsRepository,
     )
-    sut = new CreateRecipeUseCase(
-      inMemoryRecipesRepository,
-      inMemoryIngredientsRepository,
+    catalogResolver = new RecipeCatalogResolver(
       inMemoryTagsRepository,
+      inMemoryIngredientsRepository,
     )
+    sut = new CreateRecipeUseCase(inMemoryRecipesRepository, catalogResolver)
   })
 
   it('should be able to create a recipe', async () => {

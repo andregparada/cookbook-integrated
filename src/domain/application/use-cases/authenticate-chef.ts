@@ -35,12 +35,12 @@ export class AuthenticateChefUseCase {
       return left(new WrongCredentialsError())
     }
 
-    const isPassworedValid = await this.hashComparer.compare(
+    const isPasswordValid = await this.hashComparer.compare(
       password,
       chef.hashedPassword,
     )
 
-    if (!isPassworedValid) {
+    if (!isPasswordValid) {
       return left(new WrongCredentialsError())
     }
 

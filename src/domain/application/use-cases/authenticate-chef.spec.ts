@@ -3,6 +3,7 @@ import { FakeHasher } from 'test/cryptography/fake-hasher'
 import { InMemoryChefsRepository } from 'test/repositories/in-memory-chefs-repository'
 import { AuthenticateChefUseCase } from './authenticate-chef'
 import { makeChef } from 'test/factories/make-chef'
+import { WrongCredentialsError } from './errors/wrong-credentials-error'
 
 let inMemoryChefsRepository: InMemoryChefsRepository
 let fakeHasher: FakeHasher
@@ -39,5 +40,32 @@ describe('Authenticate Chef', () => {
     expect(result.value).toEqual({
       accessToken: expect.any(String),
     })
+  })
+
+  it('should not be able to authenticate with a non-existing email', async () => {
+    const result = await sut.execute({
+      email: 'unknown@example.com',
+      password: '123456',
+    })
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(WrongCredentialsError)
+  })
+
+  it('should not be able to authenticate with a wrong password', async () => {
+    const chef = makeChef({
+      email: 'johndoe@example.com',
+      hashedPassword: await fakeHasher.hash('123456'),
+    })
+
+    inMemoryChefsRepository.items.push(chef)
+
+    const result = await sut.execute({
+      email: 'johndoe@example.com',
+      password: 'wrong-password',
+    })
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(WrongCredentialsError)
   })
 })

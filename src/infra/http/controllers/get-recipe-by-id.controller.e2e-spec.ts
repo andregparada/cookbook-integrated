@@ -50,9 +50,7 @@ describe('Get recipe by id (E2E)', () => {
       recipe: expect.objectContaining({
         name: 'Receita 01',
         author: 'johndoe',
-        slug: expect.objectContaining({
-          value: recipe.slug.value,
-        }),
+        slug: recipe.slug.value,
       }),
     })
   })

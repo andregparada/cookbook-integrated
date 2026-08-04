@@ -1,6 +1,6 @@
 import { UniqueEntityID } from '../entities/unique-entity-id'
 
 export interface DomainEvent {
-  ocurredAt: Date
+  occurredAt: Date
   getAggregateId(): UniqueEntityID
 }

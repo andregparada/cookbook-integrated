@@ -13,6 +13,7 @@ import { EditRecipeController } from './controllers/edit-recipe.controller'
 import { EditRecipeUseCase } from '@/domain/application/use-cases/edit-recipe'
 import { GetRecipeByIdController } from './controllers/get-recipe-by-id.controller'
 import { GetRecipeByIdUseCase } from '@/domain/application/use-cases/get-recipe-by-id'
+import { RecipeCatalogResolver } from '@/domain/application/services/recipe-catalog-resolver'
 
 @Module({
   imports: [DatabaseModule, CryptographyModule],
@@ -31,6 +32,7 @@ import { GetRecipeByIdUseCase } from '@/domain/application/use-cases/get-recipe-
     CreateRecipeUseCase,
     EditRecipeUseCase,
     GetRecipeByIdUseCase,
+    RecipeCatalogResolver,
   ],
 })
 export class HttpModule {}

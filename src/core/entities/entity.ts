@@ -18,7 +18,7 @@ export class Entity<Props> {
       return true
     }
 
-    if (entity.id === this.id) {
+    if (entity.id.equals(this.id)) {
       return true
     }
 

@@ -15,12 +15,14 @@ import { Tag } from '@/domain/enterprise/entities/tag'
 import { Ingredient } from '@/domain/enterprise/entities/ingredient'
 import { RecipeIngredient } from '@/domain/enterprise/entities/recipe-ingredient'
 import { RecipeIngredientList } from '@/domain/enterprise/entities/recipe-ingredient-list'
+import { RecipeCatalogResolver } from '../services/recipe-catalog-resolver'
 
 let inMemoryChefsRepository: InMemoryChefsRepository
 let inMemoryIngredientsRepository: InMemoryIngredientsRepository
 let inMemoryTagsRepository: InMemoryTagsRepository
 let inMemoryRecipeIngredientsRepository: InMemoryRecipeIngredientsRepository
 let inMemoryRecipesRepository: InMemoryRecipesRepository
+let catalogResolver: RecipeCatalogResolver
 let sut: EditRecipeUseCase
 
 describe('Edit Recipe', () => {
@@ -35,11 +37,14 @@ describe('Edit Recipe', () => {
       inMemoryTagsRepository,
       inMemoryRecipeIngredientsRepository,
     )
+    catalogResolver = new RecipeCatalogResolver(
+      inMemoryTagsRepository,
+      inMemoryIngredientsRepository,
+    )
     sut = new EditRecipeUseCase(
       inMemoryRecipesRepository,
-      inMemoryIngredientsRepository,
-      inMemoryTagsRepository,
       inMemoryRecipeIngredientsRepository,
+      catalogResolver,
     )
   })
 

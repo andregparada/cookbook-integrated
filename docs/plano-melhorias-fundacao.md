@@ -79,6 +79,7 @@ Use esta lista ao criar novos planos de implementação:
 - [x] **MF-07** Registrar decisão `@Injectable` (sem refatoração, salvo mudança de meta)
 - [x] **MF-02** `Recipe` AggregateRoot + `RecipeIngredientList`
 - [x] **MF-03** Sync + transaction em `PrismaRecipesRepository` (+ dispatch de events quando houver subscriber)
+- [x] **MF-10** Ajustes finais pós-fundação (presenter, catalog resolver, port ISP, specs, higiene)
 
 ---
 
@@ -92,7 +93,7 @@ Não detalhar implementação agora; apenas backlog consciente:
 4. **Cache de detalhes por id** — só se `get-recipe-by-id` exigir escala (nest-clean usa Redis em detalhes; aqui a chave canônica é o id, com slug só para URL pública).
 5. **Paginação** — `PaginationParams` em `src/core/repositories` já existe; usar em listagens futuras.
 
-Cada um desses deve virar um plano próprio **somente** quando a fundação (MF-01…MF-09 / MF-02–03) estiver estável.
+Cada um desses deve virar um plano próprio **somente** quando a fundação (MF-01…MF-10) estiver estável.
 
 ---
 
@@ -164,6 +165,7 @@ pnpm lint && pnpm typecheck && pnpm build && pnpm test
 | 2026-08-03 | MF-07 concluído: `@Injectable` permanece padrão em use cases | Formalizado em README/SKILL; sem refatoração na fundação |
 | 2026-08-03 | MF-02: `Recipe` como `AggregateRoot` com `RecipeIngredientList`; `compareItems` por ingredientId+amount+unit; tags permanecem `tagsIds` | In-memory sync no agregado; Prisma transacional no MF-03 |
 | 2026-08-03 | MF-03: `$transaction` em `PrismaRecipesRepository`; ingredientes via WatchedList diff; tags via `set` em `tagsIds`; sem `DomainEvents` até subscriber real | Integridade atômica do grafo; use cases inalterados |
+| 2026-08-04 | MF-10: `RecipeDetailsPresenter` achata slug/tags/ingredients; `RecipeCatalogResolver` extrai dedup; port `RecipeIngredientsRepository` só `findManyByRecipeId`; specs auth + mapper; higiene core | Fechamento pós-varredura; fundação pronta para features |
 
 ---
 
@@ -180,12 +182,36 @@ Após implementar e validar um item (testes unitários + e2e afetados), a IA ou 
 
 ## Próximo passo sugerido
 
-Fundação (MF-01…MF-09, MF-02, MF-03) concluída. Próximos itens sob demanda — ver **Planos futuros**:
+Fundação (MF-01…MF-10) concluída. Próximos itens sob demanda — ver **Planos futuros**:
 
 1. **Domain events reais** — primeiro subscriber útil + `dispatchEventsForAggregate` no repositório
 2. Features de produto (listagem com paginação, busca, favoritos) em planos próprios
 
 ## Tarefas concluídas
+
+## MF-10 — Ajustes finais pós-fundação
+
+### O que estava errado / inconsistente
+
+- `RecipeDetailsPresenter` devolvia objetos de domínio crus (`slug` como `{ value }`, `tags`/`recipeIngredients` com `props`/`_id`).
+- `resolveTagsIds` e `resolveRecipeIngredients` duplicados entre create e edit recipe.
+- `RecipeIngredientsRepository` expunha métodos não usados pela aplicação (`findById`, `createMany`, `deleteMany` no Prisma).
+- Regras de auth (`ChefAlreadyExistsError`, `WrongCredentialsError`) e `mapDomainErrorToHttpException` sem spec.
+- Typos e bugs latentes em core (`isPassworedValid`, `ocurredAt`, `equals(null)` em `ValueObject`, referência em `Entity.equals`).
+
+### O que foi feito
+
+- `RecipeDetailsPresenter` achata `slug`, `tags` e `recipeIngredients` para JSON plano.
+- `RecipeCatalogResolver` em `domain/application/services/`; create/edit delegam a ele.
+- Port `RecipeIngredientsRepository` reduzido a `findManyByRecipeId`; sync de ingredientes permanece no `PrismaRecipesRepository`.
+- Specs: duplicate email, wrong credentials (2 branches), mapper HTTP (6 casos).
+- Higiene: typos, `equals` em core, Zod do edit alinhado ao create, `prisma` CLI ^6.19.2.
+
+### Por que melhorou o projeto
+
+Contrato HTTP correto no único read endpoint, DRY na orquestração de catálogo, port enxuto (ISP), cobertura de regras existentes e fundação fechada para evolução.
+
+---
 
 ## MF-03 — Persistência atômica e sync no repositório do agregado
 
