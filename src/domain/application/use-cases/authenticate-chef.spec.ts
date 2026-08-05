@@ -42,6 +42,25 @@ describe('Authenticate Chef', () => {
     })
   })
 
+  it('should be able to authenticate with a different email casing', async () => {
+    const chef = makeChef({
+      email: 'johndoe@example.com',
+      hashedPassword: await fakeHasher.hash('123456'),
+    })
+
+    inMemoryChefsRepository.items.push(chef)
+
+    const result = await sut.execute({
+      email: 'JohnDoe@Example.com',
+      password: '123456',
+    })
+
+    expect(result.isRight()).toBe(true)
+    expect(result.value).toEqual({
+      accessToken: expect.any(String),
+    })
+  })
+
   it('should not be able to authenticate with a non-existing email', async () => {
     const result = await sut.execute({
       email: 'unknown@example.com',

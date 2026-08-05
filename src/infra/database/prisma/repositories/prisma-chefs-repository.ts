@@ -34,9 +34,29 @@ export class PrismaChefsRepository implements ChefsRepository {
   }
 
   async findByEmail(email: string): Promise<Chef | null> {
-    const chef = await this.prisma.user.findUnique({
+    const chef = await this.prisma.user.findFirst({
       where: {
-        email,
+        email: {
+          equals: email,
+          mode: 'insensitive',
+        },
+      },
+    })
+
+    if (!chef) {
+      return null
+    }
+
+    return PrismaChefMapper.toDomain(chef)
+  }
+
+  async findByUserName(userName: string): Promise<Chef | null> {
+    const chef = await this.prisma.user.findFirst({
+      where: {
+        userName: {
+          equals: userName,
+          mode: 'insensitive',
+        },
       },
     })
 

@@ -2,6 +2,7 @@ import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 import { ChefAlreadyExistsError } from '@/domain/application/use-cases/errors/chef-already-exists-error'
 import { WrongCredentialsError } from '@/domain/application/use-cases/errors/wrong-credentials-error'
+import { InvalidUserNameError } from '@/domain/enterprise/errors/invalid-user-name-error'
 import {
   BadRequestException,
   ConflictException,
@@ -40,6 +41,15 @@ describe('mapDomainErrorToHttpException', () => {
 
     expect(error).toBeInstanceOf(ConflictException)
     expect(error.getStatus()).toBe(409)
+  })
+
+  it('should map InvalidUserNameError to 400', () => {
+    const error = mapDomainErrorToHttpException(
+      new InvalidUserNameError('User name is reserved.'),
+    )
+
+    expect(error).toBeInstanceOf(BadRequestException)
+    expect(error.getStatus()).toBe(400)
   })
 
   it('should map generic Error to 400', () => {

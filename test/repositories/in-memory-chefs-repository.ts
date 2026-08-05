@@ -15,7 +15,23 @@ export class InMemoryChefsRepository implements ChefsRepository {
   }
 
   async findByEmail(email: string): Promise<Chef | null> {
-    const chef = this.items.find((item) => item.email.toString() === email)
+    const normalizedEmail = email.toLowerCase()
+    const chef = this.items.find(
+      (item) => item.email.toLowerCase() === normalizedEmail,
+    )
+
+    if (!chef) {
+      return null
+    }
+
+    return chef
+  }
+
+  async findByUserName(userName: string): Promise<Chef | null> {
+    const normalizedUserName = userName.toLowerCase()
+    const chef = this.items.find(
+      (item) => item.userName.toLowerCase() === normalizedUserName,
+    )
 
     if (!chef) {
       return null

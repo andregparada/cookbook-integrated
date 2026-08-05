@@ -9,7 +9,7 @@ import { EditChefUseCase } from '@/domain/application/use-cases/edit-chef'
 const editChefBodySchema = z.object({
   firstName: z.string().optional(),
   lastName: z.string().optional(),
-  userName: z.string().optional(),
+  userName: z.string().min(3).max(30).optional(),
   email: z.email().optional(),
   password: z.string().optional(),
   avatarId: z.uuid().optional(),

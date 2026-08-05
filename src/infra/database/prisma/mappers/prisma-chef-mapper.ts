@@ -11,7 +11,10 @@ export class PrismaChefMapper {
         userName: raw.userName,
         email: raw.email,
         hashedPassword: raw.password,
+        avatarId: raw.avatarId,
         bio: raw.bio,
+        createdAt: raw.createdAt,
+        updatedAt: raw.updatedAt,
       },
       new UniqueEntityID(raw.id),
     )
@@ -25,7 +28,9 @@ export class PrismaChefMapper {
       userName: chef.userName.toString(),
       email: chef.email.toString(),
       password: chef.hashedPassword,
+      avatarId: chef.avatarId,
       bio: chef.bio,
+      createdAt: chef.createdAt,
     }
   }
 }

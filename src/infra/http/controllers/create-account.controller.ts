@@ -8,7 +8,7 @@ import z from 'zod'
 const createAccountBodySchema = z.object({
   firstName: z.string(),
   lastName: z.string(),
-  userName: z.string(),
+  userName: z.string().min(3).max(30),
   email: z.email(),
   password: z.string(),
   avatarId: z.uuid().optional(),

@@ -2,6 +2,7 @@ import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 import { ChefAlreadyExistsError } from '@/domain/application/use-cases/errors/chef-already-exists-error'
 import { WrongCredentialsError } from '@/domain/application/use-cases/errors/wrong-credentials-error'
+import { InvalidUserNameError } from '@/domain/enterprise/errors/invalid-user-name-error'
 import {
   BadRequestException,
   ConflictException,
@@ -26,6 +27,10 @@ export function mapDomainErrorToHttpException(error: unknown): HttpException {
 
   if (error instanceof ChefAlreadyExistsError) {
     return new ConflictException(error.message)
+  }
+
+  if (error instanceof InvalidUserNameError) {
+    return new BadRequestException(error.message)
   }
 
   if (error instanceof Error) {

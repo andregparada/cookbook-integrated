@@ -1,15 +1,15 @@
 # Cookbook
 
-API de um aplicativo pessoal para **armazenar, pesquisar e, no futuro, trocar receitas**.
+API de um aplicativo social de livro de receitas para **publicar, descobrir e pesquisar receitas** com filtros combinados — no estilo TudoGostoso.
 
-Nasceu da necessidade do próprio criador: um lugar confiável para guardar receitas e encontrá-las depois com **filtros bem específicos** — por ingredientes, tempo, dificuldade, tags e outros critérios que importam na cozinha do dia a dia. Quando essa base estiver sólida e a experiência de busca for boa o suficiente, o produto pode evoluir para uma **rede de chefs amadores**: pessoas compartilhando o que cozinham, descobertas e adaptações.
+Usuários cadastram receitas (inicialmente como rascunho, publicando quando prontas) e descobrem receitas de outros com **filtros bem específicos** — por ingredientes, tempo, dificuldade, tags e outros critérios. Na Fase 2, o produto evolui com interação social leve: favoritar, avaliar, seguir chefs e feed cronológico.
 
 ## Visão em duas fases
 
 | Fase | Foco | Sucesso |
 |------|------|---------|
-| **1 — Caderno pessoal** | Conta, CRUD de receitas, catálogo de ingredientes/tags, busca com filtros | O criador (e depois outros usuários) usa o app no lugar de anotações soltas |
-| **2 — Rede de chefs amadores** | Compartilhamento, descoberta social, perfis | Troca de receitas entre amadores, sem perder a qualidade da busca |
+| **1 — Catálogo público pesquisável** | Conta, CRUD de receitas, publicação (rascunho → publicada), catálogo de ingredientes/tags, busca global com filtros, perfis públicos | Usuários publicam receitas e encontram receitas de outros com filtros precisos |
+| **2 — Interação entre usuários** | Favoritar, avaliar, seguir chefs, feed cronológico | Descoberta social leve sem perder a qualidade da busca |
 
 ## O que já existe hoje
 
@@ -91,9 +91,10 @@ Há também um `client.http` na raiz para experimentar endpoints manualmente.
 
 ## Roadmap (alto nível)
 
-1. Consolidar a fundação (autorização, agregado de receita, busca/filtros, consistência de persistência) — ver o [plano de melhorias](docs/plano-melhorias-fundacao.md) e a [análise de regras de negócio](docs/analise-regras-negocio.md)
-2. Entregar uma **pesquisa com filtros** à altura do uso pessoal diário
-3. Só então investir em compartilhamento e rede social leve entre chefs amadores
+1. Fundação concluída (autorização, agregado de receita, consistência de persistência) — ver o [plano de melhorias](docs/plans/completed/plano-melhorias-fundacao.md)
+2. Publicação de receitas (rascunho → publicada) e **busca global com filtros** — ver [regras de negócio](docs/regras-de-negocio.md)
+3. Perfis públicos e descoberta por autor
+4. Interação social leve (favoritar, avaliar, seguir, feed)
 
 ## Licença
 

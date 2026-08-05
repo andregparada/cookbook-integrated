@@ -5,8 +5,11 @@ import { Chef } from '@/domain/enterprise/entities/chef'
 import { Injectable } from '@nestjs/common'
 import { ChefsRepository } from '../repositories/chefs-repository'
 import { HashGenerator } from '../cryptography/hash-generator'
+import { UserName } from '@/domain/enterprise/entities/value-objects/user-name'
+import { InvalidUserNameError } from '@/domain/enterprise/errors/invalid-user-name-error'
+import { ChefAlreadyExistsError } from './errors/chef-already-exists-error'
 
-interface EditChefUseCaseRequest {
+export interface EditChefUseCaseRequest {
   actorId: string
   chefId: string
   firstName?: string
@@ -19,7 +22,10 @@ interface EditChefUseCaseRequest {
 }
 
 type EditChefUseCaseResponse = Either<
-  ResourceNotFoundError | NotAllowedError,
+  | ResourceNotFoundError
+  | NotAllowedError
+  | ChefAlreadyExistsError
+  | InvalidUserNameError,
   {
     chef: Chef
   }
@@ -53,10 +59,47 @@ export class EditChefUseCase {
       return left(new NotAllowedError())
     }
 
+    if (
+      userName !== undefined &&
+      userName.toLowerCase() !== chef.userName.toLowerCase()
+    ) {
+      const userNameResult = UserName.create(userName)
+
+      if (userNameResult.isLeft()) {
+        return left(userNameResult.value)
+      }
+
+      const chefWithSameUserName =
+        await this.chefsRepository.findByUserName(userName)
+
+      if (
+        chefWithSameUserName &&
+        chefWithSameUserName.id.toString() !== chef.id.toString()
+      ) {
+        return left(new ChefAlreadyExistsError(userName))
+      }
+
+      chef.userName = userNameResult.value.value
+    }
+
+    if (
+      email !== undefined &&
+      email.toLowerCase() !== chef.email.toLowerCase()
+    ) {
+      const chefWithSameEmail = await this.chefsRepository.findByEmail(email)
+
+      if (
+        chefWithSameEmail &&
+        chefWithSameEmail.id.toString() !== chef.id.toString()
+      ) {
+        return left(new ChefAlreadyExistsError(email))
+      }
+
+      chef.email = email
+    }
+
     chef.firstName = firstName ?? chef.firstName
     chef.lastName = lastName ?? chef.lastName
-    chef.userName = userName ?? chef.userName
-    chef.email = email ?? chef.email
     if (password) {
       const hashedPassword = await this.hashGenerator.hash(password)
       chef.hashedPassword = hashedPassword
