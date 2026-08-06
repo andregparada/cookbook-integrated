@@ -61,7 +61,7 @@ describe('Edit Recipe', () => {
     const result = await sut.execute(
       makeEditRecipeUseCaseRequest({
         recipeId: newRecipe.id.toValue(),
-        authorId: 'author-1',
+        actorId: 'author-1',
         name: 'New Name',
         description: 'New Description',
         instructions: 'New Instructions',
@@ -109,7 +109,7 @@ describe('Edit Recipe', () => {
     const result = await sut.execute(
       makeEditRecipeUseCaseRequest({
         recipeId: newRecipe.id.toValue(),
-        authorId: 'author-1',
+        actorId: 'author-1',
         tags: [],
         recipeIngredients: [],
       }),
@@ -147,7 +147,7 @@ describe('Edit Recipe', () => {
     const result = await sut.execute(
       makeEditRecipeUseCaseRequest({
         recipeId: newRecipe.id.toValue(),
-        authorId: 'author-1',
+        actorId: 'author-1',
         tags: [],
         recipeIngredients: [{ name: 'Salt', amount: 2, unit: 'tbsp' }],
       }),
@@ -185,7 +185,7 @@ describe('Edit Recipe', () => {
     const result = await sut.execute(
       makeEditRecipeUseCaseRequest({
         recipeId: newRecipe.id.toValue(),
-        authorId: 'author-1',
+        actorId: 'author-1',
         name: 'New Name',
         description: undefined,
         tags: ['dinner'],
@@ -202,6 +202,33 @@ describe('Edit Recipe', () => {
     expect(inMemoryRecipeIngredientsRepository.items).toHaveLength(1)
   })
 
+  it('should preserve authorId after a successful edit', async () => {
+    const authorId = new UniqueEntityID('author-1')
+    const newRecipe = makeRecipe(
+      {
+        authorId,
+        name: 'Original Name',
+      },
+      new UniqueEntityID('recipe-1'),
+    )
+
+    await inMemoryRecipesRepository.create(newRecipe)
+
+    const result = await sut.execute(
+      makeEditRecipeUseCaseRequest({
+        recipeId: newRecipe.id.toValue(),
+        actorId: 'author-1',
+        name: 'New Name',
+      }),
+    )
+
+    expect(result.isRight()).toBe(true)
+    expect(inMemoryRecipesRepository.items[0].authorId).toEqual(authorId)
+    expect(inMemoryRecipesRepository.items[0].authorId.toString()).toBe(
+      'author-1',
+    )
+  })
+
   it('should not be able to edit a recipe from another chef', async () => {
     const newRecipe = makeRecipe(
       {
@@ -216,7 +243,7 @@ describe('Edit Recipe', () => {
     const result = await sut.execute(
       makeEditRecipeUseCaseRequest({
         recipeId: newRecipe.id.toValue(),
-        authorId: 'author-2',
+        actorId: 'author-2',
       }),
     )
 
@@ -231,7 +258,7 @@ describe('Edit Recipe', () => {
     const result = await sut.execute(
       makeEditRecipeUseCaseRequest({
         recipeId: 'non-existing-recipe-id',
-        authorId: 'author-1',
+        actorId: 'author-1',
       }),
     )
 

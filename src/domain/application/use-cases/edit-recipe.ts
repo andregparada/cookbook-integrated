@@ -12,7 +12,7 @@ import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-e
 
 export interface EditRecipeUseCaseRequest {
   recipeId: string
-  authorId: string
+  actorId: string
   name?: string
   description?: string
   instructions?: string
@@ -45,7 +45,7 @@ export class EditRecipeUseCase {
 
   async execute({
     recipeId,
-    authorId,
+    actorId,
     name,
     description,
     instructions,
@@ -62,7 +62,7 @@ export class EditRecipeUseCase {
       return left(new ResourceNotFoundError())
     }
 
-    if (authorId !== recipe.authorId.toString()) {
+    if (actorId !== recipe.authorId.toString()) {
       return left(new NotAllowedError())
     }
 

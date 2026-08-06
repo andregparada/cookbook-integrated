@@ -65,10 +65,19 @@ export class PrismaRecipesRepository implements RecipesRepository {
   }
 
   async save(recipe: Recipe) {
-    const data = PrismaRecipeMapper.toPrisma(recipe)
+    const {
+      slug,
+      name,
+      description,
+      instructions,
+      prepTime,
+      cookTime,
+      servings,
+      difficultyLevel,
+      createdAt,
+      updatedAt,
+    } = PrismaRecipeMapper.toPrisma(recipe)
     const recipeId = recipe.id.toString()
-    const scalarData = { ...data }
-    delete scalarData.id
 
     await this.prisma.$transaction(async (transaction) => {
       await transaction.recipe.update({
@@ -76,7 +85,16 @@ export class PrismaRecipesRepository implements RecipesRepository {
           id: recipeId,
         },
         data: {
-          ...scalarData,
+          slug,
+          name,
+          description,
+          instructions,
+          prepTime,
+          cookTime,
+          servings,
+          difficultyLevel,
+          createdAt,
+          updatedAt,
           tags: this.tagsSetInput(recipe.tagsIds),
         },
       })

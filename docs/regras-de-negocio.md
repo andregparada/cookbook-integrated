@@ -464,6 +464,7 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 | `PaginationParams` | Existe, não usado | Usar em busca e listagens | Novo port + use case |
 | Busca/listagem | Não existe | `SearchRecipesUseCase` | Novo MF ou plano derivado |
 | Perfil público | Não existe | `GetChefProfileUseCase` | Novo MF ou plano derivado |
+| Autoria de receita | `EditRecipe` usava `authorId` como ator; Prisma `save` reescrevia `authorId` | `actorId` na edição; `authorId` omitido no update | **MF-18** ✅ |
 
 ---
 
@@ -475,6 +476,7 @@ O modelo conceitual do **Cookbook** possui base sólida após a fundação MF-01
 
 | Ordem | Plano | Escopo principal |
 | :---: | :--- | :--- |
+| 0 | **MF-18 — Autoria imutável** ✅ | `actorId` em edit; `authorId` do JWT no create; omit no Prisma `save` |
 | 1 | **MF-11 — Publicação e status** | `RecipeStatus`, `publishedAt`, `PublishRecipeUseCase`, leitura pública |
 | 2 | **MF-12 — Invariantes de Chef** ✅ | Unicidade de `userName`, formato, nomes reservados |
 | 3 | **MF-13 — Semântica de null e unidades** | Defaults corrigidos, enum `MeasurementUnit`, `position`/`note` |

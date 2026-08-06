@@ -28,7 +28,7 @@ type RecipeIngredientInput =
 
 export type EditRecipeHttpBody = Omit<
   EditRecipeUseCaseRequest,
-  'recipeId' | 'authorId'
+  'recipeId' | 'actorId'
 >
 
 function makeRecipeScalars(): RecipeScalars {
@@ -94,7 +94,7 @@ export function makeEditRecipeUseCaseRequest(
 ): EditRecipeUseCaseRequest {
   return {
     recipeId: new UniqueEntityID().toString(),
-    authorId: new UniqueEntityID().toString(),
+    actorId: new UniqueEntityID().toString(),
     ...makeRecipeScalars(),
     tags: makeTagsInput(),
     recipeIngredients: makeRecipeIngredientsInput(),

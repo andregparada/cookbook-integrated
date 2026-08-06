@@ -55,7 +55,7 @@ export class EditRecipeController {
     const userId = user.sub
 
     const result = await this.editRecipe.execute({
-      authorId: userId,
+      actorId: userId,
       recipeId,
       name,
       description,
