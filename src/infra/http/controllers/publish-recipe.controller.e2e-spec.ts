@@ -44,7 +44,7 @@ describe('Publish recipe (E2E)', () => {
         servings: 2,
         difficultyLevel: 'easy',
         tags: ['dinner'],
-        recipeIngredients: [{ name: 'Salt', amount: 1, unit: 'tsp' }],
+        recipeIngredients: [{ name: 'Salt', amount: 1, unit: 'teaspoon' }],
       })
 
     expect(createResponse.statusCode).toBe(201)
@@ -86,7 +86,7 @@ describe('Publish recipe (E2E)', () => {
         servings: 2,
         difficultyLevel: 'easy',
         tags: ['dinner'],
-        recipeIngredients: [{ name: 'Pepper', amount: 1, unit: 'tsp' }],
+        recipeIngredients: [{ name: 'Pepper', amount: 1, unit: 'teaspoon' }],
       })
 
     expect(createResponse.statusCode).toBe(201)

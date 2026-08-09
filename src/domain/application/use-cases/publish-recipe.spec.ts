@@ -12,7 +12,10 @@ import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-e
 import { RecipeStatus } from '@/domain/enterprise/entities/recipe'
 import { RecipeNotPublishableError } from '@/domain/enterprise/errors/recipe-not-publishable-error'
 import { Ingredient } from '@/domain/enterprise/entities/ingredient'
-import { RecipeIngredient } from '@/domain/enterprise/entities/recipe-ingredient'
+import {
+  RecipeIngredient,
+  MeasurementUnit,
+} from '@/domain/enterprise/entities/recipe-ingredient'
 import { RecipeIngredientList } from '@/domain/enterprise/entities/recipe-ingredient-list'
 import { PublishRecipeUseCase } from './publish-recipe'
 
@@ -46,7 +49,7 @@ describe('Publish Recipe', () => {
       recipeId: new UniqueEntityID('recipe-1'),
       ingredientId: ingredient.id,
       amount: 1,
-      unit: 'tsp',
+      unit: MeasurementUnit.TEASPOON,
     })
 
     const newRecipe = makeRecipe(
@@ -80,7 +83,7 @@ describe('Publish Recipe', () => {
       recipeId: new UniqueEntityID('recipe-1'),
       ingredientId: ingredient.id,
       amount: 1,
-      unit: 'tsp',
+      unit: MeasurementUnit.TEASPOON,
     })
 
     const publishedAt = new Date('2024-01-01T00:00:00.000Z')
@@ -113,7 +116,7 @@ describe('Publish Recipe', () => {
       recipeId: new UniqueEntityID('recipe-1'),
       ingredientId: ingredient.id,
       amount: 1,
-      unit: 'tsp',
+      unit: MeasurementUnit.TEASPOON,
     })
 
     const newRecipe = makeRecipe(
@@ -176,7 +179,7 @@ describe('Publish Recipe', () => {
       recipeId: new UniqueEntityID('recipe-1'),
       ingredientId: ingredient.id,
       amount: 1,
-      unit: 'tsp',
+      unit: MeasurementUnit.TEASPOON,
     })
 
     const newRecipe = makeRecipe(

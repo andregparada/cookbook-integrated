@@ -1,11 +1,41 @@
 import { Entity } from '@/core/entities/entity'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 
+export enum MeasurementUnit {
+  GRAM = 'gram',
+  KILOGRAM = 'kilogram',
+  MILLILITER = 'milliliter',
+  LITER = 'liter',
+  CUP = 'cup',
+  TABLESPOON = 'tablespoon',
+  TEASPOON = 'teaspoon',
+  PINCH = 'pinch',
+  DASH = 'dash',
+  DROP = 'drop',
+  GLASS = 'glass',
+  BOWL = 'bowl',
+  UNIT = 'unit',
+  CLOVE = 'clove',
+  SLICE = 'slice',
+  PIECE = 'piece',
+  BUNCH = 'bunch',
+  SPRIG = 'sprig',
+  HEAD = 'head',
+  STALK = 'stalk',
+  CAN = 'can',
+  JAR = 'jar',
+  BOTTLE = 'bottle',
+  BOX = 'box',
+  PACKAGE = 'package',
+  SACHET = 'sachet',
+  TO_TASTE = 'to_taste',
+}
+
 export interface RecipeIngredientProps {
   recipeId: UniqueEntityID
   ingredientId: UniqueEntityID
-  amount: number
-  unit: string // TODO fazer enum de unit
+  amount: number | null
+  unit: MeasurementUnit
 }
 
 export class RecipeIngredient extends Entity<RecipeIngredientProps> {
@@ -23,6 +53,12 @@ export class RecipeIngredient extends Entity<RecipeIngredientProps> {
 
   get unit() {
     return this.props.unit
+  }
+
+  hasValidMeasurement(): boolean {
+    return this.unit === MeasurementUnit.TO_TASTE
+      ? this.amount === null
+      : this.amount !== null && this.amount > 0
   }
 
   static create(props: RecipeIngredientProps, id?: UniqueEntityID) {

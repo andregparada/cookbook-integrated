@@ -190,6 +190,14 @@ export class Recipe extends AggregateRoot<RecipeProps> {
     return issues
   }
 
+  getIngredientMeasurementIssues(): string[] {
+    return this.ingredients
+      .getItems()
+      .flatMap((item, index) =>
+        item.hasValidMeasurement() ? [] : [`recipeIngredients[${index}]`],
+      )
+  }
+
   assertPublishable(): void {
     const issues = this.getPublishabilityIssues()
 

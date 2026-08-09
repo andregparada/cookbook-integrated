@@ -46,8 +46,8 @@ describe('Create recipe (E2E)', () => {
         difficultyLevel: 'medium',
         tags: ['dinner', 'easy'],
         recipeIngredients: [
-          { name: 'Ingredient 1', amount: 2, unit: 'cups' },
-          { name: 'Ingredient 2', amount: 1, unit: 'tbsp' },
+          { name: 'Ingredient 1', amount: 2, unit: 'cup' },
+          { name: 'Ingredient 2', amount: 1, unit: 'tablespoon' },
         ],
       })
 
@@ -68,6 +68,8 @@ describe('Create recipe (E2E)', () => {
     expect(recipeOnDatabase?.publishedAt).toBeNull()
     expect(recipeOnDatabase?.tags).toHaveLength(2)
     expect(recipeOnDatabase?.ingredients).toHaveLength(2)
+    expect(recipeOnDatabase?.ingredients[0].unit).toBe('Cup')
+    expect(recipeOnDatabase?.ingredients[1].unit).toBe('Tablespoon')
   })
 
   test('[POST] /recipes without timing and servings', async () => {

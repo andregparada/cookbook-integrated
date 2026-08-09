@@ -44,7 +44,7 @@ describe('Delete recipe (E2E)', () => {
         servings: 2,
         difficultyLevel: 'easy',
         tags: ['dinner'],
-        recipeIngredients: [{ name: 'Salt', amount: 1, unit: 'tsp' }],
+        recipeIngredients: [{ name: 'Salt', amount: 1, unit: 'teaspoon' }],
       })
 
     expect(createResponse.statusCode).toBe(201)

@@ -252,12 +252,13 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
   1. **Enum `MeasurementUnit`:** O campo `unit` restringe-se ao conjunto padronizado abaixo.
   2. **Valores permitidos:**
      - **Massa/peso:** `GRAM` (`g`), `KILOGRAM` (`kg`)
-     - **Volume:** `MILLILITER` (`ml`), `LITER` (`l`)
-     - **Medidas caseiras:** `CUP` (`xícara`), `TABLESPOON` (`colher de sopa`), `TEASPOON` (`colher de chá`), `PINCH` (`pitada`)
-     - **Unidades discretas:** `UNIT` (`unidade`), `CLOVE` (`dente`), `SLICE` (`fatia`), `CAN` (`lata`), `PACKAGE` (`pacote`)
+     - **Volume:** `MILLILITER` (`ml`), `LITER` (`l`), `GLASS` (`copo`), `BOWL` (`tigela`)
+     - **Medidas caseiras:** `CUP` (`xícara`), `TABLESPOON` (`colher de sopa`), `TEASPOON` (`colher de chá`), `PINCH` (`pitada`), `DASH` (`fio`), `DROP` (`gota`)
+     - **Unidades discretas:** `UNIT` (`unidade`), `CLOVE` (`dente`), `SLICE` (`fatia`), `PIECE` (`pedaço`), `CAN` (`lata`), `PACKAGE` (`pacote`), `JAR` (`pote`), `BOTTLE` (`garrafa`), `BOX` (`caixa`), `SACHET` (`sachê`)
+     - **Partes de vegetais:** `BUNCH` (`maço`), `SPRIG` (`raminho`), `HEAD` (`cabeça`), `STALK` (`talo`)
      - **A gosto:** `TO_TASTE` (`a gosto`)
   3. **`amount` e `TO_TASTE`:** Quando `unit = TO_TASTE`, `amount` deve ser `null`.
-  4. **Apresentação:** O backend armazena o enum codificado; o frontend traduz e pluraliza conforme `amount` (ex.: `1 colher de sopa` vs `2 colheres de sopa`).
+  4. **Apresentação:** O backend armazena o enum codificado (`gram`, `tablespoon`, …). Tradução e pluralização em português ficam em `src/infra/i18n/measurement-units/` (`MEASUREMENT_UNIT_LABELS_PT_BR`, `formatMeasurementUnitLabel`).
 
 ---
 
@@ -451,14 +452,14 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 | Área | Estado atual | Regra desejada | Plano sugerido |
 | :--- | :--- | :--- | :--- |
 | `Recipe.create` defaults | ~~`prepTime=0`, `cookTime=0`, `servings=1`~~ `null` quando omitido | `null` quando omitido | **MF-13** ✅ |
-| `RecipeIngredient.amount/unit` | Obrigatórios no domínio; nullable no Prisma | Alinhar; `amount` nullable com `TO_TASTE` | Migration + entidade |
+| `RecipeIngredient.amount/unit` | ~~Obrigatórios no domínio; nullable no Prisma~~ `amount` nullable; enum `MeasurementUnit` | Alinhar; `amount` nullable com `TO_TASTE` | **MF-21** ✅ |
 | `GET /recipes/:id` | ~~Exige JWT~~ Público para `PUBLISHED` | Público para `PUBLISHED` | **MF-11** ✅ |
 | `POST /recipes` Zod | ~~`description` obrigatório~~ | Opcional | **MF-19** ✅ |
 | `CreateRecipeUseCase` | `Either<null, …>` sem erros | Suportar `RecipeNotPublishableError` na publicação | **MF-11** ✅ (via `PublishRecipeUseCase`) |
 | `Recipe.status` | ~~Não existe~~ `DRAFT` / `PUBLISHED` | `DRAFT` / `PUBLISHED` | **MF-11** ✅ |
 | `Recipe.deletedAt` | ~~Não existe~~ Soft delete | Soft delete | **MF-16** ✅ |
 | `RecipeIngredient.position/note` | Não existem | Ordem e observação por linha | **MF-22** |
-| `unit` | `string` livre | Enum `MeasurementUnit` | **MF-21** |
+| `unit` | ~~`string` livre~~ Enum `MeasurementUnit` | Enum `MeasurementUnit` | **MF-21** ✅ |
 | `PaginationParams` | Existe, não usado | Usar em busca e listagens | Novo port + use case |
 | Busca/listagem | Não existe | `SearchRecipesUseCase` | Novo MF ou plano derivado |
 | Perfil público | Não existe | `GetChefProfileUseCase` | Novo MF ou plano derivado |
@@ -478,7 +479,7 @@ O modelo conceitual do **Cookbook** possui base sólida após a fundação MF-01
 | 1 | **MF-11 — Publicação e status** ✅ | `RecipeStatus`, `publishedAt`, `PublishRecipeUseCase`, leitura pública |
 | 2 | **MF-12 — Invariantes de Chef** ✅ | Unicidade de `userName`, formato, nomes reservados |
 | 3 | **MF-13 — Semântica de null em tempos e porções** ✅ | Defaults `null`, validação de faixa, `null` explícito na edição |
-| 3a | **MF-21 — Enum de unidades** | `MeasurementUnit` |
+| 3a | **MF-21 — Enum de unidades** ✅ | `MeasurementUnit` |
 | 3b | **MF-22 — Ordem e observação de ingredientes** | `position`/`note` |
 | 4 | **MF-14 — Busca e paginação** | `SearchRecipesUseCase`, filtros combinados, `PaginationParams` |
 | 5 | **MF-15 — Perfil público** | `GetChefProfileUseCase`, listagem por autor |

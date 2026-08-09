@@ -10,6 +10,7 @@ import {
   RecipeProps,
 } from '@/domain/enterprise/entities/recipe'
 import { RecipeIngredientList } from '@/domain/enterprise/entities/recipe-ingredient-list'
+import { MeasurementUnit } from '@/domain/enterprise/entities/recipe-ingredient'
 import { PrismaRecipeMapper } from '@/infra/database/prisma/mappers/prisma-recipe-mapper'
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { faker } from '@faker-js/faker'
@@ -56,8 +57,12 @@ export function makeTagsInput(): string[] {
 
 export function makeRecipeIngredientsInput(): RecipeIngredientInput[] {
   return [
-    { name: faker.food.ingredient(), amount: 2, unit: 'cups' },
-    { name: faker.food.ingredient(), amount: 1, unit: 'tbsp' },
+    { name: faker.food.ingredient(), amount: 2, unit: MeasurementUnit.CUP },
+    {
+      name: faker.food.ingredient(),
+      amount: 1,
+      unit: MeasurementUnit.TABLESPOON,
+    },
   ]
 }
 

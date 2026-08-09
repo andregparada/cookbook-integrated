@@ -24,6 +24,36 @@ enum RecipeStatus {
   Published
 }
 
+enum MeasurementUnit {
+  Gram
+  Kilogram
+  Milliliter
+  Liter
+  Cup
+  Tablespoon
+  Teaspoon
+  Pinch
+  Dash
+  Drop
+  Glass
+  Bowl
+  Unit
+  Clove
+  Slice
+  Piece
+  Bunch
+  Sprig
+  Head
+  Stalk
+  Can
+  Jar
+  Bottle
+  Box
+  Package
+  Sachet
+  ToTaste
+}
+
 model User {
   id        String  @id @default(uuid())
   firstName String
@@ -94,7 +124,7 @@ model RecipeIngredient {
   recipeId     String  @map("recipe_id")
   ingredientId String  @map("ingredient_id")
   amount       Float?
-  unit         String?
+  unit         MeasurementUnit
 
   recipe     Recipe     @relation(fields: [recipeId], references: [id])
   ingredient Ingredient @relation(fields: [ingredientId], references: [id])

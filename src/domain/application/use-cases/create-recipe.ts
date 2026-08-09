@@ -5,9 +5,13 @@ import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { DifficultyLevel, Recipe } from '../../enterprise/entities/recipe'
 import { RecipeIngredientList } from '@/domain/enterprise/entities/recipe-ingredient-list'
 import { InvalidRecipeTimingOrServingsError } from '@/domain/enterprise/errors/invalid-recipe-timing-or-servings-error'
+import { InvalidRecipeIngredientMeasurementError } from '@/domain/enterprise/errors/invalid-recipe-ingredient-measurement-error'
 
 import { RecipesRepository } from '../repositories/recipes-repository'
-import { RecipeCatalogResolver } from '../services/recipe-catalog-resolver'
+import {
+  RecipeCatalogResolver,
+  RecipeIngredientInput,
+} from '../services/recipe-catalog-resolver'
 
 export interface CreateRecipeUseCaseRequest {
   authorId: string
@@ -19,15 +23,11 @@ export interface CreateRecipeUseCaseRequest {
   servings?: number | null
   difficultyLevel: DifficultyLevel
   tags?: string[]
-  recipeIngredients?: Array<{
-    name: string
-    amount: number
-    unit: string
-  }>
+  recipeIngredients?: RecipeIngredientInput[]
 }
 
 type CreateRecipeUseCaseResponse = Either<
-  InvalidRecipeTimingOrServingsError,
+  InvalidRecipeTimingOrServingsError | InvalidRecipeIngredientMeasurementError,
   {
     recipe: Recipe
   }
@@ -82,6 +82,14 @@ export class CreateRecipeUseCase {
 
     if (timingIssues.length > 0) {
       return left(new InvalidRecipeTimingOrServingsError(timingIssues))
+    }
+
+    const measurementIssues = recipe.getIngredientMeasurementIssues()
+
+    if (measurementIssues.length > 0) {
+      return left(
+        new InvalidRecipeIngredientMeasurementError(measurementIssues),
+      )
     }
 
     await this.recipesRepository.create(recipe)

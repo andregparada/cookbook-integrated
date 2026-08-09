@@ -13,11 +13,15 @@ import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 import { Tag } from '@/domain/enterprise/entities/tag'
 import { Ingredient } from '@/domain/enterprise/entities/ingredient'
-import { RecipeIngredient } from '@/domain/enterprise/entities/recipe-ingredient'
+import {
+  RecipeIngredient,
+  MeasurementUnit,
+} from '@/domain/enterprise/entities/recipe-ingredient'
 import { RecipeIngredientList } from '@/domain/enterprise/entities/recipe-ingredient-list'
 import { RecipeCatalogResolver } from '../services/recipe-catalog-resolver'
 import { RecipeNotPublishableError } from '@/domain/enterprise/errors/recipe-not-publishable-error'
 import { InvalidRecipeTimingOrServingsError } from '@/domain/enterprise/errors/invalid-recipe-timing-or-servings-error'
+import { InvalidRecipeIngredientMeasurementError } from '@/domain/enterprise/errors/invalid-recipe-ingredient-measurement-error'
 import { RecipeStatus } from '@/domain/enterprise/entities/recipe'
 
 let inMemoryChefsRepository: InMemoryChefsRepository
@@ -121,7 +125,7 @@ describe('Edit Recipe', () => {
       recipeId: new UniqueEntityID('recipe-1'),
       ingredientId: ingredient.id,
       amount: 2,
-      unit: 'cups',
+      unit: MeasurementUnit.CUP,
     })
 
     const newRecipe = makeRecipe(
@@ -160,7 +164,7 @@ describe('Edit Recipe', () => {
       recipeId: new UniqueEntityID('recipe-1'),
       ingredientId: ingredient.id,
       amount: 1,
-      unit: 'tsp',
+      unit: MeasurementUnit.TEASPOON,
     })
 
     const newRecipe = makeRecipe(
@@ -178,7 +182,9 @@ describe('Edit Recipe', () => {
         recipeId: newRecipe.id.toValue(),
         actorId: 'author-1',
         tags: [],
-        recipeIngredients: [{ name: 'Salt', amount: 2, unit: 'tbsp' }],
+        recipeIngredients: [
+          { name: 'Salt', amount: 2, unit: MeasurementUnit.TABLESPOON },
+        ],
       }),
     )
 
@@ -190,12 +196,12 @@ describe('Edit Recipe', () => {
       inMemoryRecipesRepository.items[0].ingredients.getItems()[0],
     ).toMatchObject({
       amount: 2,
-      unit: 'tbsp',
+      unit: MeasurementUnit.TABLESPOON,
     })
     expect(inMemoryRecipeIngredientsRepository.items).toHaveLength(1)
     expect(inMemoryRecipeIngredientsRepository.items[0]).toMatchObject({
       amount: 2,
-      unit: 'tbsp',
+      unit: MeasurementUnit.TABLESPOON,
     })
   })
 
@@ -224,7 +230,9 @@ describe('Edit Recipe', () => {
         cookTimeInMinutes: undefined,
         servings: undefined,
         tags: ['dinner'],
-        recipeIngredients: [{ name: 'Salt', amount: 1, unit: 'tsp' }],
+        recipeIngredients: [
+          { name: 'Salt', amount: 1, unit: MeasurementUnit.TEASPOON },
+        ],
       }),
     )
 
@@ -261,7 +269,9 @@ describe('Edit Recipe', () => {
         cookTimeInMinutes: undefined,
         servings: undefined,
         tags: ['dinner'],
-        recipeIngredients: [{ name: 'Salt', amount: 1, unit: 'tsp' }],
+        recipeIngredients: [
+          { name: 'Salt', amount: 1, unit: MeasurementUnit.TEASPOON },
+        ],
       }),
     )
 
@@ -287,7 +297,9 @@ describe('Edit Recipe', () => {
         actorId: 'author-1',
         prepTimeInMinutes: -1,
         tags: ['dinner'],
-        recipeIngredients: [{ name: 'Salt', amount: 1, unit: 'tsp' }],
+        recipeIngredients: [
+          { name: 'Salt', amount: 1, unit: MeasurementUnit.TEASPOON },
+        ],
       }),
     )
 
@@ -367,7 +379,7 @@ describe('Edit Recipe', () => {
       recipeId: new UniqueEntityID('recipe-1'),
       ingredientId: ingredient.id,
       amount: 1,
-      unit: 'tsp',
+      unit: MeasurementUnit.TEASPOON,
     })
 
     const newRecipe = makeRecipe(
@@ -403,7 +415,7 @@ describe('Edit Recipe', () => {
       recipeId: new UniqueEntityID('recipe-1'),
       ingredientId: ingredient.id,
       amount: 1,
-      unit: 'tsp',
+      unit: MeasurementUnit.TEASPOON,
     })
 
     const newRecipe = makeRecipe(
@@ -441,7 +453,7 @@ describe('Edit Recipe', () => {
       recipeId: new UniqueEntityID('recipe-1'),
       ingredientId: ingredient.id,
       amount: 1,
-      unit: 'tsp',
+      unit: MeasurementUnit.TEASPOON,
     })
 
     const newRecipe = makeRecipe(
@@ -469,5 +481,29 @@ describe('Edit Recipe', () => {
     expect(inMemoryRecipesRepository.items[0].status).toBe(
       RecipeStatus.PUBLISHED,
     )
+  })
+
+  it('should not allow invalid ingredient measurement', async () => {
+    const newRecipe = makeRecipe(
+      {
+        authorId: new UniqueEntityID('author-1'),
+      },
+      new UniqueEntityID('recipe-1'),
+    )
+
+    await inMemoryRecipesRepository.create(newRecipe)
+
+    const result = await sut.execute(
+      makeEditRecipeUseCaseRequest({
+        recipeId: newRecipe.id.toValue(),
+        actorId: 'author-1',
+        recipeIngredients: [
+          { name: 'Salt', amount: 2, unit: MeasurementUnit.TO_TASTE },
+        ],
+      }),
+    )
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(InvalidRecipeIngredientMeasurementError)
   })
 })

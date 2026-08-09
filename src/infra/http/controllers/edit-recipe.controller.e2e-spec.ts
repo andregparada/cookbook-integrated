@@ -91,7 +91,7 @@ describe('Edit recipe (E2E)', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         name: 'New Recipe',
-        recipeIngredients: [{ name: 'Ingredient 1', amount: 2, unit: 'cups' }],
+        recipeIngredients: [{ name: 'Ingredient 1', amount: 2, unit: 'cup' }],
       })
 
     expect(response.statusCode).toBe(400)

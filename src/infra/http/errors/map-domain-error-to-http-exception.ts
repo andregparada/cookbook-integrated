@@ -4,6 +4,7 @@ import { ChefAlreadyExistsError } from '@/domain/application/use-cases/errors/ch
 import { WrongCredentialsError } from '@/domain/application/use-cases/errors/wrong-credentials-error'
 import { InvalidUserNameError } from '@/domain/enterprise/errors/invalid-user-name-error'
 import { InvalidRecipeTimingOrServingsError } from '@/domain/enterprise/errors/invalid-recipe-timing-or-servings-error'
+import { InvalidRecipeIngredientMeasurementError } from '@/domain/enterprise/errors/invalid-recipe-ingredient-measurement-error'
 import { RecipeNotPublishableError } from '@/domain/enterprise/errors/recipe-not-publishable-error'
 import {
   BadRequestException,
@@ -40,6 +41,10 @@ export function mapDomainErrorToHttpException(error: unknown): HttpException {
   }
 
   if (error instanceof InvalidRecipeTimingOrServingsError) {
+    return new BadRequestException(error.message)
+  }
+
+  if (error instanceof InvalidRecipeIngredientMeasurementError) {
     return new BadRequestException(error.message)
   }
 

@@ -10,11 +10,15 @@ import { RecipeIngredientList } from '@/domain/enterprise/entities/recipe-ingred
 
 import { RecipesRepository } from '../repositories/recipes-repository'
 import { RecipeIngredientsRepository } from '../repositories/recipe-ingredients-repository'
-import { RecipeCatalogResolver } from '../services/recipe-catalog-resolver'
+import {
+  RecipeCatalogResolver,
+  RecipeIngredientInput,
+} from '../services/recipe-catalog-resolver'
 import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 import { RecipeNotPublishableError } from '@/domain/enterprise/errors/recipe-not-publishable-error'
 import { InvalidRecipeTimingOrServingsError } from '@/domain/enterprise/errors/invalid-recipe-timing-or-servings-error'
+import { InvalidRecipeIngredientMeasurementError } from '@/domain/enterprise/errors/invalid-recipe-ingredient-measurement-error'
 
 export interface EditRecipeUseCaseRequest {
   recipeId: string
@@ -27,18 +31,15 @@ export interface EditRecipeUseCaseRequest {
   servings?: number | null
   difficultyLevel?: DifficultyLevel
   tags: string[]
-  recipeIngredients: Array<{
-    name: string
-    amount: number
-    unit: string
-  }>
+  recipeIngredients: RecipeIngredientInput[]
 }
 
 type EditRecipeUseCaseResponse = Either<
   | ResourceNotFoundError
   | NotAllowedError
   | RecipeNotPublishableError
-  | InvalidRecipeTimingOrServingsError,
+  | InvalidRecipeTimingOrServingsError
+  | InvalidRecipeIngredientMeasurementError,
   {
     recipe: Recipe
   }
@@ -116,6 +117,14 @@ export class EditRecipeUseCase {
 
     if (timingIssues.length > 0) {
       return left(new InvalidRecipeTimingOrServingsError(timingIssues))
+    }
+
+    const measurementIssues = recipe.getIngredientMeasurementIssues()
+
+    if (measurementIssues.length > 0) {
+      return left(
+        new InvalidRecipeIngredientMeasurementError(measurementIssues),
+      )
     }
 
     if (recipe.status === RecipeStatus.PUBLISHED) {

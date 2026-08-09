@@ -9,7 +9,9 @@ import { Ingredient } from '@/domain/enterprise/entities/ingredient'
 import { makeCreateRecipeUseCaseRequest } from 'test/factories/make-recipe'
 import { RecipeCatalogResolver } from '../services/recipe-catalog-resolver'
 import { RecipeStatus } from '@/domain/enterprise/entities/recipe'
+import { MeasurementUnit } from '@/domain/enterprise/entities/recipe-ingredient'
 import { InvalidRecipeTimingOrServingsError } from '@/domain/enterprise/errors/invalid-recipe-timing-or-servings-error'
+import { InvalidRecipeIngredientMeasurementError } from '@/domain/enterprise/errors/invalid-recipe-ingredient-measurement-error'
 
 let inMemoryChefsRepository: InMemoryChefsRepository
 let inMemoryRecipesRepository: InMemoryRecipesRepository
@@ -70,7 +72,9 @@ describe('Create Recipe', () => {
 
     await sut.execute(
       makeCreateRecipeUseCaseRequest({
-        recipeIngredients: [{ name: 'tomate', amount: 3, unit: 'unidade' }],
+        recipeIngredients: [
+          { name: 'tomate', amount: 3, unit: MeasurementUnit.UNIT },
+        ],
       }),
     )
 
@@ -143,5 +147,50 @@ describe('Create Recipe', () => {
 
     expect(result.isLeft()).toBe(true)
     expect(result.value).toBeInstanceOf(InvalidRecipeTimingOrServingsError)
+  })
+
+  it('should allow to_taste ingredient with null amount', async () => {
+    const result = await sut.execute(
+      makeCreateRecipeUseCaseRequest({
+        recipeIngredients: [
+          { name: 'Salt', amount: null, unit: MeasurementUnit.TO_TASTE },
+        ],
+      }),
+    )
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      expect(result.value.recipe.ingredients.getItems()[0]).toMatchObject({
+        amount: null,
+        unit: MeasurementUnit.TO_TASTE,
+      })
+    }
+  })
+
+  it('should not allow to_taste ingredient with amount', async () => {
+    const result = await sut.execute(
+      makeCreateRecipeUseCaseRequest({
+        recipeIngredients: [
+          { name: 'Salt', amount: 2, unit: MeasurementUnit.TO_TASTE },
+        ],
+      }),
+    )
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(InvalidRecipeIngredientMeasurementError)
+  })
+
+  it('should not allow null amount for non to_taste units', async () => {
+    const result = await sut.execute(
+      makeCreateRecipeUseCaseRequest({
+        recipeIngredients: [
+          { name: 'Salt', amount: null, unit: MeasurementUnit.TABLESPOON },
+        ],
+      }),
+    )
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(InvalidRecipeIngredientMeasurementError)
   })
 })

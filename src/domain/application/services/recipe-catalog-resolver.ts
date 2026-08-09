@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { Ingredient } from '@/domain/enterprise/entities/ingredient'
-import { RecipeIngredient } from '@/domain/enterprise/entities/recipe-ingredient'
+import {
+  RecipeIngredient,
+  MeasurementUnit,
+} from '@/domain/enterprise/entities/recipe-ingredient'
 import { Tag } from '@/domain/enterprise/entities/tag'
 import { NormalizedName } from '@/domain/enterprise/entities/value-objects/normalized-name'
 import { IngredientsRepository } from '../repositories/ingredients-repository'
@@ -9,8 +12,8 @@ import { TagsRepository } from '../repositories/tags-repository'
 
 export type RecipeIngredientInput = {
   name: string
-  amount: number
-  unit: string
+  amount: number | null
+  unit: MeasurementUnit
 }
 
 @Injectable()

@@ -6,6 +6,7 @@ import { CreateRecipeUseCase } from '@/domain/application/use-cases/create-recip
 import { CurrentUser } from '@/infra/auth/current-user-decorator'
 import type { UserPayload } from '@/infra/auth/jwt.strategy'
 import { DifficultyLevel } from '@/domain/enterprise/entities/recipe'
+import { MeasurementUnit } from '@/domain/enterprise/entities/recipe-ingredient'
 
 const createRecipeBodySchema = z.object({
   name: z.string(),
@@ -20,8 +21,8 @@ const createRecipeBodySchema = z.object({
     .array(
       z.object({
         name: z.string(),
-        amount: z.number().nonnegative(),
-        unit: z.string(),
+        amount: z.number().positive().nullable(),
+        unit: z.nativeEnum(MeasurementUnit),
       }),
     )
     .optional(),
