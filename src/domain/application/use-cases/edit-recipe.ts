@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common'
 import { Either, left, right } from '@/core/either'
 
-import { DifficultyLevel, Recipe } from '../../enterprise/entities/recipe'
+import {
+  DifficultyLevel,
+  Recipe,
+  RecipeStatus,
+} from '../../enterprise/entities/recipe'
 import { RecipeIngredientList } from '@/domain/enterprise/entities/recipe-ingredient-list'
 
 import { RecipesRepository } from '../repositories/recipes-repository'
@@ -9,6 +13,7 @@ import { RecipeIngredientsRepository } from '../repositories/recipe-ingredients-
 import { RecipeCatalogResolver } from '../services/recipe-catalog-resolver'
 import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
+import { RecipeNotPublishableError } from '@/domain/enterprise/errors/recipe-not-publishable-error'
 
 export interface EditRecipeUseCaseRequest {
   recipeId: string
@@ -29,7 +34,7 @@ export interface EditRecipeUseCaseRequest {
 }
 
 type EditRecipeUseCaseResponse = Either<
-  ResourceNotFoundError | NotAllowedError,
+  ResourceNotFoundError | NotAllowedError | RecipeNotPublishableError,
   {
     recipe: Recipe
   }
@@ -92,6 +97,14 @@ export class EditRecipeUseCase {
     recipe.servings = servings ?? recipe.servings
     recipe.difficultyLevel = difficultyLevel ?? recipe.difficultyLevel
     recipe.tagsIds = tagsIds
+
+    if (recipe.status === RecipeStatus.PUBLISHED) {
+      const issues = recipe.getPublishabilityIssues()
+
+      if (issues.length > 0) {
+        return left(new RecipeNotPublishableError(issues))
+      }
+    }
 
     await this.recipesRepository.save(recipe)
 

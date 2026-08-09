@@ -64,6 +64,8 @@ describe('Create recipe (E2E)', () => {
     })
 
     expect(recipeOnDatabase).toBeTruthy()
+    expect(recipeOnDatabase?.status).toBe('Draft')
+    expect(recipeOnDatabase?.publishedAt).toBeNull()
     expect(recipeOnDatabase?.tags).toHaveLength(2)
     expect(recipeOnDatabase?.ingredients).toHaveLength(2)
   })

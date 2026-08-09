@@ -5,6 +5,8 @@ import { Prisma, Recipe as PrismaRecipe } from '@prisma/client'
 import {
   mapDifficultyLevelToDomain,
   mapDifficultyLevelToPrisma,
+  mapRecipeStatusToDomain,
+  mapRecipeStatusToPrisma,
 } from './enum-mappers'
 
 export class PrismaRecipeMapper {
@@ -20,6 +22,8 @@ export class PrismaRecipeMapper {
         cookTimeInMinutes: raw.cookTime,
         servings: raw.servings,
         difficultyLevel: mapDifficultyLevelToDomain(raw.difficultyLevel),
+        status: mapRecipeStatusToDomain(raw.status),
+        publishedAt: raw.publishedAt,
         createdAt: raw.createdAt,
         updatedAt: raw.updatedAt,
       },
@@ -38,6 +42,8 @@ export class PrismaRecipeMapper {
       cookTime: recipe.cookTimeInMinutes,
       servings: recipe.servings,
       difficultyLevel: mapDifficultyLevelToPrisma(recipe.difficultyLevel),
+      status: mapRecipeStatusToPrisma(recipe.status),
+      publishedAt: recipe.publishedAt,
       authorId: recipe.authorId.toString(),
       createdAt: recipe.createdAt,
       updatedAt: recipe.updatedAt,

@@ -58,6 +58,8 @@ export class InMemoryRecipesRepository implements RecipesRepository {
       cookTimeInMinutes: recipe.cookTimeInMinutes,
       servings: recipe.servings,
       difficultyLevel: recipe.difficultyLevel,
+      status: recipe.status,
+      publishedAt: recipe.publishedAt,
       tags,
       recipeIngredients,
       createdAt: recipe.createdAt,

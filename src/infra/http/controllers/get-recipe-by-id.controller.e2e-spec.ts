@@ -7,6 +7,7 @@ import { ChefFactory } from 'test/factories/make-chef'
 import { RecipeFactory } from 'test/factories/make-recipe'
 import request from 'supertest'
 import { DatabaseModule } from '@/infra/database/database.module'
+import { RecipeStatus } from '@/domain/enterprise/entities/recipe'
 
 describe('Get recipe by id (E2E)', () => {
   let app: INestApplication
@@ -29,16 +30,44 @@ describe('Get recipe by id (E2E)', () => {
     await app.init()
   })
 
-  test('[GET] /recipes/:id', async () => {
+  test('[GET] /recipes/:id for published recipe', async () => {
     const user = await chefFactory.makePrismaChef({
       userName: 'johndoe',
+    })
+
+    const recipe = await recipeFactory.makePrismaRecipe({
+      authorId: user.id,
+      name: 'Receita 01',
+      status: RecipeStatus.PUBLISHED,
+      publishedAt: new Date(),
+    })
+
+    const response = await request(app.getHttpServer()).get(
+      `/recipes/${recipe.id.toString()}`,
+    )
+
+    expect(response.statusCode).toBe(200)
+    expect(response.body).toEqual({
+      recipe: expect.objectContaining({
+        name: 'Receita 01',
+        author: 'johndoe',
+        slug: recipe.slug.value,
+        status: RecipeStatus.PUBLISHED,
+      }),
+    })
+  })
+
+  test('[GET] /recipes/:id for draft recipe by author', async () => {
+    const user = await chefFactory.makePrismaChef({
+      userName: 'janedoe',
     })
 
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
     const recipe = await recipeFactory.makePrismaRecipe({
       authorId: user.id,
-      name: 'Receita 01',
+      name: 'Draft Recipe',
+      status: RecipeStatus.DRAFT,
     })
 
     const response = await request(app.getHttpServer())
@@ -48,20 +77,16 @@ describe('Get recipe by id (E2E)', () => {
     expect(response.statusCode).toBe(200)
     expect(response.body).toEqual({
       recipe: expect.objectContaining({
-        name: 'Receita 01',
-        author: 'johndoe',
-        slug: recipe.slug.value,
+        name: 'Draft Recipe',
+        status: RecipeStatus.DRAFT,
       }),
     })
   })
 
   test('[GET] /recipes/:id should return 404 when recipe does not exist', async () => {
-    const user = await chefFactory.makePrismaChef()
-    const accessToken = jwt.sign({ sub: user.id.toString() })
-
-    const response = await request(app.getHttpServer())
-      .get(`/recipes/${randomUUID()}`)
-      .set('Authorization', `Bearer ${accessToken}`)
+    const response = await request(app.getHttpServer()).get(
+      `/recipes/${randomUUID()}`,
+    )
 
     expect(response.statusCode).toBe(404)
   })

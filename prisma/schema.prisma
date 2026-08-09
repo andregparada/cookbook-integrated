@@ -19,6 +19,11 @@ enum DifficultyLevel {
   Hard
 }
 
+enum RecipeStatus {
+  Draft
+  Published
+}
+
 model User {
   id        String  @id @default(uuid())
   firstName String
@@ -49,6 +54,8 @@ model Recipe {
   cookTime        Int?
   servings        Int?
   difficultyLevel DifficultyLevel?
+  status          RecipeStatus     @default(Draft)
+  publishedAt     DateTime?        @map("published_at")
   createdAt       DateTime         @default(now()) @map("created_at")
   updatedAt       DateTime?        @updatedAt @map("updated_at")
   authorId        String           @map("author_id")

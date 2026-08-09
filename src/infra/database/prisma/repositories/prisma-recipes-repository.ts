@@ -74,6 +74,8 @@ export class PrismaRecipesRepository implements RecipesRepository {
       cookTime,
       servings,
       difficultyLevel,
+      status,
+      publishedAt,
       createdAt,
       updatedAt,
     } = PrismaRecipeMapper.toPrisma(recipe)
@@ -93,6 +95,8 @@ export class PrismaRecipesRepository implements RecipesRepository {
           cookTime,
           servings,
           difficultyLevel,
+          status,
+          publishedAt,
           createdAt,
           updatedAt,
           tags: this.tagsSetInput(recipe.tagsIds),

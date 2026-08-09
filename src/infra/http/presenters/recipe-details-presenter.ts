@@ -14,6 +14,8 @@ export class RecipeDetailsPresenter {
       cookTimeInMinutes: recipeDetails.cookTimeInMinutes,
       servings: recipeDetails.servings,
       difficultyLevel: recipeDetails.difficultyLevel,
+      status: recipeDetails.status,
+      publishedAt: recipeDetails.publishedAt,
       tags: recipeDetails.tags.map((tag) => ({
         id: tag.id.toString(),
         name: tag.name,

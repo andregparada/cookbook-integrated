@@ -1,6 +1,8 @@
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { CreateRecipeUseCaseRequest } from '@/domain/application/use-cases/create-recipe'
 import { EditRecipeUseCaseRequest } from '@/domain/application/use-cases/edit-recipe'
+import { PublishRecipeUseCaseRequest } from '@/domain/application/use-cases/publish-recipe'
+import { UnpublishRecipeUseCaseRequest } from '@/domain/application/use-cases/unpublish-recipe'
 import {
   DifficultyLevel,
   Recipe,
@@ -109,6 +111,26 @@ export function makeEditRecipeHttpBody(
     ...makeRecipeScalars(),
     tags: makeTagsInput(),
     recipeIngredients: makeRecipeIngredientsInput(),
+    ...override,
+  }
+}
+
+export function makePublishRecipeUseCaseRequest(
+  override: Partial<PublishRecipeUseCaseRequest> = {},
+): PublishRecipeUseCaseRequest {
+  return {
+    recipeId: new UniqueEntityID().toString(),
+    actorId: new UniqueEntityID().toString(),
+    ...override,
+  }
+}
+
+export function makeUnpublishRecipeUseCaseRequest(
+  override: Partial<UnpublishRecipeUseCaseRequest> = {},
+): UnpublishRecipeUseCaseRequest {
+  return {
+    recipeId: new UniqueEntityID().toString(),
+    actorId: new UniqueEntityID().toString(),
     ...override,
   }
 }

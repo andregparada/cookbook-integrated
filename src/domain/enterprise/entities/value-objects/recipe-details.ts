@@ -1,5 +1,5 @@
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
-import { DifficultyLevel } from '../recipe'
+import { DifficultyLevel, RecipeStatus } from '../recipe'
 import { Slug } from './slug'
 import { ValueObject } from '@/core/entities/value-objects'
 import { Tag } from '../tag'
@@ -17,6 +17,8 @@ export interface RecipeDetailsProps {
   cookTimeInMinutes?: number | null
   servings?: number | null
   difficultyLevel: DifficultyLevel | null
+  status: RecipeStatus
+  publishedAt: Date | null
   tags: Tag[]
   recipeIngredients: RecipeIngredient[]
   createdAt: Date
@@ -66,6 +68,14 @@ export class RecipeDetails extends ValueObject<RecipeDetailsProps> {
 
   get difficultyLevel() {
     return this.props.difficultyLevel
+  }
+
+  get status() {
+    return this.props.status
+  }
+
+  get publishedAt() {
+    return this.props.publishedAt
   }
 
   get tags() {

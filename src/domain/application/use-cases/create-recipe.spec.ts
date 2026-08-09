@@ -8,6 +8,7 @@ import { Tag } from '@/domain/enterprise/entities/tag'
 import { Ingredient } from '@/domain/enterprise/entities/ingredient'
 import { makeCreateRecipeUseCaseRequest } from 'test/factories/make-recipe'
 import { RecipeCatalogResolver } from '../services/recipe-catalog-resolver'
+import { RecipeStatus } from '@/domain/enterprise/entities/recipe'
 
 let inMemoryChefsRepository: InMemoryChefsRepository
 let inMemoryRecipesRepository: InMemoryRecipesRepository
@@ -44,6 +45,8 @@ describe('Create Recipe', () => {
     expect(result.isRight()).toBe(true)
     expect(result.value?.recipe.ingredients.getItems()).toHaveLength(2)
     expect(inMemoryRecipeIngredientsRepository.items).toHaveLength(2)
+    expect(result.value?.recipe.status).toBe(RecipeStatus.DRAFT)
+    expect(result.value?.recipe.publishedAt).toBeNull()
   })
 
   it('should reuse an existing tag when only casing differs', async () => {

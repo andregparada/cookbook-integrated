@@ -16,6 +16,8 @@ import { Ingredient } from '@/domain/enterprise/entities/ingredient'
 import { RecipeIngredient } from '@/domain/enterprise/entities/recipe-ingredient'
 import { RecipeIngredientList } from '@/domain/enterprise/entities/recipe-ingredient-list'
 import { RecipeCatalogResolver } from '../services/recipe-catalog-resolver'
+import { RecipeNotPublishableError } from '@/domain/enterprise/errors/recipe-not-publishable-error'
+import { RecipeStatus } from '@/domain/enterprise/entities/recipe'
 
 let inMemoryChefsRepository: InMemoryChefsRepository
 let inMemoryIngredientsRepository: InMemoryIngredientsRepository
@@ -264,5 +266,41 @@ describe('Edit Recipe', () => {
 
     expect(result.isLeft()).toBe(true)
     expect(result.value).toBeInstanceOf(ResourceNotFoundError)
+  })
+
+  it('should not be able to remove all ingredients from a published recipe', async () => {
+    const ingredient = Ingredient.create({ name: 'Salt' })
+    await inMemoryIngredientsRepository.create(ingredient)
+
+    const recipeIngredient = RecipeIngredient.create({
+      recipeId: new UniqueEntityID('recipe-1'),
+      ingredientId: ingredient.id,
+      amount: 1,
+      unit: 'tsp',
+    })
+
+    const newRecipe = makeRecipe(
+      {
+        authorId: new UniqueEntityID('author-1'),
+        status: RecipeStatus.PUBLISHED,
+        publishedAt: new Date(),
+        ingredients: new RecipeIngredientList([recipeIngredient]),
+      },
+      new UniqueEntityID('recipe-1'),
+    )
+
+    await inMemoryRecipesRepository.create(newRecipe)
+
+    const result = await sut.execute(
+      makeEditRecipeUseCaseRequest({
+        recipeId: newRecipe.id.toValue(),
+        actorId: 'author-1',
+        tags: [],
+        recipeIngredients: [],
+      }),
+    )
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(RecipeNotPublishableError)
   })
 })

@@ -118,19 +118,18 @@ erDiagram
 - Cadastro e autenticação de chef (JWT)
 - Edição de perfil próprio
 - Criação e edição de receita própria (tags e ingredientes medidos)
-- Consulta de receita por ID (requer JWT hoje)
+- Consulta de receita por ID (pública para `PUBLISHED`; rascunho só autor)
+- Estados de publicação (`DRAFT` / `PUBLISHED`) com `PublishRecipeUseCase` e `UnpublishRecipeUseCase`
 - `Recipe` como `AggregateRoot` com `RecipeIngredientList` e sync atômico no repositório
 - `RecipeCatalogResolver`: find-or-create normalizado para `Tag` e `Ingredient`
 - Mapeamento de erros de domínio → HTTP (MF-06)
 
 **Lacunas identificadas:**
 
-- Ausência de estados de publicação (`DRAFT` / `PUBLISHED`)
 - Ausência de listagem e busca estruturada (global e por autor)
 - Ausência de exclusão de receitas
 - Ausência de paginação
 - Ausência de perfil público por `userName`
-- Leitura de receita publicada ainda exige autenticação
 - Unidades de medida ainda são string livre
 - Semântica de `null` em tempos/porções inconsistente entre domínio e schema
 
@@ -454,10 +453,10 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 | :--- | :--- | :--- | :--- |
 | `Recipe.create` defaults | `prepTime=0`, `cookTime=0`, `servings=1` | `null` quando omitido | Ajustar factory + use case |
 | `RecipeIngredient.amount/unit` | Obrigatórios no domínio; nullable no Prisma | Alinhar; `amount` nullable com `TO_TASTE` | Migration + entidade |
-| `GET /recipes/:id` | Exige JWT | Público para `PUBLISHED` | `@Public()` + checagem de status |
+| `GET /recipes/:id` | ~~Exige JWT~~ Público para `PUBLISHED` | Público para `PUBLISHED` | **MF-11** ✅ |
 | `POST /recipes` Zod | `description` obrigatório | Opcional | Ajustar schema |
-| `CreateRecipeUseCase` | `Either<null, …>` sem erros | Suportar `RecipeNotPublishableError` | Refatorar após status |
-| `Recipe.status` | Não existe | `DRAFT` / `PUBLISHED` | Migration + entidade + use cases |
+| `CreateRecipeUseCase` | `Either<null, …>` sem erros | Suportar `RecipeNotPublishableError` na publicação | **MF-11** ✅ (via `PublishRecipeUseCase`) |
+| `Recipe.status` | ~~Não existe~~ `DRAFT` / `PUBLISHED` | `DRAFT` / `PUBLISHED` | **MF-11** ✅ |
 | `Recipe.deletedAt` | Não existe | Soft delete | Migration + `DeleteRecipeUseCase` |
 | `RecipeIngredient.position/note` | Não existem | Ordem e observação por linha | Migration + entidade |
 | `unit` | `string` livre | Enum `MeasurementUnit` | Domínio + Prisma enum |
@@ -477,7 +476,7 @@ O modelo conceitual do **Cookbook** possui base sólida após a fundação MF-01
 | Ordem | Plano | Escopo principal |
 | :---: | :--- | :--- |
 | 0 | **MF-18 — Autoria imutável** ✅ | `actorId` em edit; `authorId` do JWT no create; omit no Prisma `save` |
-| 1 | **MF-11 — Publicação e status** | `RecipeStatus`, `publishedAt`, `PublishRecipeUseCase`, leitura pública |
+| 1 | **MF-11 — Publicação e status** ✅ | `RecipeStatus`, `publishedAt`, `PublishRecipeUseCase`, leitura pública |
 | 2 | **MF-12 — Invariantes de Chef** ✅ | Unicidade de `userName`, formato, nomes reservados |
 | 3 | **MF-13 — Semântica de null e unidades** | Defaults corrigidos, enum `MeasurementUnit`, `position`/`note` |
 | 4 | **MF-14 — Busca e paginação** | `SearchRecipesUseCase`, filtros combinados, `PaginationParams` |

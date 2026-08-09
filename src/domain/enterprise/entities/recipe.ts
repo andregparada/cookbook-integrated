@@ -1,6 +1,7 @@
 import { AggregateRoot } from '@/core/entities/aggregate-root'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { Optional } from '@/core/types/optional'
+import { RecipeNotPublishableError } from '../errors/recipe-not-publishable-error'
 import { RecipeIngredientList } from './recipe-ingredient-list'
 import { Slug } from './value-objects/slug'
 
@@ -8,6 +9,11 @@ export enum DifficultyLevel {
   EASY = 'easy',
   MEDIUM = 'medium',
   HARD = 'hard',
+}
+
+export enum RecipeStatus {
+  DRAFT = 'draft',
+  PUBLISHED = 'published',
 }
 
 export interface RecipeProps {
@@ -20,6 +26,8 @@ export interface RecipeProps {
   cookTimeInMinutes: number | null
   servings: number | null
   difficultyLevel: DifficultyLevel | null
+  status: RecipeStatus
+  publishedAt: Date | null
   tagsIds: UniqueEntityID[]
   ingredients: RecipeIngredientList
   createdAt: Date
@@ -98,6 +106,14 @@ export class Recipe extends AggregateRoot<RecipeProps> {
     this.touch()
   }
 
+  get status() {
+    return this.props.status
+  }
+
+  get publishedAt() {
+    return this.props.publishedAt
+  }
+
   get tagsIds() {
     return this.props.tagsIds
   }
@@ -124,6 +140,48 @@ export class Recipe extends AggregateRoot<RecipeProps> {
     return this.props.updatedAt
   }
 
+  getPublishabilityIssues(): string[] {
+    const issues: string[] = []
+
+    if (!this.name.trim()) {
+      issues.push('name')
+    }
+
+    if (!this.instructions.trim()) {
+      issues.push('instructions')
+    }
+
+    if (this.ingredients.getItems().length === 0) {
+      issues.push('ingredients')
+    }
+
+    return issues
+  }
+
+  assertPublishable(): void {
+    const issues = this.getPublishabilityIssues()
+
+    if (issues.length > 0) {
+      throw new RecipeNotPublishableError(issues)
+    }
+  }
+
+  publish(): void {
+    this.assertPublishable()
+
+    if (this.props.publishedAt === null) {
+      this.props.publishedAt = new Date()
+    }
+
+    this.props.status = RecipeStatus.PUBLISHED
+    this.touch()
+  }
+
+  unpublish(): void {
+    this.props.status = RecipeStatus.DRAFT
+    this.touch()
+  }
+
   private touch() {
     this.props.updatedAt = new Date()
   }
@@ -138,6 +196,8 @@ export class Recipe extends AggregateRoot<RecipeProps> {
       | 'prepTimeInMinutes'
       | 'cookTimeInMinutes'
       | 'servings'
+      | 'status'
+      | 'publishedAt'
     >,
     id?: UniqueEntityID,
   ) {
@@ -152,6 +212,8 @@ export class Recipe extends AggregateRoot<RecipeProps> {
         cookTimeInMinutes:
           props.cookTimeInMinutes === undefined ? 0 : props.cookTimeInMinutes,
         servings: props.servings === undefined ? 1 : props.servings,
+        status: props.status ?? RecipeStatus.DRAFT,
+        publishedAt: props.publishedAt ?? null,
         createdAt: props.createdAt ?? new Date(),
       },
       id,

@@ -4,7 +4,10 @@ import {
   Tag as PrismaTag,
   RecipeIngredient as PrismaRecipeIngredients,
 } from '@prisma/client'
-import { mapDifficultyLevelToDomain } from './enum-mappers'
+import {
+  mapDifficultyLevelToDomain,
+  mapRecipeStatusToDomain,
+} from './enum-mappers'
 import { RecipeDetails } from '@/domain/enterprise/entities/value-objects/recipe-details'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { Slug } from '@/domain/enterprise/entities/value-objects/slug'
@@ -31,6 +34,8 @@ export class PrismaRecipeDetailsMapper {
       cookTimeInMinutes: raw.cookTime,
       servings: raw.servings,
       difficultyLevel: mapDifficultyLevelToDomain(raw.difficultyLevel),
+      status: mapRecipeStatusToDomain(raw.status),
+      publishedAt: raw.publishedAt,
       tags: raw.tags.map(PrismaTagMapper.toDomain),
       recipeIngredients: raw.ingredients.map(
         PrismaRecipeIngredientMapper.toDomain,

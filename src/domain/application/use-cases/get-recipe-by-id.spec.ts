@@ -6,6 +6,7 @@ import { InMemoryChefsRepository } from 'test/repositories/in-memory-chefs-repos
 import { makeChef } from 'test/factories/make-chef'
 import { GetRecipeByIdUseCase } from './get-recipe-by-id'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
+import { RecipeStatus } from '@/domain/enterprise/entities/recipe'
 
 let inMemoryChefsRepository: InMemoryChefsRepository
 let inMemoryTagsRepository: InMemoryTagsRepository
@@ -34,6 +35,8 @@ describe('Get Recipe By Id', () => {
 
     const newRecipe = makeRecipe({
       authorId: chef.id,
+      status: RecipeStatus.PUBLISHED,
+      publishedAt: new Date(),
     })
 
     await inMemoryRecipesRepository.create(newRecipe)
@@ -59,5 +62,66 @@ describe('Get Recipe By Id', () => {
 
     expect(result.isLeft()).toBe(true)
     expect(result.value).toBeInstanceOf(ResourceNotFoundError)
+  })
+
+  it('should be able to get a published recipe without actorId', async () => {
+    const chef = makeChef({ userName: 'John_Doe' })
+
+    inMemoryChefsRepository.items.push(chef)
+
+    const newRecipe = makeRecipe({
+      authorId: chef.id,
+      status: RecipeStatus.PUBLISHED,
+      publishedAt: new Date(),
+    })
+
+    await inMemoryRecipesRepository.create(newRecipe)
+
+    const result = await sut.execute({
+      id: newRecipe.id.toString(),
+    })
+
+    expect(result.isRight()).toBe(true)
+  })
+
+  it('should return ResourceNotFoundError when draft is requested by non-author', async () => {
+    const chef = makeChef({ userName: 'John_Doe' })
+
+    inMemoryChefsRepository.items.push(chef)
+
+    const newRecipe = makeRecipe({
+      authorId: chef.id,
+      status: RecipeStatus.DRAFT,
+    })
+
+    await inMemoryRecipesRepository.create(newRecipe)
+
+    const result = await sut.execute({
+      id: newRecipe.id.toString(),
+      actorId: 'another-user-id',
+    })
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(ResourceNotFoundError)
+  })
+
+  it('should be able to get a draft recipe by its author', async () => {
+    const chef = makeChef({ userName: 'John_Doe' })
+
+    inMemoryChefsRepository.items.push(chef)
+
+    const newRecipe = makeRecipe({
+      authorId: chef.id,
+      status: RecipeStatus.DRAFT,
+    })
+
+    await inMemoryRecipesRepository.create(newRecipe)
+
+    const result = await sut.execute({
+      id: newRecipe.id.toString(),
+      actorId: chef.id.toString(),
+    })
+
+    expect(result.isRight()).toBe(true)
   })
 })

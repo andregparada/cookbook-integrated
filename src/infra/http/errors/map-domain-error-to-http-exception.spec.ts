@@ -3,6 +3,7 @@ import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-e
 import { ChefAlreadyExistsError } from '@/domain/application/use-cases/errors/chef-already-exists-error'
 import { WrongCredentialsError } from '@/domain/application/use-cases/errors/wrong-credentials-error'
 import { InvalidUserNameError } from '@/domain/enterprise/errors/invalid-user-name-error'
+import { RecipeNotPublishableError } from '@/domain/enterprise/errors/recipe-not-publishable-error'
 import {
   BadRequestException,
   ConflictException,
@@ -46,6 +47,15 @@ describe('mapDomainErrorToHttpException', () => {
   it('should map InvalidUserNameError to 400', () => {
     const error = mapDomainErrorToHttpException(
       new InvalidUserNameError('User name is reserved.'),
+    )
+
+    expect(error).toBeInstanceOf(BadRequestException)
+    expect(error.getStatus()).toBe(400)
+  })
+
+  it('should map RecipeNotPublishableError to 400', () => {
+    const error = mapDomainErrorToHttpException(
+      new RecipeNotPublishableError(['name', 'ingredients']),
     )
 
     expect(error).toBeInstanceOf(BadRequestException)
