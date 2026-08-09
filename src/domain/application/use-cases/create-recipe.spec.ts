@@ -72,4 +72,22 @@ describe('Create Recipe', () => {
     expect(inMemoryIngredientsRepository.items).toHaveLength(1)
     expect(inMemoryIngredientsRepository.items[0].name).toBe('Tomate')
   })
+
+  it('should be able to create an incomplete draft recipe', async () => {
+    const result = await sut.execute(
+      makeCreateRecipeUseCaseRequest({
+        name: '',
+        description: null,
+        instructions: '',
+        recipeIngredients: [],
+      }),
+    )
+
+    expect(result.isRight()).toBe(true)
+    expect(result.value?.recipe.status).toBe(RecipeStatus.DRAFT)
+    expect(result.value?.recipe.name).toBe('')
+    expect(result.value?.recipe.instructions).toBe('')
+    expect(result.value?.recipe.description).toBeNull()
+    expect(result.value?.recipe.ingredients.getItems()).toHaveLength(0)
+  })
 })

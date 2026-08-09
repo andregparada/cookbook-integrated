@@ -11,14 +11,14 @@ import { RecipeCatalogResolver } from '../services/recipe-catalog-resolver'
 export interface CreateRecipeUseCaseRequest {
   authorId: string
   name: string
-  description: string
+  description: string | null
   instructions: string
   prepTimeInMinutes: number
   cookTimeInMinutes: number
   servings: number
   difficultyLevel: DifficultyLevel
   tags?: string[]
-  recipeIngredients: Array<{
+  recipeIngredients?: Array<{
     name: string
     amount: number
     unit: string

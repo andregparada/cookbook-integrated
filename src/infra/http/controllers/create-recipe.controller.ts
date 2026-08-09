@@ -9,20 +9,22 @@ import { DifficultyLevel } from '@/domain/enterprise/entities/recipe'
 
 const createRecipeBodySchema = z.object({
   name: z.string(),
-  description: z.string(),
+  description: z.string().optional(),
   instructions: z.string(),
   prepTimeInMinutes: z.number().int().nonnegative(),
   cookTimeInMinutes: z.number().int().nonnegative(),
   servings: z.number().int().nonnegative(),
   difficultyLevel: z.nativeEnum(DifficultyLevel),
   tags: z.array(z.string()).optional(),
-  recipeIngredients: z.array(
-    z.object({
-      name: z.string(),
-      amount: z.number().nonnegative(),
-      unit: z.string(),
-    }),
-  ),
+  recipeIngredients: z
+    .array(
+      z.object({
+        name: z.string(),
+        amount: z.number().nonnegative(),
+        unit: z.string(),
+      }),
+    )
+    .optional(),
 })
 
 const bodyValidationPipe = new ZodValidationPipe(createRecipeBodySchema)
@@ -54,7 +56,7 @@ export class CreateRecipeController {
     const result = await this.createRecipe.execute({
       authorId: userId,
       name,
-      description,
+      description: description ?? null,
       instructions,
       prepTimeInMinutes,
       cookTimeInMinutes,

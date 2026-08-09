@@ -303,4 +303,80 @@ describe('Edit Recipe', () => {
     expect(result.isLeft()).toBe(true)
     expect(result.value).toBeInstanceOf(RecipeNotPublishableError)
   })
+
+  it('should not be able to clear name from a published recipe', async () => {
+    const ingredient = Ingredient.create({ name: 'Salt' })
+    await inMemoryIngredientsRepository.create(ingredient)
+
+    const recipeIngredient = RecipeIngredient.create({
+      recipeId: new UniqueEntityID('recipe-1'),
+      ingredientId: ingredient.id,
+      amount: 1,
+      unit: 'tsp',
+    })
+
+    const newRecipe = makeRecipe(
+      {
+        authorId: new UniqueEntityID('author-1'),
+        status: RecipeStatus.PUBLISHED,
+        publishedAt: new Date(),
+        ingredients: new RecipeIngredientList([recipeIngredient]),
+      },
+      new UniqueEntityID('recipe-1'),
+    )
+
+    await inMemoryRecipesRepository.create(newRecipe)
+
+    const result = await sut.execute(
+      makeEditRecipeUseCaseRequest({
+        recipeId: newRecipe.id.toValue(),
+        actorId: 'author-1',
+        name: '',
+      }),
+    )
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(RecipeNotPublishableError)
+    expect(inMemoryRecipesRepository.items[0].status).toBe(
+      RecipeStatus.PUBLISHED,
+    )
+  })
+
+  it('should not be able to clear instructions from a published recipe', async () => {
+    const ingredient = Ingredient.create({ name: 'Salt' })
+    await inMemoryIngredientsRepository.create(ingredient)
+
+    const recipeIngredient = RecipeIngredient.create({
+      recipeId: new UniqueEntityID('recipe-1'),
+      ingredientId: ingredient.id,
+      amount: 1,
+      unit: 'tsp',
+    })
+
+    const newRecipe = makeRecipe(
+      {
+        authorId: new UniqueEntityID('author-1'),
+        status: RecipeStatus.PUBLISHED,
+        publishedAt: new Date(),
+        ingredients: new RecipeIngredientList([recipeIngredient]),
+      },
+      new UniqueEntityID('recipe-1'),
+    )
+
+    await inMemoryRecipesRepository.create(newRecipe)
+
+    const result = await sut.execute(
+      makeEditRecipeUseCaseRequest({
+        recipeId: newRecipe.id.toValue(),
+        actorId: 'author-1',
+        instructions: '',
+      }),
+    )
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(RecipeNotPublishableError)
+    expect(inMemoryRecipesRepository.items[0].status).toBe(
+      RecipeStatus.PUBLISHED,
+    )
+  })
 })

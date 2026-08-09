@@ -14,19 +14,19 @@ import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { faker } from '@faker-js/faker'
 import { Injectable } from '@nestjs/common'
 
-type RecipeScalars = Pick<
-  CreateRecipeUseCaseRequest,
-  | 'name'
-  | 'description'
-  | 'instructions'
-  | 'prepTimeInMinutes'
-  | 'cookTimeInMinutes'
-  | 'servings'
-  | 'difficultyLevel'
->
+type RecipeScalars = {
+  name: string
+  description: string
+  instructions: string
+  prepTimeInMinutes: number
+  cookTimeInMinutes: number
+  servings: number
+  difficultyLevel: DifficultyLevel
+}
 
-type RecipeIngredientInput =
-  CreateRecipeUseCaseRequest['recipeIngredients'][number]
+type RecipeIngredientInput = NonNullable<
+  CreateRecipeUseCaseRequest['recipeIngredients']
+>[number]
 
 export type EditRecipeHttpBody = Omit<
   EditRecipeUseCaseRequest,

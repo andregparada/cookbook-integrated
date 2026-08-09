@@ -454,7 +454,7 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 | `Recipe.create` defaults | `prepTime=0`, `cookTime=0`, `servings=1` | `null` quando omitido | Ajustar factory + use case |
 | `RecipeIngredient.amount/unit` | Obrigatórios no domínio; nullable no Prisma | Alinhar; `amount` nullable com `TO_TASTE` | Migration + entidade |
 | `GET /recipes/:id` | ~~Exige JWT~~ Público para `PUBLISHED` | Público para `PUBLISHED` | **MF-11** ✅ |
-| `POST /recipes` Zod | `description` obrigatório | Opcional | Ajustar schema |
+| `POST /recipes` Zod | ~~`description` obrigatório~~ | Opcional | **MF-19** ✅ |
 | `CreateRecipeUseCase` | `Either<null, …>` sem erros | Suportar `RecipeNotPublishableError` na publicação | **MF-11** ✅ (via `PublishRecipeUseCase`) |
 | `Recipe.status` | ~~Não existe~~ `DRAFT` / `PUBLISHED` | `DRAFT` / `PUBLISHED` | **MF-11** ✅ |
 | `Recipe.deletedAt` | Não existe | Soft delete | Migration + `DeleteRecipeUseCase` |

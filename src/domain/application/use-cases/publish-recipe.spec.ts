@@ -161,6 +161,47 @@ describe('Publish Recipe', () => {
 
     expect(result.isLeft()).toBe(true)
     expect(result.value).toBeInstanceOf(RecipeNotPublishableError)
+    expect((result.value as RecipeNotPublishableError).message).toContain(
+      'name',
+    )
+    expect((result.value as RecipeNotPublishableError).message).toContain(
+      'ingredients',
+    )
+    expect(inMemoryRecipesRepository.items[0].status).toBe(RecipeStatus.DRAFT)
+  })
+
+  it('should not be able to publish a recipe with empty instructions', async () => {
+    const ingredient = Ingredient.create({ name: 'Salt' })
+    const recipeIngredient = RecipeIngredient.create({
+      recipeId: new UniqueEntityID('recipe-1'),
+      ingredientId: ingredient.id,
+      amount: 1,
+      unit: 'tsp',
+    })
+
+    const newRecipe = makeRecipe(
+      {
+        authorId: new UniqueEntityID('author-1'),
+        instructions: '',
+        ingredients: new RecipeIngredientList([recipeIngredient]),
+      },
+      new UniqueEntityID('recipe-1'),
+    )
+
+    await inMemoryRecipesRepository.create(newRecipe)
+
+    const result = await sut.execute(
+      makePublishRecipeUseCaseRequest({
+        recipeId: 'recipe-1',
+        actorId: 'author-1',
+      }),
+    )
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(RecipeNotPublishableError)
+    expect((result.value as RecipeNotPublishableError).message).toContain(
+      'instructions',
+    )
     expect(inMemoryRecipesRepository.items[0].status).toBe(RecipeStatus.DRAFT)
   })
 
