@@ -12,6 +12,9 @@ export class PrismaRecipeIngredientsRepository implements RecipeIngredientsRepos
       where: {
         recipeId,
       },
+      orderBy: {
+        position: 'asc',
+      },
     })
 
     return recipeIngredients.map(PrismaRecipeIngredientMapper.toDomain)

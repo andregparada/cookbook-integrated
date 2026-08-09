@@ -125,10 +125,13 @@ model RecipeIngredient {
   ingredientId String  @map("ingredient_id")
   amount       Float?
   unit         MeasurementUnit
+  position     Int
+  note         String?
 
   recipe     Recipe     @relation(fields: [recipeId], references: [id])
   ingredient Ingredient @relation(fields: [ingredientId], references: [id])
 
+  @@index([recipeId, position])
   @@map("recipe_ingredients")
 }
 

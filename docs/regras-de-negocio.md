@@ -458,7 +458,7 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 | `CreateRecipeUseCase` | `Either<null, …>` sem erros | Suportar `RecipeNotPublishableError` na publicação | **MF-11** ✅ (via `PublishRecipeUseCase`) |
 | `Recipe.status` | ~~Não existe~~ `DRAFT` / `PUBLISHED` | `DRAFT` / `PUBLISHED` | **MF-11** ✅ |
 | `Recipe.deletedAt` | ~~Não existe~~ Soft delete | Soft delete | **MF-16** ✅ |
-| `RecipeIngredient.position/note` | Não existem | Ordem e observação por linha | **MF-22** |
+| `RecipeIngredient.position/note` | ~~Não existem~~ Ordem e observação por linha | Ordem e observação por linha | **MF-22** ✅ |
 | `unit` | ~~`string` livre~~ Enum `MeasurementUnit` | Enum `MeasurementUnit` | **MF-21** ✅ |
 | `PaginationParams` | Existe, não usado | Usar em busca e listagens | Novo port + use case |
 | Busca/listagem | Não existe | `SearchRecipesUseCase` | Novo MF ou plano derivado |
@@ -480,7 +480,7 @@ O modelo conceitual do **Cookbook** possui base sólida após a fundação MF-01
 | 2 | **MF-12 — Invariantes de Chef** ✅ | Unicidade de `userName`, formato, nomes reservados |
 | 3 | **MF-13 — Semântica de null em tempos e porções** ✅ | Defaults `null`, validação de faixa, `null` explícito na edição |
 | 3a | **MF-21 — Enum de unidades** ✅ | `MeasurementUnit` |
-| 3b | **MF-22 — Ordem e observação de ingredientes** | `position`/`note` |
+| 3b | **MF-22 — Ordem e observação de ingredientes** ✅ | `position`/`note` |
 | 4 | **MF-14 — Busca e paginação** | `SearchRecipesUseCase`, filtros combinados, `PaginationParams` |
 | 5 | **MF-15 — Perfil público** | `GetChefProfileUseCase`, listagem por autor |
 | 6 | **MF-16 — Exclusão (soft delete)** ✅ | `DeleteRecipeUseCase`, `deletedAt` |

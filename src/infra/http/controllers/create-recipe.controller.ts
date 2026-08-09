@@ -23,6 +23,7 @@ const createRecipeBodySchema = z.object({
         name: z.string(),
         amount: z.number().positive().nullable(),
         unit: z.nativeEnum(MeasurementUnit),
+        note: z.string().trim().max(200).nullish(),
       }),
     )
     .optional(),

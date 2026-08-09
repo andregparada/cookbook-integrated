@@ -193,4 +193,67 @@ describe('Create Recipe', () => {
     expect(result.isLeft()).toBe(true)
     expect(result.value).toBeInstanceOf(InvalidRecipeIngredientMeasurementError)
   })
+
+  it('should assign position from payload order starting at zero', async () => {
+    const result = await sut.execute(
+      makeCreateRecipeUseCaseRequest({
+        recipeIngredients: [
+          { name: 'Salt', amount: 1, unit: MeasurementUnit.TEASPOON },
+          { name: 'Pepper', amount: 2, unit: MeasurementUnit.PINCH },
+        ],
+      }),
+    )
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      expect(
+        result.value.recipe.ingredients.getItems().map((item) => item.position),
+      ).toEqual([0, 1])
+    }
+  })
+
+  it('should normalize ingredient note', async () => {
+    const result = await sut.execute(
+      makeCreateRecipeUseCaseRequest({
+        recipeIngredients: [
+          {
+            name: 'Salt',
+            amount: 1,
+            unit: MeasurementUnit.TEASPOON,
+            note: '  picado fino  ',
+          },
+        ],
+      }),
+    )
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      expect(result.value.recipe.ingredients.getItems()[0].note).toBe(
+        'picado fino',
+      )
+    }
+  })
+
+  it('should treat blank ingredient note as null', async () => {
+    const result = await sut.execute(
+      makeCreateRecipeUseCaseRequest({
+        recipeIngredients: [
+          {
+            name: 'Salt',
+            amount: 1,
+            unit: MeasurementUnit.TEASPOON,
+            note: '   ',
+          },
+        ],
+      }),
+    )
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      expect(result.value.recipe.ingredients.getItems()[0].note).toBeNull()
+    }
+  })
 })

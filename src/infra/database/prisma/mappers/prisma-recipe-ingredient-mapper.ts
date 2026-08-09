@@ -17,6 +17,8 @@ export class PrismaRecipeIngredientMapper {
         ingredientId: new UniqueEntityID(raw.ingredientId),
         amount: raw.amount,
         unit: mapMeasurementUnitToDomain(raw.unit),
+        position: raw.position,
+        note: raw.note,
       },
       new UniqueEntityID(raw.id),
     )
@@ -31,6 +33,8 @@ export class PrismaRecipeIngredientMapper {
       ingredientId: recipeingredient.ingredientId.toString(),
       amount: recipeingredient.amount,
       unit: mapMeasurementUnitToPrisma(recipeingredient.unit),
+      position: recipeingredient.position,
+      note: recipeingredient.note,
     }
   }
 }

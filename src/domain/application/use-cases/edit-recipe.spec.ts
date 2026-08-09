@@ -22,6 +22,7 @@ import { RecipeCatalogResolver } from '../services/recipe-catalog-resolver'
 import { RecipeNotPublishableError } from '@/domain/enterprise/errors/recipe-not-publishable-error'
 import { InvalidRecipeTimingOrServingsError } from '@/domain/enterprise/errors/invalid-recipe-timing-or-servings-error'
 import { InvalidRecipeIngredientMeasurementError } from '@/domain/enterprise/errors/invalid-recipe-ingredient-measurement-error'
+import { UnknownRecipeIngredientError } from '@/domain/enterprise/errors/unknown-recipe-ingredient-error'
 import { RecipeStatus } from '@/domain/enterprise/entities/recipe'
 
 let inMemoryChefsRepository: InMemoryChefsRepository
@@ -126,6 +127,8 @@ describe('Edit Recipe', () => {
       ingredientId: ingredient.id,
       amount: 2,
       unit: MeasurementUnit.CUP,
+      position: 0,
+      note: null,
     })
 
     const newRecipe = makeRecipe(
@@ -165,6 +168,8 @@ describe('Edit Recipe', () => {
       ingredientId: ingredient.id,
       amount: 1,
       unit: MeasurementUnit.TEASPOON,
+      position: 0,
+      note: null,
     })
 
     const newRecipe = makeRecipe(
@@ -183,7 +188,12 @@ describe('Edit Recipe', () => {
         actorId: 'author-1',
         tags: [],
         recipeIngredients: [
-          { name: 'Salt', amount: 2, unit: MeasurementUnit.TABLESPOON },
+          {
+            id: recipeIngredient.id.toString(),
+            name: 'Salt',
+            amount: 2,
+            unit: MeasurementUnit.TABLESPOON,
+          },
         ],
       }),
     )
@@ -199,6 +209,9 @@ describe('Edit Recipe', () => {
       unit: MeasurementUnit.TABLESPOON,
     })
     expect(inMemoryRecipeIngredientsRepository.items).toHaveLength(1)
+    expect(inMemoryRecipeIngredientsRepository.items[0].id).toEqual(
+      recipeIngredient.id,
+    )
     expect(inMemoryRecipeIngredientsRepository.items[0]).toMatchObject({
       amount: 2,
       unit: MeasurementUnit.TABLESPOON,
@@ -380,6 +393,8 @@ describe('Edit Recipe', () => {
       ingredientId: ingredient.id,
       amount: 1,
       unit: MeasurementUnit.TEASPOON,
+      position: 0,
+      note: null,
     })
 
     const newRecipe = makeRecipe(
@@ -416,6 +431,8 @@ describe('Edit Recipe', () => {
       ingredientId: ingredient.id,
       amount: 1,
       unit: MeasurementUnit.TEASPOON,
+      position: 0,
+      note: null,
     })
 
     const newRecipe = makeRecipe(
@@ -454,6 +471,8 @@ describe('Edit Recipe', () => {
       ingredientId: ingredient.id,
       amount: 1,
       unit: MeasurementUnit.TEASPOON,
+      position: 0,
+      note: null,
     })
 
     const newRecipe = makeRecipe(
@@ -505,5 +524,105 @@ describe('Edit Recipe', () => {
 
     expect(result.isLeft()).toBe(true)
     expect(result.value).toBeInstanceOf(InvalidRecipeIngredientMeasurementError)
+  })
+
+  it('should reject unknown recipe ingredient ids', async () => {
+    const newRecipe = makeRecipe(
+      {
+        authorId: new UniqueEntityID('author-1'),
+      },
+      new UniqueEntityID('recipe-1'),
+    )
+
+    await inMemoryRecipesRepository.create(newRecipe)
+
+    const result = await sut.execute(
+      makeEditRecipeUseCaseRequest({
+        recipeId: newRecipe.id.toValue(),
+        actorId: 'author-1',
+        recipeIngredients: [
+          {
+            id: 'unknown-ingredient-id',
+            name: 'Salt',
+            amount: 1,
+            unit: MeasurementUnit.TEASPOON,
+          },
+        ],
+      }),
+    )
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(UnknownRecipeIngredientError)
+  })
+
+  it('should update position when recipe ingredients are reordered', async () => {
+    const ingredientA = Ingredient.create({ name: 'Salt' })
+    const ingredientB = Ingredient.create({ name: 'Pepper' })
+    await inMemoryIngredientsRepository.create(ingredientA)
+    await inMemoryIngredientsRepository.create(ingredientB)
+
+    const recipeIngredientA = RecipeIngredient.create({
+      recipeId: new UniqueEntityID('recipe-1'),
+      ingredientId: ingredientA.id,
+      amount: 1,
+      unit: MeasurementUnit.TEASPOON,
+      position: 0,
+      note: null,
+    })
+
+    const recipeIngredientB = RecipeIngredient.create({
+      recipeId: new UniqueEntityID('recipe-1'),
+      ingredientId: ingredientB.id,
+      amount: 2,
+      unit: MeasurementUnit.PINCH,
+      position: 1,
+      note: null,
+    })
+
+    const newRecipe = makeRecipe(
+      {
+        authorId: new UniqueEntityID('author-1'),
+        ingredients: new RecipeIngredientList([
+          recipeIngredientA,
+          recipeIngredientB,
+        ]),
+      },
+      new UniqueEntityID('recipe-1'),
+    )
+
+    await inMemoryRecipesRepository.create(newRecipe)
+
+    const result = await sut.execute(
+      makeEditRecipeUseCaseRequest({
+        recipeId: newRecipe.id.toValue(),
+        actorId: 'author-1',
+        tags: [],
+        recipeIngredients: [
+          {
+            id: recipeIngredientB.id.toString(),
+            name: 'Pepper',
+            amount: 2,
+            unit: MeasurementUnit.PINCH,
+          },
+          {
+            id: recipeIngredientA.id.toString(),
+            name: 'Salt',
+            amount: 1,
+            unit: MeasurementUnit.TEASPOON,
+          },
+        ],
+      }),
+    )
+
+    expect(result.isRight()).toBe(true)
+    expect(
+      inMemoryRecipesRepository.items[0].ingredients.getItems().map((item) => ({
+        id: item.id.toString(),
+        position: item.position,
+      })),
+    ).toEqual([
+      { id: recipeIngredientB.id.toString(), position: 0 },
+      { id: recipeIngredientA.id.toString(), position: 1 },
+    ])
   })
 })

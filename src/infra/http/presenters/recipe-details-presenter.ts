@@ -25,6 +25,8 @@ export class RecipeDetailsPresenter {
         ingredientId: item.ingredientId.toString(),
         amount: item.amount,
         unit: item.unit,
+        position: item.position,
+        note: item.note,
       })),
       createdAt: recipeDetails.createdAt,
       updatedAt: recipeDetails.updatedAt,

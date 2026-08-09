@@ -19,9 +19,11 @@ const editRecipeBodySchema = z.object({
   tags: z.array(z.string()),
   recipeIngredients: z.array(
     z.object({
+      id: z.string().uuid().optional(),
       name: z.string(),
       amount: z.number().positive().nullable(),
       unit: z.nativeEnum(MeasurementUnit),
+      note: z.string().trim().max(200).nullish(),
     }),
   ),
 })

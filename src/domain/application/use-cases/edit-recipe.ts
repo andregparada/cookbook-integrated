@@ -19,6 +19,7 @@ import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-e
 import { RecipeNotPublishableError } from '@/domain/enterprise/errors/recipe-not-publishable-error'
 import { InvalidRecipeTimingOrServingsError } from '@/domain/enterprise/errors/invalid-recipe-timing-or-servings-error'
 import { InvalidRecipeIngredientMeasurementError } from '@/domain/enterprise/errors/invalid-recipe-ingredient-measurement-error'
+import { UnknownRecipeIngredientError } from '@/domain/enterprise/errors/unknown-recipe-ingredient-error'
 
 export interface EditRecipeUseCaseRequest {
   recipeId: string
@@ -39,7 +40,8 @@ type EditRecipeUseCaseResponse = Either<
   | NotAllowedError
   | RecipeNotPublishableError
   | InvalidRecipeTimingOrServingsError
-  | InvalidRecipeIngredientMeasurementError,
+  | InvalidRecipeIngredientMeasurementError
+  | UnknownRecipeIngredientError,
   {
     recipe: Recipe
   }
@@ -80,6 +82,20 @@ export class EditRecipeUseCase {
 
     const currentRecipeIngredients =
       await this.recipeIngredientsRepository.findManyByRecipeId(recipeId)
+
+    const currentIngredientIds = new Set(
+      currentRecipeIngredients.map((item) => item.id.toString()),
+    )
+
+    const unknownIngredientIssues = recipeIngredients.flatMap((input, index) =>
+      input.id && !currentIngredientIds.has(input.id)
+        ? [`recipeIngredients[${index}]`]
+        : [],
+    )
+
+    if (unknownIngredientIssues.length > 0) {
+      return left(new UnknownRecipeIngredientError(unknownIngredientIssues))
+    }
 
     const recipeIngredientList = new RecipeIngredientList(
       currentRecipeIngredients,

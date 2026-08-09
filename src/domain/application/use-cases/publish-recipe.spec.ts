@@ -50,6 +50,8 @@ describe('Publish Recipe', () => {
       ingredientId: ingredient.id,
       amount: 1,
       unit: MeasurementUnit.TEASPOON,
+      position: 0,
+      note: null,
     })
 
     const newRecipe = makeRecipe(
@@ -84,6 +86,8 @@ describe('Publish Recipe', () => {
       ingredientId: ingredient.id,
       amount: 1,
       unit: MeasurementUnit.TEASPOON,
+      position: 0,
+      note: null,
     })
 
     const publishedAt = new Date('2024-01-01T00:00:00.000Z')
@@ -117,6 +121,8 @@ describe('Publish Recipe', () => {
       ingredientId: ingredient.id,
       amount: 1,
       unit: MeasurementUnit.TEASPOON,
+      position: 0,
+      note: null,
     })
 
     const newRecipe = makeRecipe(
@@ -180,6 +186,8 @@ describe('Publish Recipe', () => {
       ingredientId: ingredient.id,
       amount: 1,
       unit: MeasurementUnit.TEASPOON,
+      position: 0,
+      note: null,
     })
 
     const newRecipe = makeRecipe(

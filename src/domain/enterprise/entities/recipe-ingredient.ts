@@ -36,6 +36,8 @@ export interface RecipeIngredientProps {
   ingredientId: UniqueEntityID
   amount: number | null
   unit: MeasurementUnit
+  position: number
+  note: string | null
 }
 
 export class RecipeIngredient extends Entity<RecipeIngredientProps> {
@@ -53,6 +55,14 @@ export class RecipeIngredient extends Entity<RecipeIngredientProps> {
 
   get unit() {
     return this.props.unit
+  }
+
+  get position() {
+    return this.props.position
+  }
+
+  get note() {
+    return this.props.note
   }
 
   hasValidMeasurement(): boolean {

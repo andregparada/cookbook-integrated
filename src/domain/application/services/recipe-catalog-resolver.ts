@@ -11,9 +11,11 @@ import { IngredientsRepository } from '../repositories/ingredients-repository'
 import { TagsRepository } from '../repositories/tags-repository'
 
 export type RecipeIngredientInput = {
+  id?: string
   name: string
   amount: number | null
   unit: MeasurementUnit
+  note?: string | null
 }
 
 @Injectable()
@@ -49,7 +51,7 @@ export class RecipeCatalogResolver {
   ): Promise<RecipeIngredient[]> {
     const recipeIngredientEntities: RecipeIngredient[] = []
 
-    for (const input of recipeIngredients) {
+    for (const [index, input] of recipeIngredients.entries()) {
       const normalizedName = NormalizedName.createFromText(input.name)
 
       let ingredient =
@@ -60,12 +62,24 @@ export class RecipeCatalogResolver {
         await this.ingredientsRepository.create(ingredient)
       }
 
-      const recipeIngredient = RecipeIngredient.create({
-        recipeId,
-        ingredientId: ingredient.id,
-        amount: input.amount,
-        unit: input.unit,
-      })
+      const note =
+        input.note === undefined || input.note === null
+          ? null
+          : input.note.trim() === ''
+            ? null
+            : input.note.trim()
+
+      const recipeIngredient = RecipeIngredient.create(
+        {
+          recipeId,
+          ingredientId: ingredient.id,
+          amount: input.amount,
+          unit: input.unit,
+          position: index,
+          note,
+        },
+        input.id ? new UniqueEntityID(input.id) : undefined,
+      )
 
       recipeIngredientEntities.push(recipeIngredient)
     }

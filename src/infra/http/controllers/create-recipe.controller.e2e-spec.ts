@@ -46,7 +46,7 @@ describe('Create recipe (E2E)', () => {
         difficultyLevel: 'medium',
         tags: ['dinner', 'easy'],
         recipeIngredients: [
-          { name: 'Ingredient 1', amount: 2, unit: 'cup' },
+          { name: 'Ingredient 1', amount: 2, unit: 'cup', note: 'picado fino' },
           { name: 'Ingredient 2', amount: 1, unit: 'tablespoon' },
         ],
       })
@@ -69,7 +69,11 @@ describe('Create recipe (E2E)', () => {
     expect(recipeOnDatabase?.tags).toHaveLength(2)
     expect(recipeOnDatabase?.ingredients).toHaveLength(2)
     expect(recipeOnDatabase?.ingredients[0].unit).toBe('Cup')
+    expect(recipeOnDatabase?.ingredients[0].position).toBe(0)
+    expect(recipeOnDatabase?.ingredients[0].note).toBe('picado fino')
     expect(recipeOnDatabase?.ingredients[1].unit).toBe('Tablespoon')
+    expect(recipeOnDatabase?.ingredients[1].position).toBe(1)
+    expect(recipeOnDatabase?.ingredients[1].note).toBeNull()
   })
 
   test('[POST] /recipes without timing and servings', async () => {

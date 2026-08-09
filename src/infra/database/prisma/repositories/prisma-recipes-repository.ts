@@ -6,6 +6,7 @@ import { Injectable } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
 import { PrismaRecipeDetailsMapper } from '../mappers/prisma-recipe-details-mapper'
 import { PrismaRecipeIngredientMapper } from '../mappers/prisma-recipe-ingredient-mapper'
+import { mapMeasurementUnitToPrisma } from '../mappers/enum-mappers'
 import { PrismaRecipeMapper } from '../mappers/prisma-recipe-mapper'
 import { PrismaService } from '../prisma.service'
 
@@ -37,7 +38,11 @@ export class PrismaRecipesRepository implements RecipesRepository {
       include: {
         author: true,
         tags: true,
-        ingredients: true,
+        ingredients: {
+          orderBy: {
+            position: 'asc',
+          },
+        },
       },
     })
 
@@ -112,6 +117,11 @@ export class PrismaRecipesRepository implements RecipesRepository {
         recipe.ingredients.getNewItems(),
       )
 
+      await this.updateRecipeIngredients(
+        transaction,
+        recipe.ingredients.getUpdatedItems(),
+      )
+
       await this.deleteRecipeIngredients(
         transaction,
         recipe.ingredients.getRemovedItems(),
@@ -155,6 +165,26 @@ export class PrismaRecipesRepository implements RecipesRepository {
     await transaction.recipeIngredient.createMany({
       data: items.map(PrismaRecipeIngredientMapper.toPrisma),
     })
+  }
+
+  private async updateRecipeIngredients(
+    transaction: Prisma.TransactionClient,
+    items: RecipeIngredient[],
+  ) {
+    for (const item of items) {
+      await transaction.recipeIngredient.update({
+        where: {
+          id: item.id.toString(),
+        },
+        data: {
+          ingredientId: item.ingredientId.toString(),
+          amount: item.amount,
+          unit: mapMeasurementUnitToPrisma(item.unit),
+          position: item.position,
+          note: item.note,
+        },
+      })
+    }
   }
 
   private async deleteRecipeIngredients(

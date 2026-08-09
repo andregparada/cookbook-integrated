@@ -91,6 +91,10 @@ export class InMemoryRecipesRepository implements RecipesRepository {
       recipe.ingredients.getNewItems(),
     )
 
+    await this.recipeIngredientsRepository.updateMany(
+      recipe.ingredients.getUpdatedItems(),
+    )
+
     await this.recipeIngredientsRepository.deleteMany(
       recipe.ingredients.getRemovedItems(),
     )

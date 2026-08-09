@@ -77,6 +77,74 @@ describe('Edit recipe (E2E)', () => {
     )
   })
 
+  test('[PUT] /recipes/:id should preserve recipe ingredient id on update', async () => {
+    const user = await chefFactory.makePrismaChef()
+
+    const accessToken = jwt.sign({ sub: user.id.toString() })
+
+    const createResponse = await request(app.getHttpServer())
+      .post('/recipes')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        name: 'Recipe With Ingredients',
+        instructions: 'Mix ingredients.',
+        difficultyLevel: 'easy',
+        tags: ['dinner'],
+        recipeIngredients: [{ name: 'Salt', amount: 1, unit: 'teaspoon' }],
+      })
+
+    expect(createResponse.statusCode).toBe(201)
+
+    const createdRecipe = await prisma.recipe.findFirst({
+      where: {
+        authorId: user.id.toString(),
+        name: 'Recipe With Ingredients',
+      },
+      include: {
+        ingredients: {
+          orderBy: {
+            position: 'asc',
+          },
+        },
+      },
+    })
+
+    const recipeIngredientId = createdRecipe?.ingredients[0].id
+
+    const response = await request(app.getHttpServer())
+      .put(`/recipes/${createdRecipe?.id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        name: 'Recipe With Ingredients',
+        instructions: 'Mix ingredients.',
+        difficultyLevel: 'easy',
+        tags: ['dinner'],
+        recipeIngredients: [
+          {
+            id: recipeIngredientId,
+            name: 'Salt',
+            amount: 2,
+            unit: 'tablespoon',
+            note: 'para polvilhar',
+          },
+        ],
+      })
+
+    expect(response.statusCode).toBe(204)
+
+    const recipeOnDatabase = await prisma.recipeIngredient.findFirst({
+      where: {
+        id: recipeIngredientId,
+      },
+    })
+
+    expect(recipeOnDatabase).toBeTruthy()
+    expect(recipeOnDatabase?.amount).toBe(2)
+    expect(recipeOnDatabase?.unit).toBe('Tablespoon')
+    expect(recipeOnDatabase?.position).toBe(0)
+    expect(recipeOnDatabase?.note).toBe('para polvilhar')
+  })
+
   test('[PUT] /recipes/:id should reject body without required arrays', async () => {
     const user = await chefFactory.makePrismaChef()
 

@@ -11,6 +11,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common'
+import { UnknownRecipeIngredientError } from '@/domain/enterprise/errors/unknown-recipe-ingredient-error'
 import { mapDomainErrorToHttpException } from './map-domain-error-to-http-exception'
 
 describe('mapDomainErrorToHttpException', () => {
@@ -56,6 +57,15 @@ describe('mapDomainErrorToHttpException', () => {
   it('should map RecipeNotPublishableError to 400', () => {
     const error = mapDomainErrorToHttpException(
       new RecipeNotPublishableError(['name', 'ingredients']),
+    )
+
+    expect(error).toBeInstanceOf(BadRequestException)
+    expect(error.getStatus()).toBe(400)
+  })
+
+  it('should map UnknownRecipeIngredientError to 400', () => {
+    const error = mapDomainErrorToHttpException(
+      new UnknownRecipeIngredientError(['recipeIngredients[0]']),
     )
 
     expect(error).toBeInstanceOf(BadRequestException)
