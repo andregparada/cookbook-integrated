@@ -69,4 +69,33 @@ describe('Create recipe (E2E)', () => {
     expect(recipeOnDatabase?.tags).toHaveLength(2)
     expect(recipeOnDatabase?.ingredients).toHaveLength(2)
   })
+
+  test('[POST] /recipes without timing and servings', async () => {
+    const user = await chefFactory.makePrismaChef()
+
+    const accessToken = jwt.sign({ sub: user.id.toString() })
+
+    const response = await request(app.getHttpServer())
+      .post('/recipes')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        name: 'Draft Without Timing',
+        instructions: 'Mix and serve.',
+        difficultyLevel: 'easy',
+      })
+
+    expect(response.statusCode).toBe(201)
+
+    const recipeOnDatabase = await prisma.recipe.findFirst({
+      where: {
+        authorId: user.id.toString(),
+        name: 'Draft Without Timing',
+      },
+    })
+
+    expect(recipeOnDatabase).toBeTruthy()
+    expect(recipeOnDatabase?.prepTime).toBeNull()
+    expect(recipeOnDatabase?.cookTime).toBeNull()
+    expect(recipeOnDatabase?.servings).toBeNull()
+  })
 })

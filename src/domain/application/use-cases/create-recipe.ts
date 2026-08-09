@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common'
-import { Either, right } from '@/core/either'
+import { Either, left, right } from '@/core/either'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 
 import { DifficultyLevel, Recipe } from '../../enterprise/entities/recipe'
 import { RecipeIngredientList } from '@/domain/enterprise/entities/recipe-ingredient-list'
+import { InvalidRecipeTimingOrServingsError } from '@/domain/enterprise/errors/invalid-recipe-timing-or-servings-error'
 
 import { RecipesRepository } from '../repositories/recipes-repository'
 import { RecipeCatalogResolver } from '../services/recipe-catalog-resolver'
@@ -13,9 +14,9 @@ export interface CreateRecipeUseCaseRequest {
   name: string
   description: string | null
   instructions: string
-  prepTimeInMinutes: number
-  cookTimeInMinutes: number
-  servings: number
+  prepTimeInMinutes?: number | null
+  cookTimeInMinutes?: number | null
+  servings?: number | null
   difficultyLevel: DifficultyLevel
   tags?: string[]
   recipeIngredients?: Array<{
@@ -26,7 +27,7 @@ export interface CreateRecipeUseCaseRequest {
 }
 
 type CreateRecipeUseCaseResponse = Either<
-  null,
+  InvalidRecipeTimingOrServingsError,
   {
     recipe: Recipe
   }
@@ -76,6 +77,12 @@ export class CreateRecipeUseCase {
       },
       recipeId,
     )
+
+    const timingIssues = recipe.getTimingAndServingsIssues()
+
+    if (timingIssues.length > 0) {
+      return left(new InvalidRecipeTimingOrServingsError(timingIssues))
+    }
 
     await this.recipesRepository.create(recipe)
 

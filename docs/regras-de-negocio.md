@@ -131,7 +131,6 @@ erDiagram
 - Ausência de paginação
 - Ausência de perfil público por `userName`
 - Unidades de medida ainda são string livre
-- Semântica de `null` em tempos/porções inconsistente entre domínio e schema
 
 ---
 
@@ -451,15 +450,15 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 
 | Área | Estado atual | Regra desejada | Plano sugerido |
 | :--- | :--- | :--- | :--- |
-| `Recipe.create` defaults | `prepTime=0`, `cookTime=0`, `servings=1` | `null` quando omitido | Ajustar factory + use case |
+| `Recipe.create` defaults | ~~`prepTime=0`, `cookTime=0`, `servings=1`~~ `null` quando omitido | `null` quando omitido | **MF-13** ✅ |
 | `RecipeIngredient.amount/unit` | Obrigatórios no domínio; nullable no Prisma | Alinhar; `amount` nullable com `TO_TASTE` | Migration + entidade |
 | `GET /recipes/:id` | ~~Exige JWT~~ Público para `PUBLISHED` | Público para `PUBLISHED` | **MF-11** ✅ |
 | `POST /recipes` Zod | ~~`description` obrigatório~~ | Opcional | **MF-19** ✅ |
 | `CreateRecipeUseCase` | `Either<null, …>` sem erros | Suportar `RecipeNotPublishableError` na publicação | **MF-11** ✅ (via `PublishRecipeUseCase`) |
 | `Recipe.status` | ~~Não existe~~ `DRAFT` / `PUBLISHED` | `DRAFT` / `PUBLISHED` | **MF-11** ✅ |
 | `Recipe.deletedAt` | ~~Não existe~~ Soft delete | Soft delete | **MF-16** ✅ |
-| `RecipeIngredient.position/note` | Não existem | Ordem e observação por linha | Migration + entidade |
-| `unit` | `string` livre | Enum `MeasurementUnit` | Domínio + Prisma enum |
+| `RecipeIngredient.position/note` | Não existem | Ordem e observação por linha | **MF-22** |
+| `unit` | `string` livre | Enum `MeasurementUnit` | **MF-21** |
 | `PaginationParams` | Existe, não usado | Usar em busca e listagens | Novo port + use case |
 | Busca/listagem | Não existe | `SearchRecipesUseCase` | Novo MF ou plano derivado |
 | Perfil público | Não existe | `GetChefProfileUseCase` | Novo MF ou plano derivado |
@@ -478,7 +477,9 @@ O modelo conceitual do **Cookbook** possui base sólida após a fundação MF-01
 | 0 | **MF-18 — Autoria imutável** ✅ | `actorId` em edit; `authorId` do JWT no create; omit no Prisma `save` |
 | 1 | **MF-11 — Publicação e status** ✅ | `RecipeStatus`, `publishedAt`, `PublishRecipeUseCase`, leitura pública |
 | 2 | **MF-12 — Invariantes de Chef** ✅ | Unicidade de `userName`, formato, nomes reservados |
-| 3 | **MF-13 — Semântica de null e unidades** | Defaults corrigidos, enum `MeasurementUnit`, `position`/`note` |
+| 3 | **MF-13 — Semântica de null em tempos e porções** ✅ | Defaults `null`, validação de faixa, `null` explícito na edição |
+| 3a | **MF-21 — Enum de unidades** | `MeasurementUnit` |
+| 3b | **MF-22 — Ordem e observação de ingredientes** | `position`/`note` |
 | 4 | **MF-14 — Busca e paginação** | `SearchRecipesUseCase`, filtros combinados, `PaginationParams` |
 | 5 | **MF-15 — Perfil público** | `GetChefProfileUseCase`, listagem por autor |
 | 6 | **MF-16 — Exclusão (soft delete)** ✅ | `DeleteRecipeUseCase`, `deletedAt` |

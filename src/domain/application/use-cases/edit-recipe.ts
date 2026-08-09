@@ -14,6 +14,7 @@ import { RecipeCatalogResolver } from '../services/recipe-catalog-resolver'
 import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 import { RecipeNotPublishableError } from '@/domain/enterprise/errors/recipe-not-publishable-error'
+import { InvalidRecipeTimingOrServingsError } from '@/domain/enterprise/errors/invalid-recipe-timing-or-servings-error'
 
 export interface EditRecipeUseCaseRequest {
   recipeId: string
@@ -21,9 +22,9 @@ export interface EditRecipeUseCaseRequest {
   name?: string
   description?: string
   instructions?: string
-  prepTimeInMinutes?: number
-  cookTimeInMinutes?: number
-  servings?: number
+  prepTimeInMinutes?: number | null
+  cookTimeInMinutes?: number | null
+  servings?: number | null
   difficultyLevel?: DifficultyLevel
   tags: string[]
   recipeIngredients: Array<{
@@ -34,7 +35,10 @@ export interface EditRecipeUseCaseRequest {
 }
 
 type EditRecipeUseCaseResponse = Either<
-  ResourceNotFoundError | NotAllowedError | RecipeNotPublishableError,
+  | ResourceNotFoundError
+  | NotAllowedError
+  | RecipeNotPublishableError
+  | InvalidRecipeTimingOrServingsError,
   {
     recipe: Recipe
   }
@@ -92,11 +96,27 @@ export class EditRecipeUseCase {
     recipe.name = name ?? recipe.name
     recipe.description = description ?? recipe.description
     recipe.instructions = instructions ?? recipe.instructions
-    recipe.prepTimeInMinutes = prepTimeInMinutes ?? recipe.prepTimeInMinutes
-    recipe.cookTimeInMinutes = cookTimeInMinutes ?? recipe.cookTimeInMinutes
-    recipe.servings = servings ?? recipe.servings
+
+    if (prepTimeInMinutes !== undefined) {
+      recipe.prepTimeInMinutes = prepTimeInMinutes
+    }
+
+    if (cookTimeInMinutes !== undefined) {
+      recipe.cookTimeInMinutes = cookTimeInMinutes
+    }
+
+    if (servings !== undefined) {
+      recipe.servings = servings
+    }
+
     recipe.difficultyLevel = difficultyLevel ?? recipe.difficultyLevel
     recipe.tagsIds = tagsIds
+
+    const timingIssues = recipe.getTimingAndServingsIssues()
+
+    if (timingIssues.length > 0) {
+      return left(new InvalidRecipeTimingOrServingsError(timingIssues))
+    }
 
     if (recipe.status === RecipeStatus.PUBLISHED) {
       const issues = recipe.getPublishabilityIssues()

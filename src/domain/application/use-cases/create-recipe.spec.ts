@@ -9,6 +9,7 @@ import { Ingredient } from '@/domain/enterprise/entities/ingredient'
 import { makeCreateRecipeUseCaseRequest } from 'test/factories/make-recipe'
 import { RecipeCatalogResolver } from '../services/recipe-catalog-resolver'
 import { RecipeStatus } from '@/domain/enterprise/entities/recipe'
+import { InvalidRecipeTimingOrServingsError } from '@/domain/enterprise/errors/invalid-recipe-timing-or-servings-error'
 
 let inMemoryChefsRepository: InMemoryChefsRepository
 let inMemoryRecipesRepository: InMemoryRecipesRepository
@@ -43,10 +44,14 @@ describe('Create Recipe', () => {
     )
 
     expect(result.isRight()).toBe(true)
-    expect(result.value?.recipe.ingredients.getItems()).toHaveLength(2)
+
+    if (result.isRight()) {
+      expect(result.value.recipe.ingredients.getItems()).toHaveLength(2)
+      expect(result.value.recipe.status).toBe(RecipeStatus.DRAFT)
+      expect(result.value.recipe.publishedAt).toBeNull()
+    }
+
     expect(inMemoryRecipeIngredientsRepository.items).toHaveLength(2)
-    expect(result.value?.recipe.status).toBe(RecipeStatus.DRAFT)
-    expect(result.value?.recipe.publishedAt).toBeNull()
   })
 
   it('should reuse an existing tag when only casing differs', async () => {
@@ -84,10 +89,59 @@ describe('Create Recipe', () => {
     )
 
     expect(result.isRight()).toBe(true)
-    expect(result.value?.recipe.status).toBe(RecipeStatus.DRAFT)
-    expect(result.value?.recipe.name).toBe('')
-    expect(result.value?.recipe.instructions).toBe('')
-    expect(result.value?.recipe.description).toBeNull()
-    expect(result.value?.recipe.ingredients.getItems()).toHaveLength(0)
+
+    if (result.isRight()) {
+      expect(result.value.recipe.status).toBe(RecipeStatus.DRAFT)
+      expect(result.value.recipe.name).toBe('')
+      expect(result.value.recipe.instructions).toBe('')
+      expect(result.value.recipe.description).toBeNull()
+      expect(result.value.recipe.ingredients.getItems()).toHaveLength(0)
+    }
+  })
+
+  it('should default timing and servings to null when omitted', async () => {
+    const result = await sut.execute(
+      makeCreateRecipeUseCaseRequest({
+        prepTimeInMinutes: undefined,
+        cookTimeInMinutes: undefined,
+        servings: undefined,
+      }),
+    )
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      expect(result.value.recipe.prepTimeInMinutes).toBeNull()
+      expect(result.value.recipe.cookTimeInMinutes).toBeNull()
+      expect(result.value.recipe.servings).toBeNull()
+    }
+  })
+
+  it('should preserve explicit zero cook time as a valid value', async () => {
+    const result = await sut.execute(
+      makeCreateRecipeUseCaseRequest({
+        prepTimeInMinutes: undefined,
+        cookTimeInMinutes: 0,
+        servings: undefined,
+      }),
+    )
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      expect(result.value.recipe.cookTimeInMinutes).toBe(0)
+      expect(result.value.recipe.prepTimeInMinutes).toBeNull()
+    }
+  })
+
+  it('should not allow zero servings', async () => {
+    const result = await sut.execute(
+      makeCreateRecipeUseCaseRequest({
+        servings: 0,
+      }),
+    )
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(InvalidRecipeTimingOrServingsError)
   })
 })

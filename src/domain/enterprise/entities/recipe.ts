@@ -163,6 +163,33 @@ export class Recipe extends AggregateRoot<RecipeProps> {
     return issues
   }
 
+  getTimingAndServingsIssues(): string[] {
+    const issues: string[] = []
+
+    if (
+      this.prepTimeInMinutes !== null &&
+      (!Number.isInteger(this.prepTimeInMinutes) || this.prepTimeInMinutes < 0)
+    ) {
+      issues.push('prepTimeInMinutes')
+    }
+
+    if (
+      this.cookTimeInMinutes !== null &&
+      (!Number.isInteger(this.cookTimeInMinutes) || this.cookTimeInMinutes < 0)
+    ) {
+      issues.push('cookTimeInMinutes')
+    }
+
+    if (
+      this.servings !== null &&
+      (!Number.isInteger(this.servings) || this.servings < 1)
+    ) {
+      issues.push('servings')
+    }
+
+    return issues
+  }
+
   assertPublishable(): void {
     const issues = this.getPublishabilityIssues()
 
@@ -218,11 +245,9 @@ export class Recipe extends AggregateRoot<RecipeProps> {
         slug: props.slug ?? Slug.createFromText(props.name),
         tagsIds: props.tagsIds ?? [],
         ingredients: props.ingredients ?? new RecipeIngredientList(),
-        prepTimeInMinutes:
-          props.prepTimeInMinutes === undefined ? 0 : props.prepTimeInMinutes,
-        cookTimeInMinutes:
-          props.cookTimeInMinutes === undefined ? 0 : props.cookTimeInMinutes,
-        servings: props.servings === undefined ? 1 : props.servings,
+        prepTimeInMinutes: props.prepTimeInMinutes ?? null,
+        cookTimeInMinutes: props.cookTimeInMinutes ?? null,
+        servings: props.servings ?? null,
         status: props.status ?? RecipeStatus.DRAFT,
         publishedAt: props.publishedAt ?? null,
         deletedAt: props.deletedAt ?? null,

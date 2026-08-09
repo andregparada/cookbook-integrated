@@ -19,9 +19,9 @@ type RecipeScalars = {
   name: string
   description: string
   instructions: string
-  prepTimeInMinutes: number
-  cookTimeInMinutes: number
-  servings: number
+  prepTimeInMinutes: number | null
+  cookTimeInMinutes: number | null
+  servings: number | null
   difficultyLevel: DifficultyLevel
 }
 

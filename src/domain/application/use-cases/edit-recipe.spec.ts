@@ -17,6 +17,7 @@ import { RecipeIngredient } from '@/domain/enterprise/entities/recipe-ingredient
 import { RecipeIngredientList } from '@/domain/enterprise/entities/recipe-ingredient-list'
 import { RecipeCatalogResolver } from '../services/recipe-catalog-resolver'
 import { RecipeNotPublishableError } from '@/domain/enterprise/errors/recipe-not-publishable-error'
+import { InvalidRecipeTimingOrServingsError } from '@/domain/enterprise/errors/invalid-recipe-timing-or-servings-error'
 import { RecipeStatus } from '@/domain/enterprise/entities/recipe'
 
 let inMemoryChefsRepository: InMemoryChefsRepository
@@ -204,6 +205,9 @@ describe('Edit Recipe', () => {
         authorId: new UniqueEntityID('author-1'),
         name: 'Original Name',
         description: 'Original Description',
+        prepTimeInMinutes: 10,
+        cookTimeInMinutes: 20,
+        servings: 4,
       },
       new UniqueEntityID('recipe-1'),
     )
@@ -216,6 +220,9 @@ describe('Edit Recipe', () => {
         actorId: 'author-1',
         name: 'New Name',
         description: undefined,
+        prepTimeInMinutes: undefined,
+        cookTimeInMinutes: undefined,
+        servings: undefined,
         tags: ['dinner'],
         recipeIngredients: [{ name: 'Salt', amount: 1, unit: 'tsp' }],
       }),
@@ -225,9 +232,67 @@ describe('Edit Recipe', () => {
     expect(inMemoryRecipesRepository.items[0]).toMatchObject({
       name: 'New Name',
       description: 'Original Description',
+      prepTimeInMinutes: 10,
+      cookTimeInMinutes: 20,
+      servings: 4,
     })
     expect(inMemoryRecipesRepository.items[0].tagsIds).toHaveLength(1)
     expect(inMemoryRecipeIngredientsRepository.items).toHaveLength(1)
+  })
+
+  it('should clear timing when null is sent explicitly', async () => {
+    const newRecipe = makeRecipe(
+      {
+        authorId: new UniqueEntityID('author-1'),
+        prepTimeInMinutes: 10,
+        cookTimeInMinutes: 20,
+        servings: 4,
+      },
+      new UniqueEntityID('recipe-1'),
+    )
+
+    await inMemoryRecipesRepository.create(newRecipe)
+
+    const result = await sut.execute(
+      makeEditRecipeUseCaseRequest({
+        recipeId: newRecipe.id.toValue(),
+        actorId: 'author-1',
+        prepTimeInMinutes: null,
+        cookTimeInMinutes: undefined,
+        servings: undefined,
+        tags: ['dinner'],
+        recipeIngredients: [{ name: 'Salt', amount: 1, unit: 'tsp' }],
+      }),
+    )
+
+    expect(result.isRight()).toBe(true)
+    expect(inMemoryRecipesRepository.items[0].prepTimeInMinutes).toBeNull()
+    expect(inMemoryRecipesRepository.items[0].cookTimeInMinutes).toBe(20)
+    expect(inMemoryRecipesRepository.items[0].servings).toBe(4)
+  })
+
+  it('should not allow negative prep time', async () => {
+    const newRecipe = makeRecipe(
+      {
+        authorId: new UniqueEntityID('author-1'),
+      },
+      new UniqueEntityID('recipe-1'),
+    )
+
+    await inMemoryRecipesRepository.create(newRecipe)
+
+    const result = await sut.execute(
+      makeEditRecipeUseCaseRequest({
+        recipeId: newRecipe.id.toValue(),
+        actorId: 'author-1',
+        prepTimeInMinutes: -1,
+        tags: ['dinner'],
+        recipeIngredients: [{ name: 'Salt', amount: 1, unit: 'tsp' }],
+      }),
+    )
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(InvalidRecipeTimingOrServingsError)
   })
 
   it('should preserve authorId after a successful edit', async () => {
