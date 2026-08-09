@@ -10,7 +10,7 @@ import { EditRecipeUseCase } from '@/domain/application/use-cases/edit-recipe'
 
 const editRecipeBodySchema = z.object({
   name: z.string().optional(),
-  description: z.string().optional(),
+  description: z.string().nullish(),
   instructions: z.string().optional(),
   prepTimeInMinutes: z.number().int().nonnegative().nullish(),
   cookTimeInMinutes: z.number().int().nonnegative().nullish(),

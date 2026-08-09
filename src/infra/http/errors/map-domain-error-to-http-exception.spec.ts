@@ -4,6 +4,7 @@ import { ChefAlreadyExistsError } from '@/domain/application/use-cases/errors/ch
 import { WrongCredentialsError } from '@/domain/application/use-cases/errors/wrong-credentials-error'
 import { InvalidUserNameError } from '@/domain/enterprise/errors/invalid-user-name-error'
 import { RecipeNotPublishableError } from '@/domain/enterprise/errors/recipe-not-publishable-error'
+import { InvalidRecipeInstructionsError } from '@/domain/enterprise/errors/invalid-recipe-instructions-error'
 import {
   BadRequestException,
   ConflictException,
@@ -57,6 +58,17 @@ describe('mapDomainErrorToHttpException', () => {
   it('should map RecipeNotPublishableError to 400', () => {
     const error = mapDomainErrorToHttpException(
       new RecipeNotPublishableError(['name', 'ingredients']),
+    )
+
+    expect(error).toBeInstanceOf(BadRequestException)
+    expect(error.getStatus()).toBe(400)
+  })
+
+  it('should map InvalidRecipeInstructionsError to 400', () => {
+    const error = mapDomainErrorToHttpException(
+      new InvalidRecipeInstructionsError(
+        'Recipe instructions must be at most 10000 characters.',
+      ),
     )
 
     expect(error).toBeInstanceOf(BadRequestException)

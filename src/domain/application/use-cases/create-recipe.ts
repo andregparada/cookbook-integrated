@@ -6,6 +6,8 @@ import { DifficultyLevel, Recipe } from '../../enterprise/entities/recipe'
 import { RecipeIngredientList } from '@/domain/enterprise/entities/recipe-ingredient-list'
 import { InvalidRecipeTimingOrServingsError } from '@/domain/enterprise/errors/invalid-recipe-timing-or-servings-error'
 import { InvalidRecipeIngredientMeasurementError } from '@/domain/enterprise/errors/invalid-recipe-ingredient-measurement-error'
+import { InvalidRecipeInstructionsError } from '@/domain/enterprise/errors/invalid-recipe-instructions-error'
+import { RecipeInstructions } from '@/domain/enterprise/entities/value-objects/recipe-instructions'
 
 import { RecipesRepository } from '../repositories/recipes-repository'
 import {
@@ -27,7 +29,9 @@ export interface CreateRecipeUseCaseRequest {
 }
 
 type CreateRecipeUseCaseResponse = Either<
-  InvalidRecipeTimingOrServingsError | InvalidRecipeIngredientMeasurementError,
+  | InvalidRecipeInstructionsError
+  | InvalidRecipeTimingOrServingsError
+  | InvalidRecipeIngredientMeasurementError,
   {
     recipe: Recipe
   }
@@ -52,6 +56,12 @@ export class CreateRecipeUseCase {
     tags = [],
     recipeIngredients = [],
   }: CreateRecipeUseCaseRequest): Promise<CreateRecipeUseCaseResponse> {
+    const instructionsResult = RecipeInstructions.create(instructions)
+
+    if (instructionsResult.isLeft()) {
+      return left(instructionsResult.value)
+    }
+
     const recipeId = new UniqueEntityID()
 
     const tagsIds = await this.catalogResolver.resolveTagsIds(tags)
@@ -67,7 +77,7 @@ export class CreateRecipeUseCase {
         authorId: new UniqueEntityID(authorId),
         name,
         description,
-        instructions,
+        instructions: instructionsResult.value.value,
         prepTimeInMinutes,
         cookTimeInMinutes,
         servings,

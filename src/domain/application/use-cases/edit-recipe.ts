@@ -20,12 +20,14 @@ import { RecipeNotPublishableError } from '@/domain/enterprise/errors/recipe-not
 import { InvalidRecipeTimingOrServingsError } from '@/domain/enterprise/errors/invalid-recipe-timing-or-servings-error'
 import { InvalidRecipeIngredientMeasurementError } from '@/domain/enterprise/errors/invalid-recipe-ingredient-measurement-error'
 import { UnknownRecipeIngredientError } from '@/domain/enterprise/errors/unknown-recipe-ingredient-error'
+import { InvalidRecipeInstructionsError } from '@/domain/enterprise/errors/invalid-recipe-instructions-error'
+import { RecipeInstructions } from '@/domain/enterprise/entities/value-objects/recipe-instructions'
 
 export interface EditRecipeUseCaseRequest {
   recipeId: string
   actorId: string
   name?: string
-  description?: string
+  description?: string | null
   instructions?: string
   prepTimeInMinutes?: number | null
   cookTimeInMinutes?: number | null
@@ -39,6 +41,7 @@ type EditRecipeUseCaseResponse = Either<
   | ResourceNotFoundError
   | NotAllowedError
   | RecipeNotPublishableError
+  | InvalidRecipeInstructionsError
   | InvalidRecipeTimingOrServingsError
   | InvalidRecipeIngredientMeasurementError
   | UnknownRecipeIngredientError,
@@ -111,8 +114,20 @@ export class EditRecipeUseCase {
 
     recipe.ingredients = recipeIngredientList
     recipe.name = name ?? recipe.name
-    recipe.description = description ?? recipe.description
-    recipe.instructions = instructions ?? recipe.instructions
+
+    if (description !== undefined) {
+      recipe.description = description
+    }
+
+    if (instructions !== undefined) {
+      const instructionsResult = RecipeInstructions.create(instructions)
+
+      if (instructionsResult.isLeft()) {
+        return left(instructionsResult.value)
+      }
+
+      recipe.instructions = instructionsResult.value.value
+    }
 
     if (prepTimeInMinutes !== undefined) {
       recipe.prepTimeInMinutes = prepTimeInMinutes

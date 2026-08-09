@@ -12,6 +12,8 @@ import { RecipeStatus } from '@/domain/enterprise/entities/recipe'
 import { MeasurementUnit } from '@/domain/enterprise/entities/recipe-ingredient'
 import { InvalidRecipeTimingOrServingsError } from '@/domain/enterprise/errors/invalid-recipe-timing-or-servings-error'
 import { InvalidRecipeIngredientMeasurementError } from '@/domain/enterprise/errors/invalid-recipe-ingredient-measurement-error'
+import { InvalidRecipeInstructionsError } from '@/domain/enterprise/errors/invalid-recipe-instructions-error'
+import { RecipeInstructions } from '@/domain/enterprise/entities/value-objects/recipe-instructions'
 
 let inMemoryChefsRepository: InMemoryChefsRepository
 let inMemoryRecipesRepository: InMemoryRecipesRepository
@@ -211,6 +213,34 @@ describe('Create Recipe', () => {
         result.value.recipe.ingredients.getItems().map((item) => item.position),
       ).toEqual([0, 1])
     }
+  })
+
+  it('should normalize instructions line breaks', async () => {
+    const result = await sut.execute(
+      makeCreateRecipeUseCaseRequest({
+        instructions: '  Bata os ovos.\r\nLeve ao forno.  ',
+      }),
+    )
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      expect(result.value.recipe.instructions).toBe(
+        'Bata os ovos.\nLeve ao forno.',
+      )
+    }
+  })
+
+  it('should not allow instructions longer than the maximum length', async () => {
+    const result = await sut.execute(
+      makeCreateRecipeUseCaseRequest({
+        instructions: 'a'.repeat(RecipeInstructions.MAX_LENGTH + 1),
+      }),
+    )
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(InvalidRecipeInstructionsError)
+    expect(inMemoryRecipesRepository.items).toHaveLength(0)
   })
 
   it('should normalize ingredient note', async () => {

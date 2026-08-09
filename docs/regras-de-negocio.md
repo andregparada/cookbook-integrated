@@ -435,8 +435,8 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 | **Recipe.deletedAt** | Soft delete | Preserva links, favoritos e integridade referencial |
 | **Recipe.times/servings** | `null` = não informado; `0` = ausência real | Evita dados falsos e falhas em filtros de tempo |
 | **Recipe.slug** | Gerado no create, imutável; URL `/{id}-{slug}` | Previne link rot; `id` é chave de roteamento |
-| **Recipe.instructions** | Texto livre Fase 1; obrigatório na publicação | Simplicidade de cadastro; steps estruturados só se UX pedir |
-| **Recipe.description** | Opcional | Resumo/introdução; não bloqueia rascunho |
+| **Recipe.instructions** | Texto livre Fase 1 normalizado (`\n`, máx. 10.000); obrigatório na publicação | Simplicidade de cadastro; steps estruturados só se UX pedir |
+| **Recipe.description** | Opcional; `null` explícito limpa na edição | Resumo/introdução; não bloqueia rascunho |
 | **Recipe.ingredients** | Mínimo 1 para publicar; `position` + `note` por linha | Receita sem ingrediente é inválida no catálogo público |
 | **RecipeIngredient.unit** | Enum `MeasurementUnit` | Padronização, agregação e conversão futura |
 | **Tag** | Opcionais; máx. 10 por receita; sem `Category` | Flexibilidade sem rigidez taxonômica |
@@ -460,6 +460,8 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 | `Recipe.deletedAt` | ~~Não existe~~ Soft delete | Soft delete | **MF-16** ✅ |
 | `RecipeIngredient.position/note` | ~~Não existem~~ Ordem e observação por linha | Ordem e observação por linha | **MF-22** ✅ |
 | `unit` | ~~`string` livre~~ Enum `MeasurementUnit` | Enum `MeasurementUnit` | **MF-21** ✅ |
+| `Recipe.instructions` | ~~Sem normalização nem limite~~ `\r\n` → `\n` e máx. 10.000 caracteres | Normalizar quebras de linha e limitar tamanho | **MF-23** ✅ |
+| `description` na edição | ~~`description ?? atual` impedia limpar~~ `null` limpa; omitir preserva | Campo opcional também na edição | **MF-23** ✅ |
 | `PaginationParams` | Existe, não usado | Usar em busca e listagens | Novo port + use case |
 | Busca/listagem | Não existe | `SearchRecipesUseCase` | Novo MF ou plano derivado |
 | Perfil público | Não existe | `GetChefProfileUseCase` | Novo MF ou plano derivado |
@@ -481,6 +483,7 @@ O modelo conceitual do **Cookbook** possui base sólida após a fundação MF-01
 | 3 | **MF-13 — Semântica de null em tempos e porções** ✅ | Defaults `null`, validação de faixa, `null` explícito na edição |
 | 3a | **MF-21 — Enum de unidades** ✅ | `MeasurementUnit` |
 | 3b | **MF-22 — Ordem e observação de ingredientes** ✅ | `position`/`note` |
+| 3c | **MF-23 — Instruções em texto livre** ✅ | `RecipeInstructions` (normalização + limite); `description` limpável |
 | 4 | **MF-14 — Busca e paginação** | `SearchRecipesUseCase`, filtros combinados, `PaginationParams` |
 | 5 | **MF-15 — Perfil público** | `GetChefProfileUseCase`, listagem por autor |
 | 6 | **MF-16 — Exclusão (soft delete)** ✅ | `DeleteRecipeUseCase`, `deletedAt` |

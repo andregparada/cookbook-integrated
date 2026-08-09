@@ -23,6 +23,8 @@ import { RecipeNotPublishableError } from '@/domain/enterprise/errors/recipe-not
 import { InvalidRecipeTimingOrServingsError } from '@/domain/enterprise/errors/invalid-recipe-timing-or-servings-error'
 import { InvalidRecipeIngredientMeasurementError } from '@/domain/enterprise/errors/invalid-recipe-ingredient-measurement-error'
 import { UnknownRecipeIngredientError } from '@/domain/enterprise/errors/unknown-recipe-ingredient-error'
+import { InvalidRecipeInstructionsError } from '@/domain/enterprise/errors/invalid-recipe-instructions-error'
+import { RecipeInstructions } from '@/domain/enterprise/entities/value-objects/recipe-instructions'
 import { RecipeStatus } from '@/domain/enterprise/entities/recipe'
 
 let inMemoryChefsRepository: InMemoryChefsRepository
@@ -259,6 +261,79 @@ describe('Edit Recipe', () => {
     })
     expect(inMemoryRecipesRepository.items[0].tagsIds).toHaveLength(1)
     expect(inMemoryRecipeIngredientsRepository.items).toHaveLength(1)
+  })
+
+  it('should clear description when null is sent explicitly', async () => {
+    const newRecipe = makeRecipe(
+      {
+        authorId: new UniqueEntityID('author-1'),
+        description: 'Original Description',
+      },
+      new UniqueEntityID('recipe-1'),
+    )
+
+    await inMemoryRecipesRepository.create(newRecipe)
+
+    const result = await sut.execute(
+      makeEditRecipeUseCaseRequest({
+        recipeId: newRecipe.id.toValue(),
+        actorId: 'author-1',
+        description: null,
+      }),
+    )
+
+    expect(result.isRight()).toBe(true)
+    expect(inMemoryRecipesRepository.items[0].description).toBeNull()
+  })
+
+  it('should normalize instructions line breaks', async () => {
+    const newRecipe = makeRecipe(
+      {
+        authorId: new UniqueEntityID('author-1'),
+      },
+      new UniqueEntityID('recipe-1'),
+    )
+
+    await inMemoryRecipesRepository.create(newRecipe)
+
+    const result = await sut.execute(
+      makeEditRecipeUseCaseRequest({
+        recipeId: newRecipe.id.toValue(),
+        actorId: 'author-1',
+        instructions: '  Bata os ovos.\r\nLeve ao forno.  ',
+      }),
+    )
+
+    expect(result.isRight()).toBe(true)
+    expect(inMemoryRecipesRepository.items[0].instructions).toBe(
+      'Bata os ovos.\nLeve ao forno.',
+    )
+  })
+
+  it('should not allow instructions longer than the maximum length', async () => {
+    const newRecipe = makeRecipe(
+      {
+        authorId: new UniqueEntityID('author-1'),
+        instructions: 'Original Instructions',
+      },
+      new UniqueEntityID('recipe-1'),
+    )
+
+    await inMemoryRecipesRepository.create(newRecipe)
+
+    const result = await sut.execute(
+      makeEditRecipeUseCaseRequest({
+        recipeId: newRecipe.id.toValue(),
+        actorId: 'author-1',
+        instructions: 'a'.repeat(RecipeInstructions.MAX_LENGTH + 1),
+      }),
+    )
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(InvalidRecipeInstructionsError)
+    expect(inMemoryRecipesRepository.items[0].instructions).toBe(
+      'Original Instructions',
+    )
   })
 
   it('should clear timing when null is sent explicitly', async () => {
