@@ -81,6 +81,32 @@ describe('Edit Recipe', () => {
     expect(inMemoryRecipeIngredientsRepository.items).toHaveLength(2)
   })
 
+  it('should keep slug stable when recipe name is changed', async () => {
+    const newRecipe = makeRecipe(
+      {
+        authorId: new UniqueEntityID('author-1'),
+        name: 'Bolo de Cenoura',
+      },
+      new UniqueEntityID('recipe-1'),
+    )
+
+    const originalSlug = newRecipe.slug.value
+
+    await inMemoryRecipesRepository.create(newRecipe)
+
+    const result = await sut.execute(
+      makeEditRecipeUseCaseRequest({
+        recipeId: newRecipe.id.toValue(),
+        actorId: 'author-1',
+        name: 'Bolo de Chocolate',
+      }),
+    )
+
+    expect(result.isRight()).toBe(true)
+    expect(inMemoryRecipesRepository.items[0].slug.value).toBe(originalSlug)
+    expect(inMemoryRecipesRepository.items[0].name).toBe('Bolo de Chocolate')
+  })
+
   it('should clear tags and recipe ingredients when empty arrays are sent', async () => {
     const tag1 = Tag.create({ name: 'tag1' })
     const tag2 = Tag.create({ name: 'tag2' })

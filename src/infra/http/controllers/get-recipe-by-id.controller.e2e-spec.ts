@@ -57,6 +57,33 @@ describe('Get recipe by id (E2E)', () => {
     })
   })
 
+  test('[GET] /recipes/:id-:slug for published recipe', async () => {
+    const user = await chefFactory.makePrismaChef({
+      userName: 'sluguser',
+    })
+
+    const recipe = await recipeFactory.makePrismaRecipe({
+      authorId: user.id,
+      name: 'Bolo de Cenoura',
+      status: RecipeStatus.PUBLISHED,
+      publishedAt: new Date(),
+    })
+
+    const response = await request(app.getHttpServer()).get(
+      `/recipes/${recipe.id.toString()}-${recipe.slug.value}`,
+    )
+
+    expect(response.statusCode).toBe(200)
+    expect(response.body).toEqual({
+      recipe: expect.objectContaining({
+        name: 'Bolo de Cenoura',
+        author: 'sluguser',
+        slug: recipe.slug.value,
+        status: RecipeStatus.PUBLISHED,
+      }),
+    })
+  })
+
   test('[GET] /recipes/:id for draft recipe by author', async () => {
     const user = await chefFactory.makePrismaChef({
       userName: 'janedoe',

@@ -1,5 +1,6 @@
 import { GetRecipeByIdUseCase } from '@/domain/application/use-cases/get-recipe-by-id'
 import { mapDomainErrorToHttpException } from '@/infra/http/errors/map-domain-error-to-http-exception'
+import { parseRecipeIdFromRouteParam } from '@/infra/http/utils/parse-recipe-id-from-route-param'
 import { Public } from '@/infra/auth/public'
 import { Controller, Get, Param, Req } from '@nestjs/common'
 import { RecipeDetailsPresenter } from '../presenters/recipe-details-presenter'
@@ -12,8 +13,9 @@ export class GetRecipeByIdController {
 
   @Public()
   @Get()
-  async handle(@Param('id') id: string, @Req() request: Request) {
+  async handle(@Param('id') routeParam: string, @Req() request: Request) {
     const user = request.user as UserPayload | undefined
+    const id = parseRecipeIdFromRouteParam(routeParam)
 
     const result = await this.getRecipeById.execute({
       id,

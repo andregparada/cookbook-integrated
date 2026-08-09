@@ -16,7 +16,7 @@ Usuários cadastram receitas (inicialmente como rascunho, publicando quando pron
 - Cadastro e autenticação de chefs (JWT)
 - Criação e edição de receitas (nome, descrição, instruções, tempos, porções, dificuldade)
 - Associação com **tags** e **ingredientes** (quantidade + unidade)
-- Consulta de receita por **id** (slug permanece no payload para URLs públicas no estilo `{id}-{slug}`)
+- Consulta de receita por **id** ou URL canônica `{id}-{slug}` (resolução por id; slug é legibilidade/SEO)
 - Persistência em PostgreSQL via Prisma
 - Testes unitários (Vitest + repositórios in-memory) e e2e
 
