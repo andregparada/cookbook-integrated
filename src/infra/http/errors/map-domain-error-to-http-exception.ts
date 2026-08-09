@@ -6,6 +6,7 @@ import { InvalidUserNameError } from '@/domain/enterprise/errors/invalid-user-na
 import { InvalidRecipeTimingOrServingsError } from '@/domain/enterprise/errors/invalid-recipe-timing-or-servings-error'
 import { InvalidRecipeIngredientMeasurementError } from '@/domain/enterprise/errors/invalid-recipe-ingredient-measurement-error'
 import { InvalidRecipeInstructionsError } from '@/domain/enterprise/errors/invalid-recipe-instructions-error'
+import { InvalidRecipeTagsError } from '@/domain/enterprise/errors/invalid-recipe-tags-error'
 import { UnknownRecipeIngredientError } from '@/domain/enterprise/errors/unknown-recipe-ingredient-error'
 import { RecipeNotPublishableError } from '@/domain/enterprise/errors/recipe-not-publishable-error'
 import {
@@ -43,6 +44,10 @@ export function mapDomainErrorToHttpException(error: unknown): HttpException {
   }
 
   if (error instanceof InvalidRecipeInstructionsError) {
+    return new BadRequestException(error.message)
+  }
+
+  if (error instanceof InvalidRecipeTagsError) {
     return new BadRequestException(error.message)
   }
 

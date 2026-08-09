@@ -462,6 +462,7 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 | `unit` | ~~`string` livre~~ Enum `MeasurementUnit` | Enum `MeasurementUnit` | **MF-21** ✅ |
 | `Recipe.instructions` | ~~Sem normalização nem limite~~ `\r\n` → `\n` e máx. 10.000 caracteres | Normalizar quebras de linha e limitar tamanho | **MF-23** ✅ |
 | `description` na edição | ~~`description ?? atual` impedia limpar~~ `null` limpa; omitir preserva | Campo opcional também na edição | **MF-23** ✅ |
+| Tags (limites e semântica) | ~~Sem limites; dedup só entre requisições; omitir tags no edit apagava no Prisma~~ `RecipeTagNames` (máx. 10, 50 chars, dedup); omitir preserva | Limites, dedup no payload, omitir preserva | **MF-24** ✅ |
 | `PaginationParams` | Existe, não usado | Usar em busca e listagens | Novo port + use case |
 | Busca/listagem | Não existe | `SearchRecipesUseCase` | Novo MF ou plano derivado |
 | Perfil público | Não existe | `GetChefProfileUseCase` | Novo MF ou plano derivado |
@@ -484,6 +485,7 @@ O modelo conceitual do **Cookbook** possui base sólida após a fundação MF-01
 | 3a | **MF-21 — Enum de unidades** ✅ | `MeasurementUnit` |
 | 3b | **MF-22 — Ordem e observação de ingredientes** ✅ | `position`/`note` |
 | 3c | **MF-23 — Instruções em texto livre** ✅ | `RecipeInstructions` (normalização + limite); `description` limpável |
+| 3d | **MF-24 — Limites e semântica de tags** ✅ | `RecipeTagNames` (máx. 10, 50 chars, dedup); omitir preserva; fix wipe no Prisma |
 | 4 | **MF-14 — Busca e paginação** | `SearchRecipesUseCase`, filtros combinados, `PaginationParams` |
 | 5 | **MF-15 — Perfil público** | `GetChefProfileUseCase`, listagem por autor |
 | 6 | **MF-16 — Exclusão (soft delete)** ✅ | `DeleteRecipeUseCase`, `deletedAt` |

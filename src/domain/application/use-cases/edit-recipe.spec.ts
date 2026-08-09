@@ -24,7 +24,9 @@ import { InvalidRecipeTimingOrServingsError } from '@/domain/enterprise/errors/i
 import { InvalidRecipeIngredientMeasurementError } from '@/domain/enterprise/errors/invalid-recipe-ingredient-measurement-error'
 import { UnknownRecipeIngredientError } from '@/domain/enterprise/errors/unknown-recipe-ingredient-error'
 import { InvalidRecipeInstructionsError } from '@/domain/enterprise/errors/invalid-recipe-instructions-error'
+import { InvalidRecipeTagsError } from '@/domain/enterprise/errors/invalid-recipe-tags-error'
 import { RecipeInstructions } from '@/domain/enterprise/entities/value-objects/recipe-instructions'
+import { RecipeTagNames } from '@/domain/enterprise/entities/value-objects/recipe-tag-names'
 import { RecipeStatus } from '@/domain/enterprise/entities/recipe'
 
 let inMemoryChefsRepository: InMemoryChefsRepository
@@ -159,6 +161,70 @@ describe('Edit Recipe', () => {
       inMemoryRecipesRepository.items[0].ingredients.getItems(),
     ).toHaveLength(0)
     expect(inMemoryRecipeIngredientsRepository.items).toHaveLength(0)
+  })
+
+  it('should preserve tags when they are omitted from the request', async () => {
+    const tag1 = Tag.create({ name: 'tag1' })
+    const tag2 = Tag.create({ name: 'tag2' })
+    await inMemoryTagsRepository.create(tag1)
+    await inMemoryTagsRepository.create(tag2)
+
+    const newRecipe = makeRecipe(
+      {
+        authorId: new UniqueEntityID('author-1'),
+        tagsIds: [tag1.id, tag2.id],
+      },
+      new UniqueEntityID('recipe-1'),
+    )
+
+    await inMemoryRecipesRepository.create(newRecipe)
+
+    const result = await sut.execute(
+      makeEditRecipeUseCaseRequest({
+        recipeId: newRecipe.id.toValue(),
+        actorId: 'author-1',
+        name: 'Updated Name',
+        tags: undefined,
+        recipeIngredients: [
+          { name: 'Salt', amount: 1, unit: MeasurementUnit.TEASPOON },
+        ],
+      }),
+    )
+
+    expect(result.isRight()).toBe(true)
+    expect(inMemoryRecipesRepository.items[0].tagsIds).toHaveLength(2)
+    expect(inMemoryRecipesRepository.items[0].tagsIds).toEqual([
+      tag1.id,
+      tag2.id,
+    ])
+    expect(inMemoryRecipesRepository.items[0].name).toBe('Updated Name')
+  })
+
+  it('should not allow more than the maximum number of tags', async () => {
+    const newRecipe = makeRecipe(
+      {
+        authorId: new UniqueEntityID('author-1'),
+      },
+      new UniqueEntityID('recipe-1'),
+    )
+
+    await inMemoryRecipesRepository.create(newRecipe)
+
+    const tags = Array.from(
+      { length: RecipeTagNames.MAX_TAGS + 1 },
+      (_, index) => `tag-${index}`,
+    )
+
+    const result = await sut.execute(
+      makeEditRecipeUseCaseRequest({
+        recipeId: newRecipe.id.toValue(),
+        actorId: 'author-1',
+        tags,
+      }),
+    )
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(InvalidRecipeTagsError)
   })
 
   it('should update amount and unit for the same ingredient without duplicating rows', async () => {

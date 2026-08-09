@@ -71,7 +71,9 @@ describe('Edit recipe (E2E)', () => {
     expect(recipeOnDatabase).toBeTruthy()
     expect(recipeOnDatabase?.slug).toBe(originalSlug)
     expect(recipeOnDatabase?.createdAt).toEqual(originalCreatedAt)
-    expect(recipeOnDatabase?.tags).toHaveLength(editRecipeBody.tags.length)
+    expect(recipeOnDatabase?.tags).toHaveLength(
+      editRecipeBody.tags?.length ?? 0,
+    )
     expect(recipeOnDatabase?.ingredients).toHaveLength(
       editRecipeBody.recipeIngredients.length,
     )
@@ -145,7 +147,7 @@ describe('Edit recipe (E2E)', () => {
     expect(recipeOnDatabase?.note).toBe('para polvilhar')
   })
 
-  test('[PUT] /recipes/:id should reject body without required arrays', async () => {
+  test('[PUT] /recipes/:id should reject body without recipeIngredients', async () => {
     const user = await chefFactory.makePrismaChef()
 
     const accessToken = jwt.sign({ sub: user.id.toString() })
@@ -159,10 +161,64 @@ describe('Edit recipe (E2E)', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         name: 'New Recipe',
-        recipeIngredients: [{ name: 'Ingredient 1', amount: 2, unit: 'cup' }],
       })
 
     expect(response.statusCode).toBe(400)
+  })
+
+  test('[PUT] /recipes/:id should preserve tags when tags are omitted', async () => {
+    const user = await chefFactory.makePrismaChef()
+    const accessToken = jwt.sign({ sub: user.id.toString() })
+
+    const createResponse = await request(app.getHttpServer())
+      .post('/recipes')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        name: 'Recipe With Tags',
+        instructions: 'Mix ingredients.',
+        difficultyLevel: 'easy',
+        tags: ['dinner', 'quick'],
+        recipeIngredients: [{ name: 'Salt', amount: 1, unit: 'teaspoon' }],
+      })
+
+    expect(createResponse.statusCode).toBe(201)
+
+    const createdRecipe = await prisma.recipe.findFirst({
+      where: {
+        authorId: user.id.toString(),
+        name: 'Recipe With Tags',
+      },
+      include: {
+        tags: true,
+      },
+    })
+
+    const originalTagIds = createdRecipe?.tags.map((tag) => tag.id).sort()
+
+    const response = await request(app.getHttpServer())
+      .put(`/recipes/${createdRecipe?.id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        name: 'Recipe With Tags Updated',
+        instructions: 'Mix ingredients.',
+        difficultyLevel: 'easy',
+        recipeIngredients: [{ name: 'Salt', amount: 1, unit: 'teaspoon' }],
+      })
+
+    expect(response.statusCode).toBe(204)
+
+    const recipeOnDatabase = await prisma.recipe.findFirst({
+      where: {
+        id: createdRecipe?.id,
+      },
+      include: {
+        tags: true,
+      },
+    })
+
+    expect(recipeOnDatabase?.tags.map((tag) => tag.id).sort()).toEqual(
+      originalTagIds,
+    )
   })
 
   test('[PUT] /recipes/:id should return 404 when recipe does not exist', async () => {

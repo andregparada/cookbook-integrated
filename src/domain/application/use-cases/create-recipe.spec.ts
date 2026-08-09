@@ -13,7 +13,9 @@ import { MeasurementUnit } from '@/domain/enterprise/entities/recipe-ingredient'
 import { InvalidRecipeTimingOrServingsError } from '@/domain/enterprise/errors/invalid-recipe-timing-or-servings-error'
 import { InvalidRecipeIngredientMeasurementError } from '@/domain/enterprise/errors/invalid-recipe-ingredient-measurement-error'
 import { InvalidRecipeInstructionsError } from '@/domain/enterprise/errors/invalid-recipe-instructions-error'
+import { InvalidRecipeTagsError } from '@/domain/enterprise/errors/invalid-recipe-tags-error'
 import { RecipeInstructions } from '@/domain/enterprise/entities/value-objects/recipe-instructions'
+import { RecipeTagNames } from '@/domain/enterprise/entities/value-objects/recipe-tag-names'
 
 let inMemoryChefsRepository: InMemoryChefsRepository
 let inMemoryRecipesRepository: InMemoryRecipesRepository
@@ -65,6 +67,59 @@ describe('Create Recipe', () => {
 
     expect(inMemoryTagsRepository.items).toHaveLength(1)
     expect(inMemoryTagsRepository.items[0].name).toBe('Ovo')
+  })
+
+  it('should deduplicate tags within the same request', async () => {
+    const result = await sut.execute(
+      makeCreateRecipeUseCaseRequest({
+        tags: ['Café da Manhã', 'cafe da manha'],
+      }),
+    )
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      expect(result.value.recipe.tagsIds).toHaveLength(1)
+    }
+
+    expect(inMemoryTagsRepository.items).toHaveLength(1)
+    expect(inMemoryTagsRepository.items[0].name).toBe('Café da Manhã')
+  })
+
+  it('should not allow more than the maximum number of tags', async () => {
+    const tags = Array.from(
+      { length: RecipeTagNames.MAX_TAGS + 1 },
+      (_, index) => `tag-${index}`,
+    )
+
+    const result = await sut.execute(makeCreateRecipeUseCaseRequest({ tags }))
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(InvalidRecipeTagsError)
+    expect(inMemoryRecipesRepository.items).toHaveLength(0)
+  })
+
+  it('should not allow empty tag names', async () => {
+    const result = await sut.execute(
+      makeCreateRecipeUseCaseRequest({ tags: [''] }),
+    )
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(InvalidRecipeTagsError)
+    expect(inMemoryRecipesRepository.items).toHaveLength(0)
+  })
+
+  it('should preserve the display name from the first tag registration', async () => {
+    await sut.execute(
+      makeCreateRecipeUseCaseRequest({ tags: ['Café da Manhã'] }),
+    )
+
+    await sut.execute(
+      makeCreateRecipeUseCaseRequest({ tags: ['cafe da manha'] }),
+    )
+
+    expect(inMemoryTagsRepository.items).toHaveLength(1)
+    expect(inMemoryTagsRepository.items[0].name).toBe('Café da Manhã')
   })
 
   it('should reuse an existing ingredient when only casing differs', async () => {

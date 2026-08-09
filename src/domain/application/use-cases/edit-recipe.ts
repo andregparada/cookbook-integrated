@@ -21,7 +21,9 @@ import { InvalidRecipeTimingOrServingsError } from '@/domain/enterprise/errors/i
 import { InvalidRecipeIngredientMeasurementError } from '@/domain/enterprise/errors/invalid-recipe-ingredient-measurement-error'
 import { UnknownRecipeIngredientError } from '@/domain/enterprise/errors/unknown-recipe-ingredient-error'
 import { InvalidRecipeInstructionsError } from '@/domain/enterprise/errors/invalid-recipe-instructions-error'
+import { InvalidRecipeTagsError } from '@/domain/enterprise/errors/invalid-recipe-tags-error'
 import { RecipeInstructions } from '@/domain/enterprise/entities/value-objects/recipe-instructions'
+import { RecipeTagNames } from '@/domain/enterprise/entities/value-objects/recipe-tag-names'
 
 export interface EditRecipeUseCaseRequest {
   recipeId: string
@@ -33,7 +35,7 @@ export interface EditRecipeUseCaseRequest {
   cookTimeInMinutes?: number | null
   servings?: number | null
   difficultyLevel?: DifficultyLevel
-  tags: string[]
+  tags?: string[]
   recipeIngredients: RecipeIngredientInput[]
 }
 
@@ -42,6 +44,7 @@ type EditRecipeUseCaseResponse = Either<
   | NotAllowedError
   | RecipeNotPublishableError
   | InvalidRecipeInstructionsError
+  | InvalidRecipeTagsError
   | InvalidRecipeTimingOrServingsError
   | InvalidRecipeIngredientMeasurementError
   | UnknownRecipeIngredientError,
@@ -80,8 +83,6 @@ export class EditRecipeUseCase {
     if (actorId !== recipe.authorId.toString()) {
       return left(new NotAllowedError())
     }
-
-    const tagsIds = await this.catalogResolver.resolveTagsIds(tags)
 
     const currentRecipeIngredients =
       await this.recipeIngredientsRepository.findManyByRecipeId(recipeId)
@@ -142,7 +143,20 @@ export class EditRecipeUseCase {
     }
 
     recipe.difficultyLevel = difficultyLevel ?? recipe.difficultyLevel
-    recipe.tagsIds = tagsIds
+
+    if (tags !== undefined) {
+      const tagNamesResult = RecipeTagNames.create(tags)
+
+      if (tagNamesResult.isLeft()) {
+        return left(tagNamesResult.value)
+      }
+
+      const tagsIds = await this.catalogResolver.resolveTagsIds(
+        tagNamesResult.value,
+      )
+
+      recipe.tagsIds = tagsIds
+    }
 
     const timingIssues = recipe.getTimingAndServingsIssues()
 

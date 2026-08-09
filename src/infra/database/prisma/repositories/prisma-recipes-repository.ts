@@ -20,6 +20,13 @@ export class PrismaRecipesRepository implements RecipesRepository {
         id,
         deletedAt: null,
       },
+      include: {
+        tags: {
+          select: {
+            id: true,
+          },
+        },
+      },
     })
 
     if (!recipe) {

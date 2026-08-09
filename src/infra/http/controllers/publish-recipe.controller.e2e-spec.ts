@@ -64,10 +64,15 @@ describe('Publish recipe (E2E)', () => {
 
     const recipeOnDatabaseAfterPublish = await prisma.recipe.findUnique({
       where: { id: recipeId },
+      include: {
+        tags: true,
+      },
     })
 
     expect(recipeOnDatabaseAfterPublish?.status).toBe('Published')
     expect(recipeOnDatabaseAfterPublish?.publishedAt).toBeTruthy()
+    expect(recipeOnDatabaseAfterPublish?.tags).toHaveLength(1)
+    expect(recipeOnDatabaseAfterPublish?.tags[0].name).toBe('dinner')
   })
 
   test('[POST] /recipes/:id/unpublish', async () => {

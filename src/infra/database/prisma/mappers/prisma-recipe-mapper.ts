@@ -9,8 +9,12 @@ import {
   mapRecipeStatusToPrisma,
 } from './enum-mappers'
 
+type PrismaRecipeWithTags = PrismaRecipe & {
+  tags?: { id: string }[]
+}
+
 export class PrismaRecipeMapper {
-  static toDomain(raw: PrismaRecipe): Recipe {
+  static toDomain(raw: PrismaRecipeWithTags): Recipe {
     return Recipe.create(
       {
         authorId: new UniqueEntityID(raw.authorId),
@@ -25,6 +29,7 @@ export class PrismaRecipeMapper {
         status: mapRecipeStatusToDomain(raw.status),
         publishedAt: raw.publishedAt,
         deletedAt: raw.deletedAt,
+        tagsIds: raw.tags?.map((tag) => new UniqueEntityID(tag.id)) ?? [],
         createdAt: raw.createdAt,
         updatedAt: raw.updatedAt,
       },

@@ -12,7 +12,9 @@ import {
 import { RecipeIngredientList } from '@/domain/enterprise/entities/recipe-ingredient-list'
 import { MeasurementUnit } from '@/domain/enterprise/entities/recipe-ingredient'
 import { PrismaRecipeMapper } from '@/infra/database/prisma/mappers/prisma-recipe-mapper'
+import { PrismaTagMapper } from '@/infra/database/prisma/mappers/prisma-tag-mapper'
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
+import { Tag } from '@/domain/enterprise/entities/tag'
 import { faker } from '@faker-js/faker'
 import { Injectable } from '@nestjs/common'
 
@@ -158,8 +160,28 @@ export class RecipeFactory {
   async makePrismaRecipe(data: Partial<RecipeProps> = {}): Promise<Recipe> {
     const recipe = makeRecipe(data)
 
+    for (const tagId of recipe.tagsIds) {
+      const tag = Tag.create(
+        {
+          name: `tag-${tagId.toString()}`,
+        },
+        tagId,
+      )
+
+      await this.prisma.tag.create({
+        data: PrismaTagMapper.toPrisma(tag),
+      })
+    }
+
     await this.prisma.recipe.create({
-      data: PrismaRecipeMapper.toPrisma(recipe),
+      data: {
+        ...PrismaRecipeMapper.toPrisma(recipe),
+        tags: {
+          connect: recipe.tagsIds.map((tagId) => ({
+            id: tagId.toString(),
+          })),
+        },
+      },
     })
 
     return recipe

@@ -7,6 +7,7 @@ import {
 } from '@/domain/enterprise/entities/recipe-ingredient'
 import { Tag } from '@/domain/enterprise/entities/tag'
 import { NormalizedName } from '@/domain/enterprise/entities/value-objects/normalized-name'
+import { RecipeTagNames } from '@/domain/enterprise/entities/value-objects/recipe-tag-names'
 import { IngredientsRepository } from '../repositories/ingredients-repository'
 import { TagsRepository } from '../repositories/tags-repository'
 
@@ -25,17 +26,15 @@ export class RecipeCatalogResolver {
     private ingredientsRepository: IngredientsRepository,
   ) {}
 
-  async resolveTagsIds(tags: string[]): Promise<UniqueEntityID[]> {
+  async resolveTagsIds(tagNames: RecipeTagNames): Promise<UniqueEntityID[]> {
     const tagsIds: UniqueEntityID[] = []
 
-    for (const tag of tags) {
-      const normalizedName = NormalizedName.createFromText(tag)
-
+    for (const { name, normalizedName } of tagNames.items) {
       let tagEntity =
         await this.tagsRepository.findByNormalizedName(normalizedName)
 
       if (!tagEntity) {
-        tagEntity = Tag.create({ name: tag })
+        tagEntity = Tag.create({ name })
         await this.tagsRepository.create(tagEntity)
       }
 
