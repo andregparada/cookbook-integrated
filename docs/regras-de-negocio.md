@@ -310,21 +310,171 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 #### Sugestão 12: Motor de Busca Global
 
 * **Contexto & Problema:** O produto permite recuperar receitas apenas por ID. Falta a especificação da capacidade central: busca com filtros combinados sobre o catálogo público.
-* **Análise de Domínio:** O diferencial do Cookbook é encontrar rapidamente o que cozinhar com base em ingredientes disponíveis, tempo livre ou preferências. A busca global sobre receitas `PUBLISHED` é o núcleo da Fase 1.
+* **Análise de Domínio:** O diferencial do Cookbook é encontrar rapidamente o que cozinhar com base em ingredientes disponíveis, tempo livre ou preferências. A busca global sobre receitas `PUBLISHED` é o núcleo da Fase 1. Por concentrar decisões heterogêneas (visibilidade, filtros textuais, filtros de catálogo, ordenação), o motor de busca é detalhado em sub-sugestões independentes: cada uma pode ser especificada, implementada e testada isoladamente, e todas compartilham o mesmo contrato de consulta (`SearchRecipesParams`) e a mesma paginação obrigatória (Sugestão 13).
+
+| Sub-sugestão | Tema | Parâmetros |
+| :--- | :--- | :--- |
+| **12.a** | Escopos de consulta e visibilidade | `scope` |
+| **12.b** | Composição de filtros e contrato de parâmetros | — |
+| **12.c** | Busca textual livre | `query` |
+| **12.d** | Filtro por ingredientes exigidos | `ingredients[]`, `ingredientMatch` |
+| **12.e** | Filtro por ingredientes excluídos | `excludeIngredients[]` |
+| **12.f** | Filtro por tags | `tags[]`, `tagMatch` |
+| **12.g** | Filtro por dificuldade | `difficultyLevel` |
+| **12.h** | Filtro por tempo total | `maxTotalTimeInMinutes`, `includeUnspecifiedTime` |
+| **12.i** | Filtro por autor | `authorUserName` |
+| **12.j** | Ordenação e desempate estável | `sortBy` |
+| **12.k** | Exclusão implícita de resultados | — |
+
+---
+
+##### Sugestão 12.a: Escopos de Consulta e Visibilidade
+
+* **Contexto & Problema:** A mesma capacidade de busca serve a dois públicos com visibilidades opostas: qualquer visitante navegando no catálogo público e o autor gerenciando o próprio trabalho, inclusive rascunhos. Sem um escopo explícito, a alternativa seria inferir visibilidade a partir da presença de JWT — comportamento implícito e propenso a vazar rascunhos.
+* **Análise de Domínio:** Visibilidade é regra de domínio, não detalhe de transporte. Tornar o escopo um parâmetro nomeado deixa a intenção explícita no contrato e mantém uma única implementação de filtros para ambos os casos. O escopo `mine` é o único caminho de descoberta de rascunhos no produto (perfil público nunca os exibe — Sugestão 15).
 * **Regras de Negócio Formalizadas:**
-  1. **Escopos de consulta:**
-     - **Padrão (global):** Retorna receitas `PUBLISHED` e não excluídas de todos os chefs.
-     - **`mine`:** Retorna receitas do chef autenticado, incluindo `DRAFT` e `PUBLISHED` (exige JWT).
-  2. **Filtros suportados (combináveis via AND lógico):**
-     - **`query`:** Busca parcial case-insensitive em `name` e `description`.
-     - **`ingredients[]`:** IDs ou nomes normalizados. Modo `ingredientMatch=ALL` (padrão) ou `ANY`.
-     - **`excludeIngredients[]`:** Exclui receitas que contenham qualquer um dos ingredientes informados (restrições/alergias).
-     - **`tags[]`:** IDs ou nomes normalizados. Modo `tagMatch=ALL` ou `ANY` (padrão: `ANY`).
-     - **`difficultyLevel`:** Filtro por enum (`EASY`, `MEDIUM`, `HARD`).
-     - **`maxTotalTimeInMinutes`:** `prepTimeInMinutes + cookTimeInMinutes <= valor`. Ignora registros com ambos os tempos `null`.
-     - **`authorUserName`:** Filtra por autor específico (apenas receitas `PUBLISHED` desse autor).
-  3. **Ordenação:** Padrão `createdAt DESC`. Alternativas: `totalTime ASC`, `name ASC`. Desempate estável por `id`.
-  4. **Exclusão implícita:** Receitas com `deletedAt` não-nulo ou `status = DRAFT` (no escopo global) nunca aparecem nos resultados.
+  1. **Escopo padrão (global):** Na ausência de `scope`, a busca retorna receitas `PUBLISHED` e não excluídas de todos os chefs.
+  2. **Acesso anônimo ao escopo global:** O escopo global não exige autenticação (`@Public()`). Estar autenticado não altera os resultados do escopo global.
+  3. **Escopo `mine`:** Retorna receitas cujo `authorId` é o do chef autenticado, incluindo `DRAFT` e `PUBLISHED`, e exige JWT.
+  4. **`mine` sem autenticação:** Requisição com `scope=mine` sem token válido é rejeitada pelo guard de autenticação (HTTP 401), antes do use case.
+  5. **Ator derivado da sessão:** O `actorId` usado no escopo `mine` vem sempre de `@CurrentUser().sub`; o payload nunca aceita `authorId` como parâmetro de escopo (Sugestão 2).
+
+---
+
+##### Sugestão 12.b: Composição de Filtros e Contrato de Parâmetros
+
+* **Contexto & Problema:** Filtros especificados isoladamente não definem o que acontece quando o usuário combina vários — nem o que acontece quando nenhum é informado, ou quando um filtro é informado vazio. Ambiguidade aqui produz resultados inconsistentes entre adaptadores (Prisma e in-memory).
+* **Análise de Domínio:** A busca é uma consulta declarativa: cada filtro estreita o conjunto de resultados. Composição por AND lógico é o modelo mental esperado pelo usuário ("massa, vegetariana, até 30 minutos"). O contrato único de parâmetros permite que o port de repositório seja honrado igualmente pelo Prisma e pelo in-memory (Liskov).
+* **Regras de Negócio Formalizadas:**
+  1. **Combinação por AND lógico:** Todos os filtros informados são aplicados simultaneamente; um resultado só é retornado se satisfizer todos eles. A semântica `ALL`/`ANY` (12.d, 12.f) vale **dentro** de um filtro, nunca entre filtros distintos.
+  2. **Busca sem filtros:** Requisição sem nenhum filtro é válida e retorna o catálogo do escopo vigente, ordenado e paginado (Sugestões 12.j e 13).
+  3. **Filtros ausentes vs. vazios:** Parâmetro omitido significa "sem restrição". Lista informada vazia é tratada como omitida, não como "nenhum resultado".
+  4. **Contrato único:** Todos os parâmetros de 12.a–12.j formam `SearchRecipesParams`, entrada única de `SearchRecipesUseCase` e do port `RecipesRepository.findMany` (Sugestão 13, regra 4).
+  5. **Parâmetros inválidos:** Valores fora do contrato (enum desconhecido, `perPage` acima do máximo, número negativo) são rejeitados na validação de entrada (HTTP 400), sem chegar ao domínio.
+  6. **Read model de resultado:** A busca retorna `RecipeSummary` (dados suficientes para listagem: `id`, `slug`, `name`, `description`, tempos, `difficultyLevel`, tags e autor), não o agregado completo com todas as linhas de ingredientes.
+
+---
+
+##### Sugestão 12.c: Busca Textual Livre (`query`)
+
+* **Contexto & Problema:** O caminho de entrada mais comum na descoberta é digitar um termo ("bolo de cenoura"). Sem regra formal, ficam indefinidos os campos pesquisados, a sensibilidade a caixa e acentos e o tratamento de termos com espaços.
+* **Análise de Domínio:** Na Fase 1, busca por substring em `name` e `description` atende ao caso de uso sem introduzir infraestrutura de full-text search. `instructions` fica fora para evitar ruído (uma receita que apenas menciona "chocolate" no preparo não é uma receita de chocolate). Busca semântica e ranqueamento por relevância são evoluções posteriores.
+* **Regras de Negócio Formalizadas:**
+  1. **Campos pesquisados:** `query` faz correspondência parcial (substring) em `name` e `description`, combinados por OR entre os dois campos.
+  2. **Insensibilidade a caixa:** A comparação é *case-insensitive* (`"BOLO"` encontra `"Bolo de Cenoura"`).
+  3. **Normalização do termo:** Espaços nas extremidades são removidos; `query` vazia ou só com espaços é tratada como omitida (12.b, regra 3).
+  4. **Limite de tamanho:** `query` aceita no máximo 100 caracteres; acima disso a requisição é rejeitada na validação de entrada.
+  5. **Escopo respeitado:** A busca textual nunca amplia visibilidade — atua apenas sobre o conjunto já restrito pelo escopo (12.a) e pelas exclusões implícitas (12.k).
+  6. **Não-escopo na Fase 1:** Sem ranqueamento por relevância, sem correção ortográfica (*fuzzy*) e sem busca em `instructions` ou em nomes de ingredientes (para ingredientes, usar 12.d).
+
+---
+
+##### Sugestão 12.d: Filtro por Ingredientes Exigidos (`ingredients[]`)
+
+* **Contexto & Problema:** "Tenho frango e batata, o que faço?" é a pergunta central do produto. Sem definir o modo de correspondência, não fica claro se o usuário quer receitas que usem **todos** os ingredientes informados ou **qualquer um** deles.
+* **Análise de Domínio:** Ambas as intenções são legítimas e correspondem a jornadas diferentes: `ALL` é filtro preciso ("receitas que levam frango **e** batata"); `ANY` é exploração ampla. O padrão `ALL` é mais previsível para quem informa vários ingredientes. A cobertura parcial com ranqueamento é jornada distinta e vive na Sugestão 14 (modo despensa).
+* **Regras de Negócio Formalizadas:**
+  1. **Parâmetro:** `ingredients[]` aceita IDs de `Ingredient` ou nomes; nomes são resolvidos por `normalizedName` (Sugestão 16, regra 1).
+  2. **Nome não cadastrado:** Nome que não corresponde a nenhum `Ingredient` do catálogo global **não** cria registro; no modo `ALL` o resultado é vazio, no modo `ANY` o termo é simplesmente ignorado.
+  3. **Modo `ALL` (padrão):** A receita só é retornada se contiver **todos** os ingredientes informados.
+  4. **Modo `ANY`:** A receita é retornada se contiver **pelo menos um** dos ingredientes informados.
+  5. **Seleção do modo:** `ingredientMatch` aceita `ALL` ou `ANY`; omitido, assume `ALL`.
+  6. **Dedup de entrada:** Ingredientes repetidos na lista (por ID ou por `normalizedName`) são deduplicados antes da consulta e não afetam o modo `ALL`.
+  7. **Independente de quantidade:** O filtro considera apenas a presença do ingrediente na receita; `amount` e `unit` da linha não participam do critério.
+
+---
+
+##### Sugestão 12.e: Filtro por Ingredientes Excluídos (`excludeIngredients[]`)
+
+* **Contexto & Problema:** Restrições alimentares e alergias são requisito de descoberta tão relevante quanto a inclusão. Sem exclusão explícita, um usuário com intolerância precisa inspecionar manualmente cada resultado.
+* **Análise de Domínio:** Exclusão é filtro de segurança percebida pelo usuário: precisa ser estrita e ter precedência sobre qualquer inclusão. Na Fase 1 opera sobre ingredientes literais do catálogo global — não há inferência de grupos alimentares (`"lactose"` não exclui `"queijo"`), o que dependeria do mecanismo de alias/taxonomia adiado na Sugestão 16.
+* **Regras de Negócio Formalizadas:**
+  1. **Parâmetro:** `excludeIngredients[]` aceita IDs ou nomes normalizados, com a mesma resolução de catálogo de 12.d.
+  2. **Semântica:** A receita é removida dos resultados se contiver **qualquer um** dos ingredientes informados (NOT ANY).
+  3. **Precedência sobre inclusão:** Se o mesmo ingrediente aparecer em `ingredients[]` e `excludeIngredients[]`, a exclusão prevalece e o resultado é vazio para aquele critério.
+  4. **Nome não cadastrado:** Termo sem correspondência no catálogo global não exclui nada e não gera erro.
+  5. **Limite de confiabilidade:** O filtro não infere sinônimos, plurais nem grupos alimentares na Fase 1; a exclusão é literal por `normalizedName`.
+
+---
+
+##### Sugestão 12.f: Filtro por Tags (`tags[]`)
+
+* **Contexto & Problema:** Tags são o eixo de classificação do produto (Sugestão 11), mas sem regra de busca elas não cumprem sua função: navegar por ocasião, tipo de prato ou restrição.
+* **Análise de Domínio:** Tags são descritores facetados e frequentemente alternativos ("almoço **ou** jantar"), o oposto de ingredientes, que costumam ser cumulativos. Por isso o padrão de correspondência é `ANY` para tags e `ALL` para ingredientes — cada default reflete a intenção mais comum de cada eixo.
+* **Regras de Negócio Formalizadas:**
+  1. **Parâmetro:** `tags[]` aceita IDs de `Tag` ou nomes; nomes são resolvidos por `normalizedName` (`"Café da Manhã"` e `"cafe da manha"` são o mesmo filtro).
+  2. **Modo `ANY` (padrão):** A receita é retornada se possuir **pelo menos uma** das tags informadas.
+  3. **Modo `ALL`:** A receita só é retornada se possuir **todas** as tags informadas.
+  4. **Seleção do modo:** `tagMatch` aceita `ALL` ou `ANY`; omitido, assume `ANY`.
+  5. **Tag inexistente:** Nome sem correspondência no catálogo global não cria `Tag` e é ignorado no modo `ANY`; no modo `ALL` o resultado é vazio.
+  6. **Limite de entrada:** No máximo 10 tags por consulta, coerente com o limite por receita (Sugestão 11, regra 5).
+  7. **Receitas sem tags:** Tags são opcionais; receitas sem tags simplesmente não satisfazem o filtro quando ele é informado.
+
+---
+
+##### Sugestão 12.g: Filtro por Dificuldade (`difficultyLevel`)
+
+* **Contexto & Problema:** `difficultyLevel` já existe na entidade `Recipe`, mas não há regra de uso como critério de busca — nem definição de comportamento para múltiplos valores.
+* **Análise de Domínio:** Dificuldade é enum fechado e de baixa cardinalidade, o que torna natural a seleção múltipla na UI (checkboxes). Aceitar lista com semântica de OR interno preserva a regra de AND entre filtros distintos (12.b) sem exigir um parâmetro de modo adicional.
+* **Regras de Negócio Formalizadas:**
+  1. **Parâmetro:** `difficultyLevel` aceita um ou mais valores do enum `DifficultyLevel` (`EASY`, `MEDIUM`, `HARD`).
+  2. **Semântica interna:** Múltiplos valores são combinados por OR (a receita satisfaz o filtro se sua dificuldade estiver entre as informadas).
+  3. **Valor inválido:** Valor fora do enum é rejeitado na validação de entrada (HTTP 400), não silenciosamente ignorado.
+  4. **Tradução na fronteira:** O contrato público usa os valores de domínio em maiúsculas; a conversão para a representação do Prisma (`Easy` / `Medium` / `Hard`) permanece em `enum-mappers.ts`.
+
+---
+
+##### Sugestão 12.h: Filtro por Tempo Total (`maxTotalTimeInMinutes`)
+
+* **Contexto & Problema:** "O que consigo fazer em 30 minutos?" é intenção recorrente, mas `prepTimeInMinutes` e `cookTimeInMinutes` são anuláveis (Sugestão 7). Tratar `null` como `0` faria receitas sem tempo declarado aparecerem indevidamente no topo de buscas por rapidez.
+* **Análise de Domínio:** A distinção `null` (não informado) vs. `0` (etapa realmente ausente) só tem valor se a busca a respeitar. O padrão conservador é omitir o que não pode ser afirmado, com escape explícito para o usuário que prefere ver resultados incompletos.
+* **Regras de Negócio Formalizadas:**
+  1. **Critério:** A receita satisfaz o filtro quando `prepTimeInMinutes + cookTimeInMinutes <= maxTotalTimeInMinutes`.
+  2. **Tempo parcialmente informado:** Quando apenas um dos tempos é `null`, o outro é considerado o tempo total (o `null` não contribui com valor).
+  3. **Ambos `null`:** Receitas sem nenhum tempo declarado são excluídas do resultado quando o filtro é aplicado.
+  4. **Escape explícito:** `includeUnspecifiedTime=true` inclui as receitas com ambos os tempos `null` no resultado (Sugestão 7, regra 4).
+  5. **Validação:** `maxTotalTimeInMinutes`, quando informado, deve ser inteiro `>= 0`.
+  6. **`0` é valor válido:** Uma receita com `prepTimeInMinutes=0` e `cookTimeInMinutes=0` satisfaz qualquer limite, pois declara ausência real de etapas.
+
+---
+
+##### Sugestão 12.i: Filtro por Autor (`authorUserName`)
+
+* **Contexto & Problema:** A descoberta a partir de um chef específico é caminho natural após encontrar uma receita ("ver mais deste autor"), mas o filtro por autor não pode se tornar um atalho para ler rascunhos alheios.
+* **Análise de Domínio:** Filtrar por autor dentro da busca global é a mesma capacidade que alimenta a listagem do perfil público (Sugestão 15), com uma única fonte de verdade de visibilidade. O identificador público é o `userName`, não o `id` interno — coerente com a rota `/@userName`.
+* **Regras de Negócio Formalizadas:**
+  1. **Parâmetro:** `authorUserName` filtra por um chef específico, identificado pelo `userName` (comparação *case-insensitive*, coerente com a Sugestão 1, regra 1).
+  2. **Visibilidade preservada:** No escopo global, retorna apenas receitas `PUBLISHED` do autor; rascunhos nunca são expostos por este filtro.
+  3. **Combinação com `mine`:** `authorUserName` é ignorado quando `scope=mine`, cujo autor já é o chef autenticado (12.a, regra 3).
+  4. **Chef inexistente:** `userName` sem chef correspondente retorna página vazia (`items: []`), não `ResourceNotFoundError` — a busca é uma consulta de coleção, não de recurso.
+  5. **Reuso pelo perfil público:** A listagem de receitas do autor (Sugestão 15, regra 2) usa este mesmo filtro e o mesmo contrato de paginação.
+
+---
+
+##### Sugestão 12.j: Ordenação e Desempate Estável
+
+* **Contexto & Problema:** Sem ordenação definida, o banco pode retornar linhas em ordem arbitrária. Com paginação (Sugestão 13), ordem instável causa itens repetidos ou omitidos entre páginas — falha silenciosa e difícil de diagnosticar.
+* **Análise de Domínio:** Ordenação é parte do contrato da busca, não detalhe de implementação. Um critério secundário determinístico é obrigatório sempre que a chave primária de ordenação puder empatar (mesmo timestamp, mesmo tempo total, nomes iguais).
+* **Regras de Negócio Formalizadas:**
+  1. **Ordenação padrão:** `createdAt DESC` — conteúdo mais recente primeiro.
+  2. **Alternativas suportadas:** `totalTime ASC` (soma de preparo e cocção) e `name ASC`.
+  3. **Desempate estável:** Toda ordenação aplica `id` como critério secundário, garantindo paginação consistente.
+  4. **`totalTime` com valores nulos:** Na ordenação por `totalTime ASC`, receitas com ambos os tempos `null` aparecem por último, nunca no início (não são "mais rápidas").
+  5. **Contrato de parâmetros:** `sortBy` aceita apenas os critérios acima; valor não suportado é rejeitado na validação de entrada (HTTP 400).
+  6. **Independência dos filtros:** A ordenação nunca altera o conjunto de resultados, apenas sua sequência.
+
+---
+
+##### Sugestão 12.k: Exclusão Implícita de Resultados
+
+* **Contexto & Problema:** Rascunhos e receitas soft-deleted continuam existindo no banco. Se a exclusão desses registros depender de cada filtro lembrar de aplicá-la, uma consulta nova esquece a regra e vaza conteúdo privado ou removido.
+* **Análise de Domínio:** Visibilidade não é um filtro entre outros: é uma pré-condição aplicada antes de qualquer critério do usuário. Concentrá-la em uma regra única, aplicada pelo port de busca, evita que cada nova capacidade de descoberta precise reimplementá-la.
+* **Regras de Negócio Formalizadas:**
+  1. **Soft delete:** Receitas com `deletedAt` não-nulo nunca aparecem em resultados, em nenhum escopo, inclusive `mine` e inclusive para o autor (Sugestão 5, regra 3).
+  2. **Rascunhos no escopo global:** Receitas com `status = DRAFT` nunca aparecem no escopo global, mesmo que o requisitante autenticado seja o autor.
+  3. **Aplicação anterior aos filtros:** As exclusões implícitas são aplicadas antes dos filtros do usuário; nenhum parâmetro de consulta pode desativá-las.
+  4. **Contagem coerente:** Registros excluídos implicitamente não entram em `totalItems` nem em `totalPages` (Sugestão 13, regra 2).
+  5. **Alcance da regra:** Vale para a busca global, o modo despensa (Sugestão 14) e a listagem por autor (Sugestão 15), que compartilham o mesmo port de consulta.
 
 ---
 
@@ -463,8 +613,9 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 | `Recipe.instructions` | ~~Sem normalização nem limite~~ `\r\n` → `\n` e máx. 10.000 caracteres | Normalizar quebras de linha e limitar tamanho | **MF-23** ✅ |
 | `description` na edição | ~~`description ?? atual` impedia limpar~~ `null` limpa; omitir preserva | Campo opcional também na edição | **MF-23** ✅ |
 | Tags (limites e semântica) | ~~Sem limites; dedup só entre requisições; omitir tags no edit apagava no Prisma~~ `RecipeTagNames` (máx. 10, 50 chars, dedup); omitir preserva | Limites, dedup no payload, omitir preserva | **MF-24** ✅ |
-| `PaginationParams` | Existe, não usado | Usar em busca e listagens | Novo port + use case |
-| Busca/listagem | Não existe | `SearchRecipesUseCase` | Novo MF ou plano derivado |
+| `PaginationParams` | ~~Existe, não usado~~ `page`/`perPage` em `GET /recipes` | Usar em busca e listagens | **MF-25** ✅ (base); restante em MF-14 derivados |
+| Busca escopos (`global` / `mine`) | ~~Não existe~~ `GET /recipes` com `scope` | Escopos 12.a + paginação base | **MF-25** ✅ |
+| Busca filtros (12.c–12.k) | Não existe | Filtros combinados em `SearchRecipesUseCase` | MF-14 derivados |
 | Perfil público | Não existe | `GetChefProfileUseCase` | Novo MF ou plano derivado |
 | Autoria de receita | `EditRecipe` usava `authorId` como ator; Prisma `save` reescrevia `authorId` | `actorId` na edição; `authorId` omitido no update | **MF-18** ✅ |
 
@@ -486,7 +637,8 @@ O modelo conceitual do **Cookbook** possui base sólida após a fundação MF-01
 | 3b | **MF-22 — Ordem e observação de ingredientes** ✅ | `position`/`note` |
 | 3c | **MF-23 — Instruções em texto livre** ✅ | `RecipeInstructions` (normalização + limite); `description` limpável |
 | 3d | **MF-24 — Limites e semântica de tags** ✅ | `RecipeTagNames` (máx. 10, 50 chars, dedup); omitir preserva; fix wipe no Prisma |
-| 4 | **MF-14 — Busca e paginação** | `SearchRecipesUseCase`, filtros combinados, `PaginationParams` |
+| 4 | **MF-14 — Busca e paginação** | Filtros combinados (Sugestões 12.b–12.k); `PaginationParams` base em **MF-25** ✅ |
+| 4a | **MF-25 — Escopos de consulta** ✅ | `GET /recipes` `scope=global|mine`, `RecipeSummary`, paginação, visibilidade 12.a |
 | 5 | **MF-15 — Perfil público** | `GetChefProfileUseCase`, listagem por autor |
 | 6 | **MF-16 — Exclusão (soft delete)** ✅ | `DeleteRecipeUseCase`, `deletedAt` |
 | 7 | **MF-17 — Modo despensa** | Ranqueamento por cobertura de ingredientes |

@@ -1,14 +1,20 @@
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
-import { RecipesRepository } from '@/domain/application/repositories/recipes-repository'
+import {
+  RecipesRepository,
+  RecipeSearchScope,
+  SearchRecipesParams,
+} from '@/domain/application/repositories/recipes-repository'
 import { Recipe } from '@/domain/enterprise/entities/recipe'
 import { RecipeIngredient } from '@/domain/enterprise/entities/recipe-ingredient'
 import { Injectable } from '@nestjs/common'
-import { Prisma } from '@prisma/client'
+import { Prisma, RecipeStatus as PrismaRecipeStatus } from '@prisma/client'
 import { PrismaRecipeDetailsMapper } from '../mappers/prisma-recipe-details-mapper'
 import { PrismaRecipeIngredientMapper } from '../mappers/prisma-recipe-ingredient-mapper'
 import { mapMeasurementUnitToPrisma } from '../mappers/enum-mappers'
 import { PrismaRecipeMapper } from '../mappers/prisma-recipe-mapper'
 import { PrismaService } from '../prisma.service'
+import { buildPaginatedResult } from '@/core/repositories/paginated-result'
+import { PrismaRecipeSummaryMapper } from '../mappers/prisma-recipe-summary-mapper'
 
 @Injectable()
 export class PrismaRecipesRepository implements RecipesRepository {
@@ -58,6 +64,35 @@ export class PrismaRecipesRepository implements RecipesRepository {
     }
 
     return PrismaRecipeDetailsMapper.toDomain(recipe)
+  }
+
+  async findMany(params: SearchRecipesParams) {
+    const where: Prisma.RecipeWhereInput = {
+      deletedAt: null,
+      ...(params.scope === RecipeSearchScope.GLOBAL
+        ? { status: PrismaRecipeStatus.Published }
+        : { authorId: params.actorId }),
+    }
+
+    const skip = (params.page - 1) * params.perPage
+
+    const [recipes, totalItems] = await this.prisma.$transaction([
+      this.prisma.recipe.findMany({
+        where,
+        include: {
+          author: true,
+          tags: true,
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+        skip,
+        take: params.perPage,
+      }),
+      this.prisma.recipe.count({ where }),
+    ])
+
+    const items = recipes.map(PrismaRecipeSummaryMapper.toDomain)
+
+    return buildPaginatedResult(items, params.page, params.perPage, totalItems)
   }
 
   async create(recipe: Recipe): Promise<void> {

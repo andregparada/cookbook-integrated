@@ -1,9 +1,15 @@
-import { RecipesRepository } from '@/domain/application/repositories/recipes-repository'
-import { Recipe } from '@/domain/enterprise/entities/recipe'
+import {
+  RecipesRepository,
+  RecipeSearchScope,
+  SearchRecipesParams,
+} from '@/domain/application/repositories/recipes-repository'
+import { Recipe, RecipeStatus } from '@/domain/enterprise/entities/recipe'
 import { InMemoryChefsRepository } from './in-memory-chefs-repository'
 import { InMemoryTagsRepository } from './in-memory-tags-repository'
 import { InMemoryRecipeIngredientsRepository } from './in-memory-recipe-ingredients-repository'
 import { RecipeDetails } from '@/domain/enterprise/entities/value-objects/recipe-details'
+import { buildPaginatedResult } from '@/core/repositories/paginated-result'
+import { RecipeSummary } from '@/domain/enterprise/entities/value-objects/recipe-summary'
 
 export class InMemoryRecipesRepository implements RecipesRepository {
   public items: Recipe[] = []
@@ -35,20 +41,8 @@ export class InMemoryRecipesRepository implements RecipesRepository {
       return null
     }
 
-    const author = this.chefsRepository.items.find((chef) => {
-      return chef.id.equals(recipe.authorId)
-    })
-
-    if (!author) {
-      throw new Error(
-        `Author with ${recipe.authorId.toString()} does not exist.`,
-      )
-    }
-
-    const tags = this.tagsRepository.items.filter((tag) => {
-      return recipe.tagsIds.some((tagId) => tagId.equals(tag.id))
-    })
-
+    const author = this.resolveAuthor(recipe)
+    const tags = this.resolveTags(recipe)
     const recipeIngredients = recipe.ingredients.getItems()
 
     return RecipeDetails.create({
@@ -70,6 +64,63 @@ export class InMemoryRecipesRepository implements RecipesRepository {
       updatedAt: recipe.updatedAt,
       recipeId: recipe.id,
     })
+  }
+
+  async findMany(params: SearchRecipesParams) {
+    const filtered = this.items.filter((recipe) => {
+      if (recipe.deletedAt !== null) {
+        return false
+      }
+
+      if (params.scope === RecipeSearchScope.GLOBAL) {
+        return recipe.status === RecipeStatus.PUBLISHED
+      }
+
+      return recipe.authorId.toString() === params.actorId
+    })
+
+    const sorted = [...filtered].sort((a, b) => {
+      const createdAtDiff = b.createdAt.getTime() - a.createdAt.getTime()
+
+      if (createdAtDiff !== 0) {
+        return createdAtDiff
+      }
+
+      return a.id.toString().localeCompare(b.id.toString())
+    })
+
+    const start = (params.page - 1) * params.perPage
+    const pageItems = sorted.slice(start, start + params.perPage)
+
+    const summaries = pageItems.map((recipe) => {
+      const author = this.resolveAuthor(recipe)
+      const tags = this.resolveTags(recipe)
+
+      return RecipeSummary.create({
+        authorId: author.id,
+        author: author.userName,
+        recipeId: recipe.id,
+        name: recipe.name,
+        slug: recipe.slug,
+        description: recipe.description,
+        prepTimeInMinutes: recipe.prepTimeInMinutes,
+        cookTimeInMinutes: recipe.cookTimeInMinutes,
+        servings: recipe.servings,
+        difficultyLevel: recipe.difficultyLevel,
+        status: recipe.status,
+        publishedAt: recipe.publishedAt,
+        tags,
+        createdAt: recipe.createdAt,
+        updatedAt: recipe.updatedAt,
+      })
+    })
+
+    return buildPaginatedResult(
+      summaries,
+      params.page,
+      params.perPage,
+      sorted.length,
+    )
   }
 
   async create(recipe: Recipe) {
@@ -98,5 +149,25 @@ export class InMemoryRecipesRepository implements RecipesRepository {
     await this.recipeIngredientsRepository.deleteMany(
       recipe.ingredients.getRemovedItems(),
     )
+  }
+
+  private resolveAuthor(recipe: Recipe) {
+    const author = this.chefsRepository.items.find((chef) => {
+      return chef.id.equals(recipe.authorId)
+    })
+
+    if (!author) {
+      throw new Error(
+        `Author with ${recipe.authorId.toString()} does not exist.`,
+      )
+    }
+
+    return author
+  }
+
+  private resolveTags(recipe: Recipe) {
+    return this.tagsRepository.items.filter((tag) => {
+      return recipe.tagsIds.some((tagId) => tagId.equals(tag.id))
+    })
   }
 }
