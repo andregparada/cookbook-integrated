@@ -14,9 +14,10 @@ export class PrismaRecipesRepository implements RecipesRepository {
   constructor(private prisma: PrismaService) {}
 
   async findById(id: string) {
-    const recipe = await this.prisma.recipe.findUnique({
+    const recipe = await this.prisma.recipe.findFirst({
       where: {
         id,
+        deletedAt: null,
       },
     })
 
@@ -28,9 +29,10 @@ export class PrismaRecipesRepository implements RecipesRepository {
   }
 
   async findDetailsById(id: string) {
-    const recipe = await this.prisma.recipe.findUnique({
+    const recipe = await this.prisma.recipe.findFirst({
       where: {
         id,
+        deletedAt: null,
       },
       include: {
         author: true,
@@ -76,6 +78,7 @@ export class PrismaRecipesRepository implements RecipesRepository {
       difficultyLevel,
       status,
       publishedAt,
+      deletedAt,
       createdAt,
       updatedAt,
     } = PrismaRecipeMapper.toPrisma(recipe)
@@ -97,6 +100,7 @@ export class PrismaRecipesRepository implements RecipesRepository {
           difficultyLevel,
           status,
           publishedAt,
+          deletedAt,
           createdAt,
           updatedAt,
           tags: this.tagsSetInput(recipe.tagsIds),

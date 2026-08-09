@@ -28,6 +28,7 @@ export interface RecipeProps {
   difficultyLevel: DifficultyLevel | null
   status: RecipeStatus
   publishedAt: Date | null
+  deletedAt: Date | null
   tagsIds: UniqueEntityID[]
   ingredients: RecipeIngredientList
   createdAt: Date
@@ -114,6 +115,10 @@ export class Recipe extends AggregateRoot<RecipeProps> {
     return this.props.publishedAt
   }
 
+  get deletedAt() {
+    return this.props.deletedAt
+  }
+
   get tagsIds() {
     return this.props.tagsIds
   }
@@ -182,6 +187,11 @@ export class Recipe extends AggregateRoot<RecipeProps> {
     this.touch()
   }
 
+  softDelete(): void {
+    this.props.deletedAt = new Date()
+    this.touch()
+  }
+
   private touch() {
     this.props.updatedAt = new Date()
   }
@@ -198,6 +208,7 @@ export class Recipe extends AggregateRoot<RecipeProps> {
       | 'servings'
       | 'status'
       | 'publishedAt'
+      | 'deletedAt'
     >,
     id?: UniqueEntityID,
   ) {
@@ -214,6 +225,7 @@ export class Recipe extends AggregateRoot<RecipeProps> {
         servings: props.servings === undefined ? 1 : props.servings,
         status: props.status ?? RecipeStatus.DRAFT,
         publishedAt: props.publishedAt ?? null,
+        deletedAt: props.deletedAt ?? null,
         createdAt: props.createdAt ?? new Date(),
       },
       id,

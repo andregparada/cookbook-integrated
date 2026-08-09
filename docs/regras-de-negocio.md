@@ -457,7 +457,7 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 | `POST /recipes` Zod | ~~`description` obrigatório~~ | Opcional | **MF-19** ✅ |
 | `CreateRecipeUseCase` | `Either<null, …>` sem erros | Suportar `RecipeNotPublishableError` na publicação | **MF-11** ✅ (via `PublishRecipeUseCase`) |
 | `Recipe.status` | ~~Não existe~~ `DRAFT` / `PUBLISHED` | `DRAFT` / `PUBLISHED` | **MF-11** ✅ |
-| `Recipe.deletedAt` | Não existe | Soft delete | Migration + `DeleteRecipeUseCase` |
+| `Recipe.deletedAt` | ~~Não existe~~ Soft delete | Soft delete | **MF-16** ✅ |
 | `RecipeIngredient.position/note` | Não existem | Ordem e observação por linha | Migration + entidade |
 | `unit` | `string` livre | Enum `MeasurementUnit` | Domínio + Prisma enum |
 | `PaginationParams` | Existe, não usado | Usar em busca e listagens | Novo port + use case |
@@ -481,7 +481,7 @@ O modelo conceitual do **Cookbook** possui base sólida após a fundação MF-01
 | 3 | **MF-13 — Semântica de null e unidades** | Defaults corrigidos, enum `MeasurementUnit`, `position`/`note` |
 | 4 | **MF-14 — Busca e paginação** | `SearchRecipesUseCase`, filtros combinados, `PaginationParams` |
 | 5 | **MF-15 — Perfil público** | `GetChefProfileUseCase`, listagem por autor |
-| 6 | **MF-16 — Exclusão (soft delete)** | `DeleteRecipeUseCase`, `deletedAt` |
+| 6 | **MF-16 — Exclusão (soft delete)** ✅ | `DeleteRecipeUseCase`, `deletedAt` |
 | 7 | **MF-17 — Modo despensa** | Ranqueamento por cobertura de ingredientes |
 
 Cada plano deve seguir o [template do guia de fundação](plans/completed/plano-melhorias-fundacao.md#template-para-planos-derivados): critério de pronto (unit para regras, e2e para wiring), sem duplicar branches de use case em e2e.

@@ -124,4 +124,53 @@ describe('Get Recipe By Id', () => {
 
     expect(result.isRight()).toBe(true)
   })
+
+  it('should return ResourceNotFoundError when soft-deleted recipe is requested by author', async () => {
+    const chef = makeChef({ userName: 'John_Doe' })
+
+    inMemoryChefsRepository.items.push(chef)
+
+    const newRecipe = makeRecipe({
+      authorId: chef.id,
+      status: RecipeStatus.PUBLISHED,
+      publishedAt: new Date(),
+    })
+
+    await inMemoryRecipesRepository.create(newRecipe)
+
+    newRecipe.softDelete()
+    await inMemoryRecipesRepository.save(newRecipe)
+
+    const result = await sut.execute({
+      id: newRecipe.id.toString(),
+      actorId: chef.id.toString(),
+    })
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(ResourceNotFoundError)
+  })
+
+  it('should return ResourceNotFoundError when soft-deleted recipe is requested without actorId', async () => {
+    const chef = makeChef({ userName: 'John_Doe' })
+
+    inMemoryChefsRepository.items.push(chef)
+
+    const newRecipe = makeRecipe({
+      authorId: chef.id,
+      status: RecipeStatus.PUBLISHED,
+      publishedAt: new Date(),
+    })
+
+    await inMemoryRecipesRepository.create(newRecipe)
+
+    newRecipe.softDelete()
+    await inMemoryRecipesRepository.save(newRecipe)
+
+    const result = await sut.execute({
+      id: newRecipe.id.toString(),
+    })
+
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(ResourceNotFoundError)
+  })
 })

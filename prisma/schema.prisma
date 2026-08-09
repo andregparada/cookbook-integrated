@@ -56,6 +56,7 @@ model Recipe {
   difficultyLevel DifficultyLevel?
   status          RecipeStatus     @default(Draft)
   publishedAt     DateTime?        @map("published_at")
+  deletedAt       DateTime?        @map("deleted_at")
   createdAt       DateTime         @default(now()) @map("created_at")
   updatedAt       DateTime?        @updatedAt @map("updated_at")
   authorId        String           @map("author_id")

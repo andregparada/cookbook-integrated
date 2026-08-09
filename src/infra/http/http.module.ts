@@ -15,8 +15,10 @@ import { GetRecipeByIdController } from './controllers/get-recipe-by-id.controll
 import { GetRecipeByIdUseCase } from '@/domain/application/use-cases/get-recipe-by-id'
 import { PublishRecipeController } from './controllers/publish-recipe.controller'
 import { UnpublishRecipeController } from './controllers/unpublish-recipe.controller'
+import { DeleteRecipeController } from './controllers/delete-recipe.controller'
 import { PublishRecipeUseCase } from '@/domain/application/use-cases/publish-recipe'
 import { UnpublishRecipeUseCase } from '@/domain/application/use-cases/unpublish-recipe'
+import { DeleteRecipeUseCase } from '@/domain/application/use-cases/delete-recipe'
 import { RecipeCatalogResolver } from '@/domain/application/services/recipe-catalog-resolver'
 
 @Module({
@@ -30,6 +32,7 @@ import { RecipeCatalogResolver } from '@/domain/application/services/recipe-cata
     GetRecipeByIdController,
     PublishRecipeController,
     UnpublishRecipeController,
+    DeleteRecipeController,
   ],
   providers: [
     RegisterChefUseCase,
@@ -40,6 +43,7 @@ import { RecipeCatalogResolver } from '@/domain/application/services/recipe-cata
     GetRecipeByIdUseCase,
     PublishRecipeUseCase,
     UnpublishRecipeUseCase,
+    DeleteRecipeUseCase,
     RecipeCatalogResolver,
   ],
 })

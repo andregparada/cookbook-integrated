@@ -15,7 +15,9 @@ export class InMemoryRecipesRepository implements RecipesRepository {
   ) {}
 
   async findById(id: string) {
-    const recipe = this.items.find((item) => item.id.toString() === id)
+    const recipe = this.items.find(
+      (item) => item.id.toString() === id && item.deletedAt === null,
+    )
 
     if (!recipe) {
       return null
@@ -25,7 +27,9 @@ export class InMemoryRecipesRepository implements RecipesRepository {
   }
 
   async findDetailsById(id: string) {
-    const recipe = this.items.find((item) => item.id.toString() === id)
+    const recipe = this.items.find(
+      (item) => item.id.toString() === id && item.deletedAt === null,
+    )
 
     if (!recipe) {
       return null
