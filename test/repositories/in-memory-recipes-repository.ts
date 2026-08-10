@@ -9,7 +9,11 @@ import { InMemoryTagsRepository } from './in-memory-tags-repository'
 import { InMemoryRecipeIngredientsRepository } from './in-memory-recipe-ingredients-repository'
 import { RecipeDetails } from '@/domain/enterprise/entities/value-objects/recipe-details'
 import { buildPaginatedResult } from '@/core/repositories/paginated-result'
-import { RecipeSummary } from '@/domain/enterprise/entities/value-objects/recipe-summary'
+import { RecipeListReadModel } from '@/domain/application/search/search-recipes-params'
+import { RecipeCatalogCard } from '@/domain/enterprise/entities/value-objects/recipe-catalog-card'
+import { RecipeAuthorWorkspaceItem } from '@/domain/enterprise/entities/value-objects/recipe-author-workspace-item'
+import { RecipeSearchResultItem } from '@/domain/enterprise/entities/value-objects/recipe-search-result-item'
+import { RecipeListItem } from '@/domain/enterprise/entities/value-objects/recipe-list-item'
 
 export class InMemoryRecipesRepository implements RecipesRepository {
   public items: Recipe[] = []
@@ -92,31 +96,12 @@ export class InMemoryRecipesRepository implements RecipesRepository {
     const start = (params.page - 1) * params.perPage
     const pageItems = sorted.slice(start, start + params.perPage)
 
-    const summaries = pageItems.map((recipe) => {
-      const author = this.resolveAuthor(recipe)
-      const tags = this.resolveTags(recipe)
-
-      return RecipeSummary.create({
-        authorId: author.id,
-        author: author.userName,
-        recipeId: recipe.id,
-        name: recipe.name,
-        slug: recipe.slug,
-        description: recipe.description,
-        prepTimeInMinutes: recipe.prepTimeInMinutes,
-        cookTimeInMinutes: recipe.cookTimeInMinutes,
-        servings: recipe.servings,
-        difficultyLevel: recipe.difficultyLevel,
-        status: recipe.status,
-        publishedAt: recipe.publishedAt,
-        tags,
-        createdAt: recipe.createdAt,
-        updatedAt: recipe.updatedAt,
-      })
-    })
+    const listItems = pageItems.map((recipe) =>
+      this.toListItem(recipe, params.listReadModel),
+    )
 
     return buildPaginatedResult(
-      summaries,
+      listItems,
       params.page,
       params.perPage,
       sorted.length,
@@ -149,6 +134,47 @@ export class InMemoryRecipesRepository implements RecipesRepository {
     await this.recipeIngredientsRepository.deleteMany(
       recipe.ingredients.getRemovedItems(),
     )
+  }
+
+  private toListItem(
+    recipe: Recipe,
+    listReadModel: RecipeListReadModel,
+  ): RecipeListItem {
+    const author = this.resolveAuthor(recipe)
+    const tags = this.resolveTags(recipe)
+
+    if (listReadModel === RecipeListReadModel.CATALOG_CARD) {
+      return RecipeCatalogCard.create({
+        recipeId: recipe.id,
+        name: recipe.name,
+        slug: recipe.slug,
+        description: recipe.description,
+        tags,
+      })
+    }
+
+    if (listReadModel === RecipeListReadModel.AUTHOR_WORKSPACE_ITEM) {
+      return RecipeAuthorWorkspaceItem.create({
+        recipeId: recipe.id,
+        name: recipe.name,
+        slug: recipe.slug,
+        status: recipe.status,
+        description: recipe.description,
+        tags,
+      })
+    }
+
+    return RecipeSearchResultItem.create({
+      recipeId: recipe.id,
+      name: recipe.name,
+      slug: recipe.slug,
+      description: recipe.description,
+      tags,
+      prepTimeInMinutes: recipe.prepTimeInMinutes,
+      cookTimeInMinutes: recipe.cookTimeInMinutes,
+      difficultyLevel: recipe.difficultyLevel,
+      author: author.userName,
+    })
   }
 
   private resolveAuthor(recipe: Recipe) {

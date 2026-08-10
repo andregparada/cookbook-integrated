@@ -6,23 +6,21 @@ import {
 } from '@/core/repositories/pagination-params'
 import { PaginatedResult } from '@/core/repositories/paginated-result'
 import { Injectable } from '@nestjs/common'
-import { RecipeSummary } from '@/domain/enterprise/entities/value-objects/recipe-summary'
+import { RecipeListItem } from '@/domain/enterprise/entities/value-objects/recipe-list-item'
 import {
+  normalizeCatalogFilters,
+  RecipeListReadModel,
   RecipeSearchScope,
-  RecipesRepository,
-} from '../repositories/recipes-repository'
-
-interface SearchRecipesUseCaseRequest {
-  scope?: RecipeSearchScope
-  page?: number
-  perPage?: number
-  actorId?: string
-}
+  resolveRecipeListReadModel,
+  SearchRecipesInput,
+} from '../search/search-recipes-params'
+import { RecipesRepository } from '../repositories/recipes-repository'
 
 type SearchRecipesUseCaseResponse = Either<
   NotAllowedError,
   {
-    result: PaginatedResult<RecipeSummary>
+    listReadModel: RecipeListReadModel
+    result: PaginatedResult<RecipeListItem>
   }
 >
 
@@ -31,11 +29,13 @@ export class SearchRecipesUseCase {
   constructor(private recipesRepository: RecipesRepository) {}
 
   async execute(
-    request: SearchRecipesUseCaseRequest,
+    request: SearchRecipesInput,
   ): Promise<SearchRecipesUseCaseResponse> {
     const scope = request.scope ?? RecipeSearchScope.GLOBAL
     const page = request.page ?? DEFAULT_PAGE
     const perPage = request.perPage ?? DEFAULT_PER_PAGE
+    const catalogFilters = normalizeCatalogFilters(request)
+    const listReadModel = resolveRecipeListReadModel(scope, catalogFilters)
 
     if (scope === RecipeSearchScope.MINE) {
       if (!request.actorId) {
@@ -47,17 +47,21 @@ export class SearchRecipesUseCase {
         actorId: request.actorId,
         page,
         perPage,
+        listReadModel,
+        ...catalogFilters,
       })
 
-      return right({ result })
+      return right({ listReadModel, result })
     }
 
     const result = await this.recipesRepository.findMany({
       scope: RecipeSearchScope.GLOBAL,
       page,
       perPage,
+      listReadModel,
+      ...catalogFilters,
     })
 
-    return right({ result })
+    return right({ listReadModel, result })
   }
 }

@@ -10,7 +10,7 @@ import {
 import { mapDomainErrorToHttpException } from '@/infra/http/errors/map-domain-error-to-http-exception'
 import { SearchRecipesUseCase } from '@/domain/application/use-cases/search-recipes'
 import { Public } from '@/infra/auth/public'
-import { RecipeSummaryPresenter } from '../presenters/recipe-summary-presenter'
+import { RecipeListItemPresenter } from '../presenters/recipe-list-item-presenter'
 import type { Request } from 'express'
 import type { UserPayload } from '@/infra/auth/jwt.strategy'
 import { RecipeSearchScope } from '@/domain/application/repositories/recipes-repository'
@@ -66,10 +66,12 @@ export class SearchRecipesController {
       throw mapDomainErrorToHttpException(result.value)
     }
 
-    const { result: paginatedResult } = result.value
+    const { listReadModel, result: paginatedResult } = result.value
 
     return {
-      items: paginatedResult.items.map(RecipeSummaryPresenter.toHTTP),
+      items: paginatedResult.items.map((item) =>
+        RecipeListItemPresenter.toHTTP(item, listReadModel),
+      ),
       meta: paginatedResult.meta,
     }
   }

@@ -14,7 +14,7 @@ import { mapMeasurementUnitToPrisma } from '../mappers/enum-mappers'
 import { PrismaRecipeMapper } from '../mappers/prisma-recipe-mapper'
 import { PrismaService } from '../prisma.service'
 import { buildPaginatedResult } from '@/core/repositories/paginated-result'
-import { PrismaRecipeSummaryMapper } from '../mappers/prisma-recipe-summary-mapper'
+import { PrismaRecipeListMapper } from '../mappers/prisma-recipe-list-mapper'
 
 @Injectable()
 export class PrismaRecipesRepository implements RecipesRepository {
@@ -90,7 +90,9 @@ export class PrismaRecipesRepository implements RecipesRepository {
       this.prisma.recipe.count({ where }),
     ])
 
-    const items = recipes.map(PrismaRecipeSummaryMapper.toDomain)
+    const items = recipes.map((recipe) =>
+      PrismaRecipeListMapper.toDomain(recipe, params.listReadModel),
+    )
 
     return buildPaginatedResult(items, params.page, params.perPage, totalItems)
   }

@@ -9,6 +9,10 @@ import { RecipeStatus } from '@/domain/enterprise/entities/recipe'
 import { RecipeSearchScope } from '../repositories/recipes-repository'
 import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
 import { DEFAULT_PER_PAGE } from '@/core/repositories/pagination-params'
+import { RecipeListReadModel } from '../search/search-recipes-params'
+import { RecipeCatalogCard } from '@/domain/enterprise/entities/value-objects/recipe-catalog-card'
+import { RecipeAuthorWorkspaceItem } from '@/domain/enterprise/entities/value-objects/recipe-author-workspace-item'
+import { RecipeSearchResultItem } from '@/domain/enterprise/entities/value-objects/recipe-search-result-item'
 
 let inMemoryChefsRepository: InMemoryChefsRepository
 let inMemoryTagsRepository: InMemoryTagsRepository
@@ -59,7 +63,9 @@ describe('Search Recipes', () => {
     expect(result.isRight()).toBe(true)
 
     if (result.isRight()) {
+      expect(result.value.listReadModel).toBe(RecipeListReadModel.CATALOG_CARD)
       expect(result.value.result.items).toHaveLength(1)
+      expect(result.value.result.items[0]).toBeInstanceOf(RecipeCatalogCard)
       expect(result.value.result.items[0].name).toBe('Published Recipe')
       expect(result.value.result.meta.totalItems).toBe(1)
     }
@@ -183,7 +189,13 @@ describe('Search Recipes', () => {
     expect(result.isRight()).toBe(true)
 
     if (result.isRight()) {
+      expect(result.value.listReadModel).toBe(
+        RecipeListReadModel.AUTHOR_WORKSPACE_ITEM,
+      )
       expect(result.value.result.items).toHaveLength(2)
+      expect(result.value.result.items[0]).toBeInstanceOf(
+        RecipeAuthorWorkspaceItem,
+      )
       expect(result.value.result.items.map((item) => item.name)).toEqual(
         expect.arrayContaining(['My Draft', 'My Published']),
       )
@@ -257,6 +269,92 @@ describe('Search Recipes', () => {
     if (result.isRight()) {
       expect(result.value.result.meta.page).toBe(1)
       expect(result.value.result.meta.perPage).toBe(DEFAULT_PER_PAGE)
+    }
+  })
+
+  it('should return catalog card read model for global scope without filters', async () => {
+    const author = makeChef({ userName: 'author' })
+
+    inMemoryChefsRepository.items.push(author)
+
+    const recipe = makeRecipe({
+      authorId: author.id,
+      name: 'Catalog Recipe',
+      status: RecipeStatus.PUBLISHED,
+      publishedAt: new Date(),
+    })
+
+    await inMemoryRecipesRepository.create(recipe)
+
+    const result = await sut.execute({
+      scope: RecipeSearchScope.GLOBAL,
+    })
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      const item = result.value.result.items[0]
+
+      expect(result.value.listReadModel).toBe(RecipeListReadModel.CATALOG_CARD)
+      expect(item).toBeInstanceOf(RecipeCatalogCard)
+      expect(item).not.toHaveProperty('status')
+      expect(item).not.toHaveProperty('author')
+    }
+  })
+
+  it('should return search result item read model when catalog filters are present', async () => {
+    const author = makeChef({ userName: 'author' })
+
+    inMemoryChefsRepository.items.push(author)
+
+    const recipe = makeRecipe({
+      authorId: author.id,
+      name: 'Filtered Recipe',
+      status: RecipeStatus.PUBLISHED,
+      publishedAt: new Date(),
+    })
+
+    await inMemoryRecipesRepository.create(recipe)
+
+    const result = await sut.execute({
+      scope: RecipeSearchScope.GLOBAL,
+      query: 'Filtered',
+    })
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      const item = result.value.result.items[0]
+
+      expect(result.value.listReadModel).toBe(
+        RecipeListReadModel.SEARCH_RESULT_ITEM,
+      )
+      expect(item).toBeInstanceOf(RecipeSearchResultItem)
+    }
+  })
+
+  it('should treat empty ingredients list as no catalog filter', async () => {
+    const author = makeChef({ userName: 'author' })
+
+    inMemoryChefsRepository.items.push(author)
+
+    const recipe = makeRecipe({
+      authorId: author.id,
+      status: RecipeStatus.PUBLISHED,
+      publishedAt: new Date(),
+    })
+
+    await inMemoryRecipesRepository.create(recipe)
+
+    const result = await sut.execute({
+      scope: RecipeSearchScope.GLOBAL,
+      ingredients: [],
+    })
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      expect(result.value.listReadModel).toBe(RecipeListReadModel.CATALOG_CARD)
     }
   })
 })

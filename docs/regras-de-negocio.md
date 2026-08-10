@@ -240,7 +240,7 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
      - `null` = informação não declarada pelo autor.
      - `0` = ausência real de etapa (ex.: `cookTimeInMinutes=0` para prato cru).
   3. **Validação:** Quando informados, tempos devem ser inteiros `>= 0`. `servings`, se informado, deve ser `>= 1`.
-  4. **Impacto em filtros:** Filtro por tempo total (`prepTimeInMinutes + cookTimeInMinutes`) ignora registros onde ambos os tempos são `null`, salvo parâmetro explícito `includeUnspecifiedTime=true`.
+  4. **Impacto em filtros:** Filtro por tempo total (`prepTimeInMinutes + cookTimeInMinutes`) ignora registros onde ambos os tempos são `null`, salvo parâmetro explícito `includeUnspecifiedTime=true`. Filtro por porções mínimas (`minServings`, Sugestão 12.l) ignora registros com `servings` `null`.
 
 ---
 
@@ -310,12 +310,12 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 #### Sugestão 12: Motor de Busca Global
 
 * **Contexto & Problema:** O produto permite recuperar receitas apenas por ID. Falta a especificação da capacidade central: busca com filtros combinados sobre o catálogo público.
-* **Análise de Domínio:** O diferencial do Cookbook é encontrar rapidamente o que cozinhar com base em ingredientes disponíveis, tempo livre ou preferências. A busca global sobre receitas `PUBLISHED` é o núcleo da Fase 1. Por concentrar decisões heterogêneas (visibilidade, filtros textuais, filtros de catálogo, ordenação), o motor de busca é detalhado em sub-sugestões independentes: cada uma pode ser especificada, implementada e testada isoladamente, e todas compartilham o mesmo contrato de consulta (`SearchRecipesParams`) e a mesma paginação obrigatória (Sugestão 13).
+* **Análise de Domínio:** O diferencial do Cookbook é encontrar rapidamente o que cozinhar com base em ingredientes disponíveis, tempo livre ou preferências. A busca global sobre receitas `PUBLISHED` é o núcleo da Fase 1. Por concentrar decisões heterogêneas (visibilidade, filtros textuais, filtros de catálogo, ordenação), o motor de busca é detalhado em sub-sugestões independentes: cada uma pode ser especificada, implementada e testada isoladamente, e todas compartilham o mesmo contrato de consulta (`SearchRecipesParams`) e a mesma paginação obrigatória (Sugestão 13). Os filtros de 12.c–12.l combinam-se por AND lógico (12.b), permitindo consultas como “tomilho e alecrim, fácil, em menos de 1 hora”. **Inclusão de ingredientes** (`ingredients[]`, 12.d) e **cobertura da despensa** (`pantryIngredients[]`, Sugestão 14) são jornadas distintas: a primeira exige que a receita *use* os ingredientes informados; a segunda ranqueia o que é possível *com o que o usuário já tem*, podendo exigir cobertura total ou parcial.
 
 | Sub-sugestão | Tema | Parâmetros |
 | :--- | :--- | :--- |
 | **12.a** | Escopos de consulta e visibilidade | `scope` |
-| **12.b** | Composição de filtros e contrato de parâmetros | — |
+| **12.b** | Composição de filtros, contrato e read models | — |
 | **12.c** | Busca textual livre | `query` |
 | **12.d** | Filtro por ingredientes exigidos | `ingredients[]`, `ingredientMatch` |
 | **12.e** | Filtro por ingredientes excluídos | `excludeIngredients[]` |
@@ -325,6 +325,7 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 | **12.i** | Filtro por autor | `authorUserName` |
 | **12.j** | Ordenação e desempate estável | `sortBy` |
 | **12.k** | Exclusão implícita de resultados | — |
+| **12.l** | Filtro por porções | `minServings` |
 
 ---
 
@@ -341,17 +342,22 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 
 ---
 
-##### Sugestão 12.b: Composição de Filtros e Contrato de Parâmetros
+##### Sugestão 12.b: Composição de Filtros, Contrato e Read Models
 
-* **Contexto & Problema:** Filtros especificados isoladamente não definem o que acontece quando o usuário combina vários — nem o que acontece quando nenhum é informado, ou quando um filtro é informado vazio. Ambiguidade aqui produz resultados inconsistentes entre adaptadores (Prisma e in-memory).
-* **Análise de Domínio:** A busca é uma consulta declarativa: cada filtro estreita o conjunto de resultados. Composição por AND lógico é o modelo mental esperado pelo usuário ("massa, vegetariana, até 30 minutos"). O contrato único de parâmetros permite que o port de repositório seja honrado igualmente pelo Prisma e pelo in-memory (Liskov).
+* **Contexto & Problema:** Filtros especificados isoladamente não definem o que acontece quando o usuário combina vários — nem o que acontece quando nenhum é informado, ou quando um filtro é informado vazio. Também falta definir qual shape de dados cada listagem expõe: o card do catálogo (foto, título, excerpt, tags) difere de “minhas receitas” (status de rascunho) e de resultados de busca filtrada (tempos, dificuldade, metadados de despensa).
+* **Análise de Domínio:** A busca é uma consulta declarativa: cada filtro estreita o conjunto de resultados. Composição por AND lógico é o modelo mental esperado pelo usuário ("massa, vegetariana, até 30 minutos"). O contrato único de parâmetros permite que o port de repositório seja honrado igualmente pelo Prisma e pelo in-memory (Liskov). Read models seguem o padrão do projeto de referência (`QuestionDetails` vs `CommentWithAuthor`): **um value object por contexto de exibição**, não um único payload genérico que antecipa todos os campos possíveis. O agregado `Recipe` e `RecipeDetails` (página da receita) permanecem separados das listas.
 * **Regras de Negócio Formalizadas:**
-  1. **Combinação por AND lógico:** Todos os filtros informados são aplicados simultaneamente; um resultado só é retornado se satisfizer todos eles. A semântica `ALL`/`ANY` (12.d, 12.f) vale **dentro** de um filtro, nunca entre filtros distintos.
+  1. **Combinação por AND lógico:** Todos os filtros informados são aplicados simultaneamente; um resultado só é retornado se satisfizer todos eles. A semântica `ALL`/`ANY` (12.d, 12.f) vale **dentro** de um filtro, nunca entre filtros distintos. Ex.: `ingredients[]=tomilho&ingredients[]=alecrim` + `difficultyLevel=EASY` + `maxTotalTimeInMinutes=60` exige as três condições.
   2. **Busca sem filtros:** Requisição sem nenhum filtro é válida e retorna o catálogo do escopo vigente, ordenado e paginado (Sugestões 12.j e 13).
   3. **Filtros ausentes vs. vazios:** Parâmetro omitido significa "sem restrição". Lista informada vazia é tratada como omitida, não como "nenhum resultado".
-  4. **Contrato único:** Todos os parâmetros de 12.a–12.j formam `SearchRecipesParams`, entrada única de `SearchRecipesUseCase` e do port `RecipesRepository.findMany` (Sugestão 13, regra 4).
+  4. **Contrato único de entrada:** Todos os parâmetros de 12.a–12.l formam `SearchRecipesParams`, entrada única de `SearchRecipesUseCase` e do port `RecipesRepository.findMany` (Sugestão 13, regra 4).
   5. **Parâmetros inválidos:** Valores fora do contrato (enum desconhecido, `perPage` acima do máximo, número negativo) são rejeitados na validação de entrada (HTTP 400), sem chegar ao domínio.
-  6. **Read model de resultado:** A busca retorna `RecipeSummary` (dados suficientes para listagem: `id`, `slug`, `name`, `description`, tempos, `difficultyLevel`, tags e autor), não o agregado completo com todas as linhas de ingredientes.
+  6. **Read models por contexto (não o agregado completo):** Listagens retornam value objects de consulta, nunca `Recipe` com todas as linhas de ingredientes. Detalhe de página continua em `RecipeDetails` (`GET /recipes/:id`).
+     - **`RecipeCatalogCard`** — catálogo público e grid da tela de receitas (`scope=global` sem filtros de catálogo pesados): `recipeId`, `slug`, `name`, excerpt de `description` (truncado na apresentação ou campo derivado), `tags`; `coverImageId` / URL quando mídia de receita existir (fora de escopo Fase 1). **Não** inclui autor, tempos, dificuldade, status nem datas no card padrão.
+     - **`RecipeAuthorWorkspaceItem`** — escopo `mine`: `recipeId`, `slug`, `name`, `status`, `tags` (opcional); excerpt opcional. Sem tempos/dificuldade no list item de gestão.
+     - **`RecipeSearchResultItem`** — quando há filtros de catálogo (12.c–12.l) ou modo despensa (14): estende o card com campos que a UI de resultados precisa para mostrar o match (`prepTimeInMinutes`, `cookTimeInMinutes`, `difficultyLevel`, `author`; e em 14, `coveragePercent`, `missingIngredients[]`).
+  7. **Implementação transitória:** MF-25 introduziu `RecipeSummary` como read model único até os filtros e read models finais; evoluir para os shapes acima sem alterar o port `findMany` (mappers/presenters por contexto).
+  8. **Apresentação de ingredientes na página de detalhe:** Quantidade e unidade (`amount`, `unit`) com nome do ingrediente e `note` opcional são formatados na camada de presenter/i18n (ex.: `formatMeasurementAmount` + label pt-BR), não fazem parte dos read models de listagem nem dos filtros de busca (12.d considera apenas presença do ingrediente).
 
 ---
 
@@ -380,7 +386,8 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
   4. **Modo `ANY`:** A receita é retornada se contiver **pelo menos um** dos ingredientes informados.
   5. **Seleção do modo:** `ingredientMatch` aceita `ALL` ou `ANY`; omitido, assume `ALL`.
   6. **Dedup de entrada:** Ingredientes repetidos na lista (por ID ou por `normalizedName`) são deduplicados antes da consulta e não afetam o modo `ALL`.
-  7. **Independente de quantidade:** O filtro considera apenas a presença do ingrediente na receita; `amount` e `unit` da linha não participam do critério.
+  7. **Independente de quantidade:** O filtro considera apenas a presença do ingrediente na receita; `amount`, `unit`, `position` e `note` da linha não participam do critério.
+  8. **Distinção da despensa (Sugestão 14):** `ingredients[]` **não** garante que a receita possa ser feita *somente* com esses ingredientes — apenas que ela os *contém*. Para “o que posso fazer com o que tenho sem comprar nada”, usar `pantryIngredients[]` com `minCoveragePercent=100` (ou equivalente). Para “receitas que usam tomilho e alecrim que eu quero aproveitar”, usar `ingredients[]` com `ingredientMatch=ALL`.
 
 ---
 
@@ -465,6 +472,19 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 
 ---
 
+##### Sugestão 12.l: Filtro por Porções (`minServings`)
+
+* **Contexto & Problema:** Usuários buscam receitas “para 6 pessoas” ou “que sirvam pelo menos 4”. `servings` é opcional e anulável (Sugestão 7), mas não há critério de busca equivalente ao de tempo total.
+* **Análise de Domínio:** Porções são atributo escalar da receita, combinável com os demais filtros por AND (12.b). Receitas sem `servings` declarado não devem aparecer em buscas por porções mínimas, salvo escape explícito futuro — análogo ao tempo não informado em 12.h.
+* **Regras de Negócio Formalizadas:**
+  1. **Parâmetro:** `minServings` (inteiro `>= 1`) — a receita satisfaz o filtro quando `servings >= minServings`.
+  2. **`servings` null:** Receitas sem porções declaradas são excluídas do resultado quando o filtro é aplicado.
+  3. **Validação:** Valor inválido (não inteiro, `< 1`) é rejeitado na validação de entrada (HTTP 400).
+  4. **Sem `maxServings` na Fase 1:** Faixa superior (ex.: “para 2 pessoas”) fica fora de escopo até demanda de produto; porções altas já são cobertas por `minServings` baixo.
+  5. **Independência:** O filtro não altera `servings` na entidade; apenas restringe o conjunto de resultados.
+
+---
+
 ##### Sugestão 12.k: Exclusão Implícita de Resultados
 
 * **Contexto & Problema:** Rascunhos e receitas soft-deleted continuam existindo no banco. Se a exclusão desses registros depender de cada filtro lembrar de aplicá-la, uma consulta nova esquece a regra e vaza conteúdo privado ou removido.
@@ -497,20 +517,22 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
      }
      ```
   3. **Escopo:** Paginação obrigatória em busca global, listagem por autor, listagem de rascunhos (`mine`) e feed (Fase 2).
-  4. **Port de repositório:** `RecipesRepository` ganha `findMany(params: SearchRecipesParams): Promise<PaginatedResult<RecipeSummary>>`.
+  4. **Port de repositório:** `RecipesRepository.findMany(params: SearchRecipesParams)` retorna `PaginatedResult` do read model adequado ao contexto (12.b, regra 6): `RecipeCatalogCard`, `RecipeAuthorWorkspaceItem` ou `RecipeSearchResultItem`. MF-25 usa `RecipeSummary` como implementação transitória.
 
 ---
 
 #### Sugestão 14: Busca "O Que Eu Posso Cozinhar" (Modo Despensa)
 
-* **Contexto & Problema:** Usuários frequentemente querem saber quais receitas podem fazer com os ingredientes que têm em casa. Isso difere de busca por ingrediente específico — é ranqueamento por cobertura.
-* **Análise de Domínio:** Modo despensa é variante do motor de busca: dado um conjunto de ingredientes disponíveis, ranquear receitas `PUBLISHED` por percentual de cobertura e expor quantos ingredientes faltam. **Não** cria estoque ou despensa persistida na Fase 1 — é parâmetro de consulta, não entidade.
+* **Contexto & Problema:** Usuários frequentemente querem saber quais receitas podem fazer com os ingredientes que têm em casa — inclusive “só com o que tenho, sem ir ao mercado”. Isso difere de busca por ingrediente específico (12.d), que apenas exige que a receita *contenha* os ingredientes informados, mesmo que precise de outros além da lista.
+* **Análise de Domínio:** Modo despensa é variante do motor de busca: dado um conjunto de ingredientes disponíveis, ranquear receitas `PUBLISHED` por percentual de cobertura e expor quantos ingredientes faltam. **Não** cria estoque ou despensa persistida na Fase 1 — é parâmetro de consulta, não entidade. Resultados usam `RecipeSearchResultItem` (12.b) com metadados de cobertura. Quando não há receita com cobertura total, a UI deve poder oferecer alternativas parciais (“faltam 1 ou 2 ingredientes”) via ranqueamento e `missingIngredients[]`, não via `ingredients[]` de 12.d.
 * **Regras de Negócio Formalizadas:**
   1. **Parâmetro:** `pantryIngredients[]` — lista de IDs ou nomes normalizados de ingredientes disponíveis.
-  2. **Ranqueamento:** Ordenar por `coveragePercent DESC` (ingredientes da receita presentes na despensa / total de ingredientes da receita).
+  2. **Ranqueamento:** Ordenar por `coveragePercent DESC` (ingredientes da receita presentes na despensa / total de ingredientes da receita). Quando `pantryIngredients[]` está presente, esta ordenação prevalece sobre `sortBy` de 12.j, salvo documentação explícita de combinação futura.
   3. **Metadado por resultado:** Cada item inclui `missingIngredients[]` (ingredientes da receita ausentes na despensa) e `coveragePercent`.
-  4. **Filtro opcional:** `minCoveragePercent` (ex.: 80) para exibir apenas receitas quase completas.
-  5. **Não-escopo:** Não persistir despensa do usuário na Fase 1. Não criar entidade `Pantry` ou `PantryItem`.
+  4. **Filtro opcional:** `minCoveragePercent` (ex.: `100` para “só com o que tenho”; `80` para receitas quase completas).
+  5. **Cobertura total vazia:** Se `minCoveragePercent=100` não retorna resultados, a API retorna `items: []` com `meta` coerente; a UI pode solicitar nova consulta sem `minCoveragePercent` (ou com valor menor) para exibir receitas ranqueadas por cobertura com `missingIngredients` visível — mensagem do tipo “não encontramos receitas só com esses ingredientes, mas estas precisam de poucos itens adicionais”. O backend não infere fallback automaticamente; parâmetros explícitos evitam surpresa no contrato.
+  6. **Distinção de 12.d:** `pantryIngredients[]` mede *cobertura da receita* pela despensa; `ingredients[]` filtra receitas que *incluem* termos. Ambos podem coexistir na mesma consulta (AND com 12.b), mas a intenção de produto é mutuamente exclusiva na UI — não substituir um pelo outro na mesma jornada sem clareza para o usuário.
+  7. **Não-escopo:** Não persistir despensa do usuário na Fase 1. Não criar entidade `Pantry` ou `PantryItem`.
 
 ---
 
@@ -520,7 +542,7 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 * **Análise de Domínio:** Perfil público é pré-requisito para descoberta social e compartilhamento. Deve expor apenas informações públicas e receitas `PUBLISHED`, nunca rascunhos.
 * **Regras de Negócio Formalizadas:**
   1. **Rota:** `GET /@:userName` (ou `GET /chefs/:userName`) retorna perfil público: `userName`, `firstName`, `lastName`, `bio`, `avatarId` (se houver).
-  2. **Listagem de receitas do autor:** `GET /chefs/:userName/recipes` retorna receitas `PUBLISHED` e não excluídas, paginadas, ordenadas por `createdAt DESC`.
+  2. **Listagem de receitas do autor:** `GET /chefs/:userName/recipes` retorna receitas `PUBLISHED` e não excluídas, paginadas, ordenadas por `createdAt DESC`, com items em formato `RecipeCatalogCard` (12.b) via o mesmo `findMany` e filtro `authorUserName` (12.i).
   3. **Acesso sem login:** Perfil e listagem são públicos (`@Public()`).
   4. **Rascunhos:** Nunca aparecem em perfil público, mesmo para o próprio autor (usar escopo `mine` na busca).
   5. **Chef inexistente:** Retorna `ResourceNotFoundError` (HTTP 404).
@@ -591,9 +613,9 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 | **RecipeIngredient.unit** | Enum `MeasurementUnit` | Padronização, agregação e conversão futura |
 | **Tag** | Opcionais; máx. 10 por receita; sem `Category` | Flexibilidade sem rigidez taxonômica |
 | **Ingredient / Tag** | Catálogo global; `normalizedName` como chave; find-or-create | Dedup, filtros e vocabulário compartilhado |
-| **Busca** | Global sobre `PUBLISHED`; filtros combinados; paginação | Diferencial central da Fase 1 |
-| **Modo despensa** | Parâmetro de consulta; não persistido | Ranqueamento por cobertura sem complexidade de estoque |
-| **Perfil público** | `/@userName` + receitas publicadas paginadas | Descoberta e compartilhamento |
+| **Listagem / busca** | Read models por contexto (`RecipeCatalogCard`, `RecipeAuthorWorkspaceItem`, `RecipeSearchResultItem`); filtros combinados (12.c–12.l); paginação | Card de catálogo vs gestão vs resultados filtrados; diferencial da Fase 1 |
+| **Modo despensa** | `pantryIngredients[]`; cobertura e `missingIngredients[]`; distinto de `ingredients[]` (12.d) | “O que cozinho com o que tenho” vs “receitas que usam X” |
+| **Perfil público** | `/@userName` + `RecipeCatalogCard` paginado | Descoberta e compartilhamento |
 
 ---
 
@@ -615,7 +637,8 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 | Tags (limites e semântica) | ~~Sem limites; dedup só entre requisições; omitir tags no edit apagava no Prisma~~ `RecipeTagNames` (máx. 10, 50 chars, dedup); omitir preserva | Limites, dedup no payload, omitir preserva | **MF-24** ✅ |
 | `PaginationParams` | ~~Existe, não usado~~ `page`/`perPage` em `GET /recipes` | Usar em busca e listagens | **MF-25** ✅ (base); restante em MF-14 derivados |
 | Busca escopos (`global` / `mine`) | ~~Não existe~~ `GET /recipes` com `scope` | Escopos 12.a + paginação base | **MF-25** ✅ |
-| Busca filtros (12.c–12.k) | Não existe | Filtros combinados em `SearchRecipesUseCase` | MF-14 derivados |
+| Read models de listagem | ~~`RecipeSummary` (transitório MF-25)~~ `RecipeCatalogCard` / `RecipeAuthorWorkspaceItem` / `RecipeSearchResultItem` (12.b) | Três VOs por contexto; `RecipeSearchResultItem` quando há filtros de catálogo | **MF-26** ✅ |
+| Busca filtros (12.c–12.l) | Não existe | Filtros combinados em `SearchRecipesUseCase` | MF-14 derivados |
 | Perfil público | Não existe | `GetChefProfileUseCase` | Novo MF ou plano derivado |
 | Autoria de receita | `EditRecipe` usava `authorId` como ator; Prisma `save` reescrevia `authorId` | `actorId` na edição; `authorId` omitido no update | **MF-18** ✅ |
 
@@ -637,8 +660,9 @@ O modelo conceitual do **Cookbook** possui base sólida após a fundação MF-01
 | 3b | **MF-22 — Ordem e observação de ingredientes** ✅ | `position`/`note` |
 | 3c | **MF-23 — Instruções em texto livre** ✅ | `RecipeInstructions` (normalização + limite); `description` limpável |
 | 3d | **MF-24 — Limites e semântica de tags** ✅ | `RecipeTagNames` (máx. 10, 50 chars, dedup); omitir preserva; fix wipe no Prisma |
-| 4 | **MF-14 — Busca e paginação** | Filtros combinados (Sugestões 12.b–12.k); `PaginationParams` base em **MF-25** ✅ |
-| 4a | **MF-25 — Escopos de consulta** ✅ | `GET /recipes` `scope=global|mine`, `RecipeSummary`, paginação, visibilidade 12.a |
+| 4 | **MF-14 — Busca e paginação** | Filtros combinados (Sugestões 12.c–12.l); read models finais (12.b); base em **MF-25** ✅ |
+| 4a | **MF-25 — Escopos de consulta** ✅ | `GET /recipes` `scope=global|mine`, paginação, visibilidade 12.a; `RecipeSummary` transitório |
+| 4b | **MF-26 — Read models de listagem** ✅ | `RecipeCatalogCard`, `RecipeAuthorWorkspaceItem`, `RecipeSearchResultItem`; contrato `SearchRecipesParams`; helpers de composição 12.b |
 | 5 | **MF-15 — Perfil público** | `GetChefProfileUseCase`, listagem por autor |
 | 6 | **MF-16 — Exclusão (soft delete)** ✅ | `DeleteRecipeUseCase`, `deletedAt` |
 | 7 | **MF-17 — Modo despensa** | Ranqueamento por cobertura de ingredientes |

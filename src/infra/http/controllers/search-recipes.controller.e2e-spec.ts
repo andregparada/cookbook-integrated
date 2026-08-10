@@ -34,7 +34,7 @@ describe('Search recipes (E2E)', () => {
       userName: 'public_author',
     })
 
-    const recipe = await recipeFactory.makePrismaRecipe({
+    await recipeFactory.makePrismaRecipe({
       authorId: user.id,
       name: 'Public Recipe',
       status: RecipeStatus.PUBLISHED,
@@ -48,9 +48,9 @@ describe('Search recipes (E2E)', () => {
       items: expect.arrayContaining([
         expect.objectContaining({
           name: 'Public Recipe',
-          author: 'public_author',
-          slug: recipe.slug.value,
-          status: RecipeStatus.PUBLISHED,
+          slug: expect.any(String),
+          descriptionExcerpt: expect.anything(),
+          tags: expect.any(Array),
         }),
       ]),
       meta: expect.objectContaining({
@@ -60,6 +60,14 @@ describe('Search recipes (E2E)', () => {
         totalPages: expect.any(Number),
       }),
     })
+
+    const publicRecipe = response.body.items.find(
+      (item: { name: string }) => item.name === 'Public Recipe',
+    )
+
+    expect(publicRecipe).not.toHaveProperty('status')
+    expect(publicRecipe).not.toHaveProperty('author')
+    expect(publicRecipe).not.toHaveProperty('prepTimeInMinutes')
   })
 
   test('[GET] /recipes?scope=mine returns own draft recipes with JWT', async () => {
@@ -93,6 +101,13 @@ describe('Search recipes (E2E)', () => {
         perPage: 20,
       }),
     })
+
+    const draftItem = response.body.items.find(
+      (item: { name: string }) => item.name === 'My Draft',
+    )
+
+    expect(draftItem).not.toHaveProperty('author')
+    expect(draftItem).not.toHaveProperty('prepTimeInMinutes')
   })
 
   test('[GET] /recipes?scope=mine without token returns 401', async () => {
