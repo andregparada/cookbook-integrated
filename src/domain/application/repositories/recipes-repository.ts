@@ -2,12 +2,12 @@ import { PaginatedResult } from '@/core/repositories/paginated-result'
 import { Recipe } from '@/domain/enterprise/entities/recipe'
 import { RecipeDetails } from '@/domain/enterprise/entities/value-objects/recipe-details'
 import { RecipeListItem } from '@/domain/enterprise/entities/value-objects/recipe-list-item'
-import { SearchRecipesParams } from '../search/search-recipes-params'
+import { SearchRecipesParams } from '../use-cases/search-recipes/search-recipes-params'
 
 export {
   RecipeSearchScope,
   type SearchRecipesParams,
-} from '../search/search-recipes-params'
+} from '../use-cases/search-recipes/search-recipes-params'
 
 export abstract class RecipesRepository {
   abstract findById(id: string): Promise<Recipe | null>

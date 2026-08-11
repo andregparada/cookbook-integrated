@@ -117,4 +117,41 @@ describe('Search recipes (E2E)', () => {
 
     expect(response.statusCode).toBe(401)
   })
+
+  test('[GET] /recipes?query= returns search result shape', async () => {
+    const user = await chefFactory.makePrismaChef({
+      userName: 'query_author',
+    })
+
+    await recipeFactory.makePrismaRecipe({
+      authorId: user.id,
+      name: 'Bolo de Cenoura',
+      status: RecipeStatus.PUBLISHED,
+      publishedAt: new Date(),
+    })
+
+    const response = await request(app.getHttpServer()).get(
+      '/recipes?query=cenoura',
+    )
+
+    expect(response.statusCode).toBe(200)
+    expect(response.body.items[0]).toEqual(
+      expect.objectContaining({
+        name: 'Bolo de Cenoura',
+        author: 'query_author',
+        prepTimeInMinutes: expect.anything(),
+        difficultyLevel: expect.any(String),
+      }),
+    )
+  })
+
+  test('[GET] /recipes?query= with more than 100 characters returns 400', async () => {
+    const longQuery = 'a'.repeat(101)
+
+    const response = await request(app.getHttpServer()).get(
+      `/recipes?query=${longQuery}`,
+    )
+
+    expect(response.statusCode).toBe(400)
+  })
 })

@@ -13,8 +13,8 @@ import {
   RecipeSearchScope,
   resolveRecipeListReadModel,
   SearchRecipesInput,
-} from '../search/search-recipes-params'
-import { RecipesRepository } from '../repositories/recipes-repository'
+} from './search-recipes-params'
+import { RecipesRepository } from '../../repositories/recipes-repository'
 
 type SearchRecipesUseCaseResponse = Either<
   NotAllowedError,

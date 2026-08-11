@@ -1,4 +1,4 @@
-import { RecipeListReadModel } from '@/domain/application/search/search-recipes-params'
+import { RecipeListReadModel } from '@/domain/application/use-cases/search-recipes/search-recipes-params'
 import { RecipeAuthorWorkspaceItem } from '@/domain/enterprise/entities/value-objects/recipe-author-workspace-item'
 import { RecipeCatalogCard } from '@/domain/enterprise/entities/value-objects/recipe-catalog-card'
 import { RecipeListItem } from '@/domain/enterprise/entities/value-objects/recipe-list-item'

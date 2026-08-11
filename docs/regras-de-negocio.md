@@ -638,7 +638,7 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 | `PaginationParams` | ~~Existe, não usado~~ `page`/`perPage` em `GET /recipes` | Usar em busca e listagens | **MF-25** ✅ (base); restante em MF-14 derivados |
 | Busca escopos (`global` / `mine`) | ~~Não existe~~ `GET /recipes` com `scope` | Escopos 12.a + paginação base | **MF-25** ✅ |
 | Read models de listagem | ~~`RecipeSummary` (transitório MF-25)~~ `RecipeCatalogCard` / `RecipeAuthorWorkspaceItem` / `RecipeSearchResultItem` (12.b) | Três VOs por contexto; `RecipeSearchResultItem` quando há filtros de catálogo | **MF-26** ✅ |
-| Busca filtros (12.c–12.l) | Não existe | Filtros combinados em `SearchRecipesUseCase` | MF-14 derivados |
+| Busca filtros (12.c–12.l) | ~~Não existe~~ `query` (12.c) em Prisma + in-memory + `GET /recipes?query=` | Filtros 12.d–12.l restantes | **MF-27** ✅ (12.c); MF-14 derivados |
 | Perfil público | Não existe | `GetChefProfileUseCase` | Novo MF ou plano derivado |
 | Autoria de receita | `EditRecipe` usava `authorId` como ator; Prisma `save` reescrevia `authorId` | `actorId` na edição; `authorId` omitido no update | **MF-18** ✅ |
 
@@ -663,6 +663,7 @@ O modelo conceitual do **Cookbook** possui base sólida após a fundação MF-01
 | 4 | **MF-14 — Busca e paginação** | Filtros combinados (Sugestões 12.c–12.l); read models finais (12.b); base em **MF-25** ✅ |
 | 4a | **MF-25 — Escopos de consulta** ✅ | `GET /recipes` `scope=global|mine`, paginação, visibilidade 12.a; `RecipeSummary` transitório |
 | 4b | **MF-26 — Read models de listagem** ✅ | `RecipeCatalogCard`, `RecipeAuthorWorkspaceItem`, `RecipeSearchResultItem`; contrato `SearchRecipesParams`; helpers de composição 12.b |
+| 4c | **MF-27 — Busca textual livre** ✅ | Filtro `query` (12.c): substring case-insensitive em `name`/`description`; Zod máx. 100 chars |
 | 5 | **MF-15 — Perfil público** | `GetChefProfileUseCase`, listagem por autor |
 | 6 | **MF-16 — Exclusão (soft delete)** ✅ | `DeleteRecipeUseCase`, `deletedAt` |
 | 7 | **MF-17 — Modo despensa** | Ranqueamento por cobertura de ingredientes |

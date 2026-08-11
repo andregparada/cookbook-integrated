@@ -8,7 +8,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common'
 import { mapDomainErrorToHttpException } from '@/infra/http/errors/map-domain-error-to-http-exception'
-import { SearchRecipesUseCase } from '@/domain/application/use-cases/search-recipes'
+import { SearchRecipesUseCase } from '@/domain/application/use-cases/search-recipes/search-recipes'
 import { Public } from '@/infra/auth/public'
 import { RecipeListItemPresenter } from '../presenters/recipe-list-item-presenter'
 import type { Request } from 'express'
@@ -25,6 +25,7 @@ const searchRecipesQuerySchema = z.object({
     .enum([RecipeSearchScope.GLOBAL, RecipeSearchScope.MINE])
     .optional()
     .default(RecipeSearchScope.GLOBAL),
+  query: z.string().max(100).optional(),
   page: z.coerce.number().int().min(1).optional().default(DEFAULT_PAGE),
   perPage: z.coerce
     .number()
@@ -46,19 +47,21 @@ export class SearchRecipesController {
   @Public()
   @Get()
   async handle(
-    @Query(queryValidationPipe) query: SearchRecipesQuerySchema,
+    @Query(queryValidationPipe)
+    { scope, query: textQuery, page, perPage }: SearchRecipesQuerySchema,
     @Req() request: Request,
   ) {
     const user = request.user as UserPayload | undefined
 
-    if (query.scope === RecipeSearchScope.MINE && !user?.sub) {
+    if (scope === RecipeSearchScope.MINE && !user?.sub) {
       throw new UnauthorizedException()
     }
 
     const result = await this.searchRecipes.execute({
-      scope: query.scope,
-      page: query.page,
-      perPage: query.perPage,
+      scope,
+      query: textQuery,
+      page,
+      perPage,
       actorId: user?.sub,
     })
 

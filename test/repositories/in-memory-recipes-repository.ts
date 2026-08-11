@@ -9,11 +9,12 @@ import { InMemoryTagsRepository } from './in-memory-tags-repository'
 import { InMemoryRecipeIngredientsRepository } from './in-memory-recipe-ingredients-repository'
 import { RecipeDetails } from '@/domain/enterprise/entities/value-objects/recipe-details'
 import { buildPaginatedResult } from '@/core/repositories/paginated-result'
-import { RecipeListReadModel } from '@/domain/application/search/search-recipes-params'
+import { RecipeListReadModel } from '@/domain/application/use-cases/search-recipes/search-recipes-params'
 import { RecipeCatalogCard } from '@/domain/enterprise/entities/value-objects/recipe-catalog-card'
 import { RecipeAuthorWorkspaceItem } from '@/domain/enterprise/entities/value-objects/recipe-author-workspace-item'
 import { RecipeSearchResultItem } from '@/domain/enterprise/entities/value-objects/recipe-search-result-item'
 import { RecipeListItem } from '@/domain/enterprise/entities/value-objects/recipe-list-item'
+import { recipeMatchesTextQuery } from '@/domain/application/use-cases/search-recipes/recipe-text-query-match'
 
 export class InMemoryRecipesRepository implements RecipesRepository {
   public items: Recipe[] = []
@@ -77,10 +78,21 @@ export class InMemoryRecipesRepository implements RecipesRepository {
       }
 
       if (params.scope === RecipeSearchScope.GLOBAL) {
-        return recipe.status === RecipeStatus.PUBLISHED
+        if (recipe.status !== RecipeStatus.PUBLISHED) {
+          return false
+        }
+      } else if (recipe.authorId.toString() !== params.actorId) {
+        return false
       }
 
-      return recipe.authorId.toString() === params.actorId
+      if (
+        params.query &&
+        !recipeMatchesTextQuery(recipe.name, recipe.description, params.query)
+      ) {
+        return false
+      }
+
+      return true
     })
 
     const sorted = [...filtered].sort((a, b) => {

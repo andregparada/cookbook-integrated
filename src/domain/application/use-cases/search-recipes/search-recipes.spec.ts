@@ -6,10 +6,10 @@ import { InMemoryChefsRepository } from 'test/repositories/in-memory-chefs-repos
 import { makeChef } from 'test/factories/make-chef'
 import { SearchRecipesUseCase } from './search-recipes'
 import { RecipeStatus } from '@/domain/enterprise/entities/recipe'
-import { RecipeSearchScope } from '../repositories/recipes-repository'
+import { RecipeSearchScope } from '../../repositories/recipes-repository'
 import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
 import { DEFAULT_PER_PAGE } from '@/core/repositories/pagination-params'
-import { RecipeListReadModel } from '../search/search-recipes-params'
+import { RecipeListReadModel } from './search-recipes-params'
 import { RecipeCatalogCard } from '@/domain/enterprise/entities/value-objects/recipe-catalog-card'
 import { RecipeAuthorWorkspaceItem } from '@/domain/enterprise/entities/value-objects/recipe-author-workspace-item'
 import { RecipeSearchResultItem } from '@/domain/enterprise/entities/value-objects/recipe-search-result-item'
@@ -314,7 +314,15 @@ describe('Search Recipes', () => {
       publishedAt: new Date(),
     })
 
+    const otherRecipe = makeRecipe({
+      authorId: author.id,
+      name: 'Other Recipe',
+      status: RecipeStatus.PUBLISHED,
+      publishedAt: new Date(),
+    })
+
     await inMemoryRecipesRepository.create(recipe)
+    await inMemoryRecipesRepository.create(otherRecipe)
 
     const result = await sut.execute({
       scope: RecipeSearchScope.GLOBAL,
@@ -329,7 +337,119 @@ describe('Search Recipes', () => {
       expect(result.value.listReadModel).toBe(
         RecipeListReadModel.SEARCH_RESULT_ITEM,
       )
+      expect(result.value.result.items).toHaveLength(1)
+      expect(result.value.result.meta.totalItems).toBe(1)
       expect(item).toBeInstanceOf(RecipeSearchResultItem)
+      expect(item.name).toBe('Filtered Recipe')
+    }
+  })
+
+  it('should filter recipes by query matching name case-insensitively', async () => {
+    const author = makeChef({ userName: 'author' })
+
+    inMemoryChefsRepository.items.push(author)
+
+    const recipe = makeRecipe({
+      authorId: author.id,
+      name: 'Bolo de Cenoura',
+      status: RecipeStatus.PUBLISHED,
+      publishedAt: new Date(),
+    })
+
+    await inMemoryRecipesRepository.create(recipe)
+
+    const result = await sut.execute({
+      scope: RecipeSearchScope.GLOBAL,
+      query: 'BOLO',
+    })
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      expect(result.value.result.items).toHaveLength(1)
+      expect(result.value.result.items[0].name).toBe('Bolo de Cenoura')
+    }
+  })
+
+  it('should filter recipes by query matching description', async () => {
+    const author = makeChef({ userName: 'author' })
+
+    inMemoryChefsRepository.items.push(author)
+
+    const recipe = makeRecipe({
+      authorId: author.id,
+      name: 'Receita Especial',
+      description: 'Delicioso bolo de cenoura com cobertura',
+      status: RecipeStatus.PUBLISHED,
+      publishedAt: new Date(),
+    })
+
+    await inMemoryRecipesRepository.create(recipe)
+
+    const result = await sut.execute({
+      scope: RecipeSearchScope.GLOBAL,
+      query: 'cenoura',
+    })
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      expect(result.value.result.items).toHaveLength(1)
+      expect(result.value.result.items[0].name).toBe('Receita Especial')
+    }
+  })
+
+  it('should not match query against instructions', async () => {
+    const author = makeChef({ userName: 'author' })
+
+    inMemoryChefsRepository.items.push(author)
+
+    const recipe = makeRecipe({
+      authorId: author.id,
+      name: 'Receita Sem Match',
+      description: 'Um prato simples',
+      instructions: 'Adicione chocolate ao preparo',
+      status: RecipeStatus.PUBLISHED,
+      publishedAt: new Date(),
+    })
+
+    await inMemoryRecipesRepository.create(recipe)
+
+    const result = await sut.execute({
+      scope: RecipeSearchScope.GLOBAL,
+      query: 'chocolate',
+    })
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      expect(result.value.result.items).toHaveLength(0)
+      expect(result.value.result.meta.totalItems).toBe(0)
+    }
+  })
+
+  it('should hide draft recipes when filtering by query in global scope', async () => {
+    const author = makeChef({ userName: 'author' })
+
+    inMemoryChefsRepository.items.push(author)
+
+    const draftRecipe = makeRecipe({
+      authorId: author.id,
+      name: 'Bolo Draft',
+      status: RecipeStatus.DRAFT,
+    })
+
+    await inMemoryRecipesRepository.create(draftRecipe)
+
+    const result = await sut.execute({
+      scope: RecipeSearchScope.GLOBAL,
+      query: 'Bolo',
+    })
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      expect(result.value.result.items).toHaveLength(0)
     }
   })
 

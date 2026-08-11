@@ -72,6 +72,16 @@ export class PrismaRecipesRepository implements RecipesRepository {
       ...(params.scope === RecipeSearchScope.GLOBAL
         ? { status: PrismaRecipeStatus.Published }
         : { authorId: params.actorId }),
+      ...(params.query
+        ? {
+            OR: [
+              { name: { contains: params.query, mode: 'insensitive' } },
+              {
+                description: { contains: params.query, mode: 'insensitive' },
+              },
+            ],
+          }
+        : {}),
     }
 
     const skip = (params.page - 1) * params.perPage

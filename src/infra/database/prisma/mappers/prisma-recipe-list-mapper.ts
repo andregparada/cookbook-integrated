@@ -9,7 +9,7 @@ import { RecipeAuthorWorkspaceItem } from '@/domain/enterprise/entities/value-ob
 import { RecipeCatalogCard } from '@/domain/enterprise/entities/value-objects/recipe-catalog-card'
 import { RecipeListItem } from '@/domain/enterprise/entities/value-objects/recipe-list-item'
 import { RecipeSearchResultItem } from '@/domain/enterprise/entities/value-objects/recipe-search-result-item'
-import { RecipeListReadModel } from '@/domain/application/search/search-recipes-params'
+import { RecipeListReadModel } from '@/domain/application/use-cases/search-recipes/search-recipes-params'
 import {
   mapDifficultyLevelToDomain,
   mapRecipeStatusToDomain,

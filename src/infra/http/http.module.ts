@@ -20,7 +20,7 @@ import { SearchRecipesController } from './controllers/search-recipes.controller
 import { PublishRecipeUseCase } from '@/domain/application/use-cases/publish-recipe'
 import { UnpublishRecipeUseCase } from '@/domain/application/use-cases/unpublish-recipe'
 import { DeleteRecipeUseCase } from '@/domain/application/use-cases/delete-recipe'
-import { SearchRecipesUseCase } from '@/domain/application/use-cases/search-recipes'
+import { SearchRecipesUseCase } from '@/domain/application/use-cases/search-recipes/search-recipes'
 import { RecipeCatalogResolver } from '@/domain/application/services/recipe-catalog-resolver'
 
 @Module({
