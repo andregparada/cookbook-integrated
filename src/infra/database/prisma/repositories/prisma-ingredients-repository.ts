@@ -9,6 +9,20 @@ import { PrismaIngredientMapper } from '../mappers/prisma-ingredient-mapper'
 export class PrismaIngredientsRepository implements IngredientsRepository {
   constructor(private prisma: PrismaService) {}
 
+  async findById(id: string) {
+    const ingredient = await this.prisma.ingredient.findUnique({
+      where: {
+        id,
+      },
+    })
+
+    if (!ingredient) {
+      return null
+    }
+
+    return PrismaIngredientMapper.toDomain(ingredient)
+  }
+
   async findByNormalizedName(normalizedName: NormalizedName) {
     const ingredient = await this.prisma.ingredient.findUnique({
       where: {

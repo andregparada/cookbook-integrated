@@ -15,6 +15,7 @@ import { PrismaRecipeMapper } from '../mappers/prisma-recipe-mapper'
 import { PrismaService } from '../prisma.service'
 import { buildPaginatedResult } from '@/core/repositories/paginated-result'
 import { PrismaRecipeListMapper } from '../mappers/prisma-recipe-list-mapper'
+import { IngredientMatchMode } from '@/domain/application/use-cases/search-recipes/search-recipes-params'
 
 @Injectable()
 export class PrismaRecipesRepository implements RecipesRepository {
@@ -81,6 +82,27 @@ export class PrismaRecipesRepository implements RecipesRepository {
               },
             ],
           }
+        : {}),
+      ...(params.ingredients && params.ingredients.length > 0
+        ? params.ingredientMatch === IngredientMatchMode.ANY
+          ? {
+              ingredients: {
+                some: {
+                  ingredientId: {
+                    in: params.ingredients,
+                  },
+                },
+              },
+            }
+          : {
+              AND: params.ingredients.map((ingredientId) => ({
+                ingredients: {
+                  some: {
+                    ingredientId,
+                  },
+                },
+              })),
+            }
         : {}),
     }
 

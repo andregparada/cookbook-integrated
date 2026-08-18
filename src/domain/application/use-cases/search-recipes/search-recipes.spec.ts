@@ -1,24 +1,78 @@
 import { InMemoryRecipeIngredientsRepository } from 'test/repositories/in-memory-recipe-ingredients-repository'
 import { InMemoryTagsRepository } from 'test/repositories/in-memory-tags-repository'
 import { InMemoryRecipesRepository } from 'test/repositories/in-memory-recipes-repository'
+import { InMemoryIngredientsRepository } from 'test/repositories/in-memory-ingredients-repository'
 import { makeRecipe } from 'test/factories/make-recipe'
 import { InMemoryChefsRepository } from 'test/repositories/in-memory-chefs-repository'
 import { makeChef } from 'test/factories/make-chef'
 import { SearchRecipesUseCase } from './search-recipes'
-import { RecipeStatus } from '@/domain/enterprise/entities/recipe'
+import { RecipeProps, RecipeStatus } from '@/domain/enterprise/entities/recipe'
 import { RecipeSearchScope } from '../../repositories/recipes-repository'
 import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
 import { DEFAULT_PER_PAGE } from '@/core/repositories/pagination-params'
-import { RecipeListReadModel } from './search-recipes-params'
+import {
+  IngredientMatchMode,
+  RecipeListReadModel,
+} from './search-recipes-params'
 import { RecipeCatalogCard } from '@/domain/enterprise/entities/value-objects/recipe-catalog-card'
 import { RecipeAuthorWorkspaceItem } from '@/domain/enterprise/entities/value-objects/recipe-author-workspace-item'
 import { RecipeSearchResultItem } from '@/domain/enterprise/entities/value-objects/recipe-search-result-item'
+import { SearchIngredientTermsResolver } from '../../services/search-ingredient-terms-resolver'
+import { Ingredient } from '@/domain/enterprise/entities/ingredient'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
+import {
+  MeasurementUnit,
+  RecipeIngredient,
+} from '@/domain/enterprise/entities/recipe-ingredient'
+import { RecipeIngredientList } from '@/domain/enterprise/entities/recipe-ingredient-list'
 
 let inMemoryChefsRepository: InMemoryChefsRepository
 let inMemoryTagsRepository: InMemoryTagsRepository
 let inMemoryRecipeIngredientsRepository: InMemoryRecipeIngredientsRepository
+let inMemoryIngredientsRepository: InMemoryIngredientsRepository
 let inMemoryRecipesRepository: InMemoryRecipesRepository
 let sut: SearchRecipesUseCase
+
+async function seedIngredient(name: string, id?: UniqueEntityID) {
+  // TODO: usar factory
+  const ingredient = Ingredient.create({ name }, id)
+
+  await inMemoryIngredientsRepository.create(ingredient)
+
+  return ingredient
+}
+
+function makeRecipeWithIngredients(
+  authorId: UniqueEntityID,
+  ingredientIds: UniqueEntityID[],
+  override: Partial<RecipeProps> = {},
+  recipeId = new UniqueEntityID(),
+) {
+  const ingredients = new RecipeIngredientList(
+    ingredientIds.map((ingredientId, index) =>
+      // TODO: usar factory
+      RecipeIngredient.create({
+        recipeId,
+        ingredientId,
+        amount: 1,
+        unit: MeasurementUnit.CUP,
+        position: index,
+        note: null,
+      }),
+    ),
+  )
+
+  return makeRecipe(
+    {
+      authorId,
+      ingredients,
+      status: RecipeStatus.PUBLISHED,
+      publishedAt: new Date(),
+      ...override,
+    },
+    recipeId,
+  )
+}
 
 describe('Search Recipes', () => {
   beforeEach(() => {
@@ -26,12 +80,19 @@ describe('Search Recipes', () => {
     inMemoryTagsRepository = new InMemoryTagsRepository()
     inMemoryRecipeIngredientsRepository =
       new InMemoryRecipeIngredientsRepository()
+    inMemoryIngredientsRepository = new InMemoryIngredientsRepository()
     inMemoryRecipesRepository = new InMemoryRecipesRepository(
       inMemoryChefsRepository,
       inMemoryTagsRepository,
       inMemoryRecipeIngredientsRepository,
     )
-    sut = new SearchRecipesUseCase(inMemoryRecipesRepository)
+    const searchIngredientTermsResolver = new SearchIngredientTermsResolver(
+      inMemoryIngredientsRepository,
+    )
+    sut = new SearchRecipesUseCase(
+      inMemoryRecipesRepository,
+      searchIngredientTermsResolver,
+    )
   })
 
   it('should return only published recipes from all chefs in global scope', async () => {
@@ -272,6 +333,9 @@ describe('Search Recipes', () => {
     }
   })
 
+  // TODO: fundir com “only published recipes in global scope” — já asserta CATALOG_CARD.
+  // not.toHaveProperty é shape do VO, não ramo do use case (resolverRecipeListReadModel
+  // já está em search-recipes-params.spec.ts).
   it('should return catalog card read model for global scope without filters', async () => {
     const author = makeChef({ userName: 'author' })
 
@@ -302,6 +366,8 @@ describe('Search Recipes', () => {
     }
   })
 
+  // TODO: escolha do read model já está em search-recipes-params.spec.ts e no caso de query abaixo.
+  // Manter um único spec de “filtro liga SEARCH_RESULT_ITEM”.
   it('should return search result item read model when catalog filters are present', async () => {
     const author = makeChef({ userName: 'author' })
 
@@ -428,6 +494,8 @@ describe('Search Recipes', () => {
     }
   })
 
+  // TODO: visibilidade 12.k já está no caso global sem filtro.
+  // Manter só se quiser regressão explícita de “query não bypassa DRAFT”.
   it('should hide draft recipes when filtering by query in global scope', async () => {
     const author = makeChef({ userName: 'author' })
 
@@ -475,6 +543,214 @@ describe('Search Recipes', () => {
 
     if (result.isRight()) {
       expect(result.value.listReadModel).toBe(RecipeListReadModel.CATALOG_CARD)
+    }
+  })
+
+  it('should return recipes that contain all required ingredients by default', async () => {
+    const author = makeChef({ userName: 'author' })
+
+    inMemoryChefsRepository.items.push(author)
+
+    const chicken = await seedIngredient('Frango')
+    const potato = await seedIngredient('Batata')
+    const onion = await seedIngredient('Cebola')
+
+    const matchingRecipe = makeRecipeWithIngredients(
+      author.id,
+      [chicken.id, potato.id],
+      { name: 'Chicken Potato Stew' },
+    )
+
+    const partialRecipe = makeRecipeWithIngredients(author.id, [chicken.id], {
+      name: 'Chicken Only',
+    })
+
+    const otherRecipe = makeRecipeWithIngredients(author.id, [onion.id], {
+      name: 'Onion Soup',
+    })
+
+    await inMemoryRecipesRepository.create(matchingRecipe)
+    await inMemoryRecipesRepository.create(partialRecipe)
+    await inMemoryRecipesRepository.create(otherRecipe)
+
+    const result = await sut.execute({
+      scope: RecipeSearchScope.GLOBAL,
+      ingredients: ['frango', 'batata'],
+    })
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      expect(result.value.listReadModel).toBe(
+        RecipeListReadModel.SEARCH_RESULT_ITEM,
+      )
+      expect(result.value.result.items).toHaveLength(1)
+      expect(result.value.result.items[0]).toBeInstanceOf(
+        RecipeSearchResultItem,
+      )
+      expect(result.value.result.items[0].name).toBe('Chicken Potato Stew')
+    }
+  })
+
+  it('should return recipes that contain any required ingredient when ingredientMatch is ANY', async () => {
+    const author = makeChef({ userName: 'author' })
+
+    inMemoryChefsRepository.items.push(author)
+
+    const chicken = await seedIngredient('Frango')
+    const potato = await seedIngredient('Batata')
+
+    const chickenRecipe = makeRecipeWithIngredients(author.id, [chicken.id], {
+      name: 'Chicken Dish',
+    })
+
+    const potatoRecipe = makeRecipeWithIngredients(author.id, [potato.id], {
+      name: 'Potato Dish',
+    })
+
+    await inMemoryRecipesRepository.create(chickenRecipe)
+    await inMemoryRecipesRepository.create(potatoRecipe)
+
+    const result = await sut.execute({
+      scope: RecipeSearchScope.GLOBAL,
+      ingredients: ['frango', 'batata'],
+      ingredientMatch: IngredientMatchMode.ANY,
+    })
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      expect(result.value.result.items).toHaveLength(2)
+      expect(result.value.result.items.map((item) => item.name)).toEqual(
+        expect.arrayContaining(['Chicken Dish', 'Potato Dish']),
+      )
+    }
+  })
+
+  it('should return empty results when unknown ingredient is required in ALL mode', async () => {
+    const author = makeChef({ userName: 'author' })
+
+    inMemoryChefsRepository.items.push(author)
+
+    const chicken = await seedIngredient('Frango')
+    const recipe = makeRecipeWithIngredients(author.id, [chicken.id])
+
+    await inMemoryRecipesRepository.create(recipe)
+
+    const result = await sut.execute({
+      scope: RecipeSearchScope.GLOBAL,
+      ingredients: ['frango', 'unknown-ingredient'],
+    })
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      expect(result.value.result.items).toHaveLength(0)
+      expect(result.value.result.meta.totalItems).toBe(0)
+    }
+  })
+
+  it('should ignore unknown ingredients in ANY mode when at least one term resolves', async () => {
+    const author = makeChef({ userName: 'author' })
+
+    inMemoryChefsRepository.items.push(author)
+
+    const chicken = await seedIngredient('Frango')
+    const recipe = makeRecipeWithIngredients(author.id, [chicken.id], {
+      name: 'Chicken Dish',
+    })
+
+    await inMemoryRecipesRepository.create(recipe)
+
+    const result = await sut.execute({
+      scope: RecipeSearchScope.GLOBAL,
+      ingredients: ['frango', 'unknown-ingredient'],
+      ingredientMatch: IngredientMatchMode.ANY,
+    })
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      expect(result.value.result.items).toHaveLength(1)
+      expect(result.value.result.items[0].name).toBe('Chicken Dish')
+    }
+  })
+
+  it('should deduplicate repeated ingredient terms without affecting ALL mode', async () => {
+    const author = makeChef({ userName: 'author' })
+
+    inMemoryChefsRepository.items.push(author)
+
+    const chicken = await seedIngredient('Frango')
+    const recipe = makeRecipeWithIngredients(author.id, [chicken.id], {
+      name: 'Chicken Dish',
+    })
+
+    await inMemoryRecipesRepository.create(recipe)
+
+    const result = await sut.execute({
+      scope: RecipeSearchScope.GLOBAL,
+      ingredients: ['Frango', 'frango', 'FRANGO'],
+    })
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      expect(result.value.result.items).toHaveLength(1)
+      expect(result.value.result.items[0].name).toBe('Chicken Dish')
+    }
+  })
+
+  it('should filter ingredients by catalog id', async () => {
+    const author = makeChef({ userName: 'author' })
+
+    inMemoryChefsRepository.items.push(author)
+
+    const chicken = await seedIngredient('Frango')
+    const recipe = makeRecipeWithIngredients(author.id, [chicken.id], {
+      name: 'Chicken Dish',
+    })
+
+    await inMemoryRecipesRepository.create(recipe)
+
+    const result = await sut.execute({
+      scope: RecipeSearchScope.GLOBAL,
+      ingredients: [chicken.id.toString()],
+    })
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      expect(result.value.result.items).toHaveLength(1)
+      expect(result.value.result.items[0].name).toBe('Chicken Dish')
+    }
+  })
+
+  // TODO: visibilidade 12.k já está no caso global sem filtro.
+  // Manter só se quiser regressão explícita de “ingredients[] não bypassa DRAFT”.
+  it('should hide draft recipes when filtering by ingredients in global scope', async () => {
+    const author = makeChef({ userName: 'author' })
+
+    inMemoryChefsRepository.items.push(author)
+
+    const chicken = await seedIngredient('Frango')
+    const draftRecipe = makeRecipeWithIngredients(author.id, [chicken.id], {
+      name: 'Draft Chicken',
+      status: RecipeStatus.DRAFT,
+      publishedAt: null,
+    })
+
+    await inMemoryRecipesRepository.create(draftRecipe)
+
+    const result = await sut.execute({
+      scope: RecipeSearchScope.GLOBAL,
+      ingredients: ['frango'],
+    })
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isRight()) {
+      expect(result.value.result.items).toHaveLength(0)
     }
   })
 })

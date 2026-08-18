@@ -9,12 +9,16 @@ import { InMemoryTagsRepository } from './in-memory-tags-repository'
 import { InMemoryRecipeIngredientsRepository } from './in-memory-recipe-ingredients-repository'
 import { RecipeDetails } from '@/domain/enterprise/entities/value-objects/recipe-details'
 import { buildPaginatedResult } from '@/core/repositories/paginated-result'
-import { RecipeListReadModel } from '@/domain/application/use-cases/search-recipes/search-recipes-params'
+import {
+  RecipeListReadModel,
+  IngredientMatchMode,
+} from '@/domain/application/use-cases/search-recipes/search-recipes-params'
 import { RecipeCatalogCard } from '@/domain/enterprise/entities/value-objects/recipe-catalog-card'
 import { RecipeAuthorWorkspaceItem } from '@/domain/enterprise/entities/value-objects/recipe-author-workspace-item'
 import { RecipeSearchResultItem } from '@/domain/enterprise/entities/value-objects/recipe-search-result-item'
 import { RecipeListItem } from '@/domain/enterprise/entities/value-objects/recipe-list-item'
 import { recipeMatchesTextQuery } from '@/domain/application/use-cases/search-recipes/recipe-text-query-match'
+import { recipeMatchesRequiredIngredients } from '@/domain/application/use-cases/search-recipes/recipe-required-ingredients-match'
 
 export class InMemoryRecipesRepository implements RecipesRepository {
   public items: Recipe[] = []
@@ -90,6 +94,25 @@ export class InMemoryRecipesRepository implements RecipesRepository {
         !recipeMatchesTextQuery(recipe.name, recipe.description, params.query)
       ) {
         return false
+      }
+
+      if (params.ingredients && params.ingredients.length > 0) {
+        const recipeIngredientIds = recipe.ingredients
+          .getItems()
+          .map((item) => item.ingredientId.toString())
+
+        const ingredientMatch =
+          params.ingredientMatch ?? IngredientMatchMode.ALL
+
+        if (
+          !recipeMatchesRequiredIngredients(
+            recipeIngredientIds,
+            params.ingredients,
+            ingredientMatch,
+          )
+        ) {
+          return false
+        }
       }
 
       return true

@@ -22,6 +22,7 @@ import { UnpublishRecipeUseCase } from '@/domain/application/use-cases/unpublish
 import { DeleteRecipeUseCase } from '@/domain/application/use-cases/delete-recipe'
 import { SearchRecipesUseCase } from '@/domain/application/use-cases/search-recipes/search-recipes'
 import { RecipeCatalogResolver } from '@/domain/application/services/recipe-catalog-resolver'
+import { SearchIngredientTermsResolver } from '@/domain/application/services/search-ingredient-terms-resolver'
 
 @Module({
   imports: [DatabaseModule, CryptographyModule],
@@ -49,6 +50,7 @@ import { RecipeCatalogResolver } from '@/domain/application/services/recipe-cata
     DeleteRecipeUseCase,
     SearchRecipesUseCase,
     RecipeCatalogResolver,
+    SearchIngredientTermsResolver,
   ],
 })
 export class HttpModule {}

@@ -5,6 +5,16 @@ import { NormalizedName } from '@/domain/enterprise/entities/value-objects/norma
 export class InMemoryIngredientsRepository implements IngredientsRepository {
   public items: Ingredient[] = []
 
+  async findById(id: string) {
+    const ingredient = this.items.find((item) => item.id.toString() === id)
+
+    if (!ingredient) {
+      return null
+    }
+
+    return ingredient
+  }
+
   async findByNormalizedName(normalizedName: NormalizedName) {
     const ingredient = this.items.find(
       (item) => item.normalizedName.value === normalizedName.value,

@@ -44,6 +44,8 @@ describe('Search recipes (E2E)', () => {
     const response = await request(app.getHttpServer()).get('/recipes')
 
     expect(response.statusCode).toBe(200)
+    // TODO: reduzir a smoke do envelope HTTP (`items` + name + `meta` existir).
+    // slug/excerpt/tags e defaults de page/perPage já estão no unit (read model + paginação).
     expect(response.body).toEqual({
       items: expect.arrayContaining([
         expect.objectContaining({
@@ -65,6 +67,8 @@ describe('Search recipes (E2E)', () => {
       (item: { name: string }) => item.name === 'Public Recipe',
     )
 
+    // TODO: tirar esses spec expect — campos ausentes são do VO RecipeCatalogCard
+    // (search-recipes.spec.ts). Presenter é 1:1; não precisa reassertar no e2e.
     expect(publicRecipe).not.toHaveProperty('status')
     expect(publicRecipe).not.toHaveProperty('author')
     expect(publicRecipe).not.toHaveProperty('prepTimeInMinutes')
@@ -88,6 +92,8 @@ describe('Search recipes (E2E)', () => {
       .set('Authorization', `Bearer ${accessToken}`)
 
     expect(response.statusCode).toBe(200)
+    // TODO: tirar status/recipeId/meta — “mine devolve rascunho” já está no unit.
+    // Este spec vale pelo JWT + scope=mine; smoke: 200 + name.
     expect(response.body).toEqual({
       items: expect.arrayContaining([
         expect.objectContaining({
@@ -106,6 +112,7 @@ describe('Search recipes (E2E)', () => {
       (item: { name: string }) => item.name === 'My Draft',
     )
 
+    // TODO: tirar esses spec expect — shape de RecipeAuthorWorkspaceItem já está no unit.
     expect(draftItem).not.toHaveProperty('author')
     expect(draftItem).not.toHaveProperty('prepTimeInMinutes')
   })
@@ -118,6 +125,8 @@ describe('Search recipes (E2E)', () => {
     expect(response.statusCode).toBe(401)
   })
 
+  // TODO: filtro 12.c já está em search-recipes.spec.ts. Tirar o spec ou reduzir a
+  // 200 (querystring chega no use case). Não reassertar match nem campos de presenter.
   test('[GET] /recipes?query= returns search result shape', async () => {
     const user = await chefFactory.makePrismaChef({
       userName: 'query_author',
@@ -135,6 +144,7 @@ describe('Search recipes (E2E)', () => {
     )
 
     expect(response.statusCode).toBe(200)
+    // TODO: tirar author/prepTime/difficultyLevel — RecipeSearchResultItem já está no unit.
     expect(response.body.items[0]).toEqual(
       expect.objectContaining({
         name: 'Bolo de Cenoura',
@@ -150,6 +160,72 @@ describe('Search recipes (E2E)', () => {
 
     const response = await request(app.getHttpServer()).get(
       `/recipes?query=${longQuery}`,
+    )
+
+    expect(response.statusCode).toBe(400)
+  })
+
+  // TODO: filtro 12.d já está em search-recipes.spec.ts. Tirar o spec ou reduzir a
+  // 200 com seed via RecipeFactory (não POST+publish). Não reassertar match ALL.
+  test('[GET] /recipes?ingredients= returns search result shape', async () => {
+    const user = await chefFactory.makePrismaChef({
+      userName: 'ingredients_author',
+    })
+
+    const accessToken = jwt.sign({ sub: user.id.toString() })
+
+    // TODO: usar factory
+    const createResponse = await request(app.getHttpServer())
+      .post('/recipes')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        name: 'Chicken Potato Stew',
+        description: 'A hearty stew',
+        instructions: 'Cook chicken and potatoes together.',
+        prepTimeInMinutes: 15,
+        cookTimeInMinutes: 45,
+        servings: 4,
+        difficultyLevel: 'easy',
+        tags: ['dinner'],
+        recipeIngredients: [
+          { name: 'Frango', amount: 500, unit: 'gram' },
+          { name: 'Batata', amount: 3, unit: 'unit' },
+        ],
+      })
+
+    expect(createResponse.statusCode).toBe(201)
+
+    const recipeOnDatabase = await request(app.getHttpServer())
+      .get('/recipes?scope=mine')
+      .set('Authorization', `Bearer ${accessToken}`)
+
+    const recipeId = recipeOnDatabase.body.items[0].recipeId
+
+    const publishResponse = await request(app.getHttpServer())
+      .post(`/recipes/${recipeId}/publish`)
+      .set('Authorization', `Bearer ${accessToken}`)
+
+    expect(publishResponse.statusCode).toBe(204)
+
+    const response = await request(app.getHttpServer()).get(
+      '/recipes?ingredients=frango&ingredients=batata',
+    )
+
+    expect(response.statusCode).toBe(200)
+    // TODO: tirar esse spec expect — shape de search result e match ALL já estão no unit.
+    expect(response.body.items[0]).toEqual(
+      expect.objectContaining({
+        name: 'Chicken Potato Stew',
+        author: 'ingredients_author',
+        prepTimeInMinutes: expect.anything(),
+        difficultyLevel: expect.any(String),
+      }),
+    )
+  })
+
+  test('[GET] /recipes?ingredientMatch= with invalid value returns 400', async () => {
+    const response = await request(app.getHttpServer()).get(
+      '/recipes?ingredients=frango&ingredientMatch=PARTIAL',
     )
 
     expect(response.statusCode).toBe(400)
