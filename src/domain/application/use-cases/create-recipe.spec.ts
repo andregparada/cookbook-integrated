@@ -206,7 +206,7 @@ describe('Create Recipe', () => {
     expect(result.value).toBeInstanceOf(InvalidRecipeTimingOrServingsError)
   })
 
-  it('should allow to_taste ingredient with null amount', async () => {
+  it('should allow ingredients with "to taste" measurement with null amount', async () => {
     const result = await sut.execute(
       makeCreateRecipeUseCaseRequest({
         recipeIngredients: [
@@ -225,7 +225,7 @@ describe('Create Recipe', () => {
     }
   })
 
-  it('should not allow to_taste ingredient with amount', async () => {
+  it('should not allow ingredients with "to taste" measurement with amount', async () => {
     const result = await sut.execute(
       makeCreateRecipeUseCaseRequest({
         recipeIngredients: [

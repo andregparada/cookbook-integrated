@@ -643,7 +643,7 @@ describe('Edit Recipe', () => {
     )
   })
 
-  it('should not allow invalid ingredient measurement', async () => {
+  it('should not allow ingredients with "to taste" measurement with amount', async () => {
     const newRecipe = makeRecipe(
       {
         authorId: new UniqueEntityID('author-1'),
