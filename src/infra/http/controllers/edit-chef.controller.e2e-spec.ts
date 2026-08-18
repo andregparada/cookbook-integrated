@@ -29,9 +29,7 @@ describe('Edit chef (E2E)', () => {
   })
 
   test('[PUT] /user/me', async () => {
-    const user = await chefFactory.makePrismaChef({
-      userName: 'old_username',
-    })
+    const user = await chefFactory.makePrismaChef()
 
     const accessToken = jwt.sign({ sub: user.id.toString() })
 

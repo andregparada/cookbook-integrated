@@ -3,6 +3,7 @@ import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import request from 'supertest'
+import { makeRegisterChefUseCaseRequest } from 'test/factories/make-chef'
 
 describe('Create account (E2E)', () => {
   let app: INestApplication
@@ -21,20 +22,17 @@ describe('Create account (E2E)', () => {
   })
 
   test('[POST] /accounts', async () => {
-    // TODO: usar factory
-    const response = await request(app.getHttpServer()).post('/accounts').send({
-      firstName: 'John',
-      lastName: 'Doe',
-      userName: 'johndoe',
-      email: 'johndoe@example.com',
-      password: '123456',
-    })
+    const body = makeRegisterChefUseCaseRequest()
+
+    const response = await request(app.getHttpServer())
+      .post('/accounts')
+      .send(body)
 
     expect(response.statusCode).toBe(201)
 
     const userOnDatabase = await prisma.user.findUnique({
       where: {
-        email: 'johndoe@example.com',
+        email: body.email,
       },
     })
 

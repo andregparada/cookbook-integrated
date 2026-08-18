@@ -6,22 +6,27 @@ import { JwtService } from '@nestjs/jwt'
 import { Test } from '@nestjs/testing'
 import request from 'supertest'
 import { ChefFactory } from 'test/factories/make-chef'
+import { IngredientFactory } from 'test/factories/make-ingredient'
+import { TagFactory } from 'test/factories/make-tag'
+import { RecipeFactory } from 'test/factories/make-recipe'
 
 describe('Publish recipe (E2E)', () => {
   let app: INestApplication
   let chefFactory: ChefFactory
+  let recipeFactory: RecipeFactory
   let prisma: PrismaService
   let jwt: JwtService
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule, DatabaseModule],
-      providers: [ChefFactory],
+      providers: [ChefFactory, TagFactory, IngredientFactory, RecipeFactory],
     }).compile()
 
     app = moduleRef.createNestApplication()
 
     chefFactory = moduleRef.get(ChefFactory)
+    recipeFactory = moduleRef.get(RecipeFactory)
     prisma = moduleRef.get(PrismaService)
     jwt = moduleRef.get(JwtService)
 
@@ -32,30 +37,11 @@ describe('Publish recipe (E2E)', () => {
     const user = await chefFactory.makePrismaChef()
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
-    // TODO: usar factory
-    const createResponse = await request(app.getHttpServer())
-      .post('/recipes')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .send({
-        name: 'Publishable Recipe',
-        description: 'Description',
-        instructions: 'Cook it.',
-        prepTimeInMinutes: 10,
-        cookTimeInMinutes: 20,
-        servings: 2,
-        difficultyLevel: 'easy',
-        tags: ['dinner'],
-        recipeIngredients: [{ name: 'Salt', amount: 1, unit: 'teaspoon' }],
-      })
-
-    expect(createResponse.statusCode).toBe(201)
-
-    const recipeOnDatabase = await prisma.recipe.findFirst({
-      where: { authorId: user.id.toString() },
-      orderBy: { createdAt: 'desc' },
+    const recipe = await recipeFactory.makePrismaPublishableRecipe({
+      authorId: user.id,
     })
 
-    const recipeId = recipeOnDatabase!.id
+    const recipeId = recipe.id.toString()
 
     const publishResponse = await request(app.getHttpServer())
       .post(`/recipes/${recipeId}/publish`)
@@ -65,9 +51,6 @@ describe('Publish recipe (E2E)', () => {
 
     const recipeOnDatabaseAfterPublish = await prisma.recipe.findUnique({
       where: { id: recipeId },
-      include: {
-        tags: true,
-      },
     })
 
     expect(recipeOnDatabaseAfterPublish?.status).toBe('Published')
@@ -83,38 +66,15 @@ describe('Publish recipe (E2E)', () => {
     const user = await chefFactory.makePrismaChef()
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
-    // TODO: usar factory
-    const createResponse = await request(app.getHttpServer())
-      .post('/recipes')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .send({
-        name: 'Unpublishable Recipe',
-        description: 'Description',
-        instructions: 'Cook it.',
-        prepTimeInMinutes: 10,
-        cookTimeInMinutes: 20,
-        servings: 2,
-        difficultyLevel: 'easy',
-        tags: ['dinner'],
-        recipeIngredients: [{ name: 'Pepper', amount: 1, unit: 'teaspoon' }],
-      })
-
-    expect(createResponse.statusCode).toBe(201)
-
-    const recipeOnDatabaseAfterCreate = await prisma.recipe.findFirst({
-      where: { authorId: user.id.toString() },
-      orderBy: { createdAt: 'desc' },
+    const recipe = await recipeFactory.makePrismaPublishableRecipe({
+      authorId: user.id,
     })
 
-    const recipeId = recipeOnDatabaseAfterCreate!.id
+    const recipeId = recipe.id.toString()
 
     await request(app.getHttpServer())
       .post(`/recipes/${recipeId}/publish`)
       .set('Authorization', `Bearer ${accessToken}`)
-
-    const publishedRecipe = await prisma.recipe.findUnique({
-      where: { id: recipeId },
-    })
 
     const unpublishResponse = await request(app.getHttpServer())
       .post(`/recipes/${recipeId}/unpublish`)

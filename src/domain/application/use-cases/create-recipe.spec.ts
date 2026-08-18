@@ -4,9 +4,9 @@ import { InMemoryIngredientsRepository } from 'test/repositories/in-memory-ingre
 import { InMemoryTagsRepository } from 'test/repositories/in-memory-tags-repository'
 import { InMemoryRecipesRepository } from 'test/repositories/in-memory-recipes-repository'
 import { InMemoryChefsRepository } from 'test/repositories/in-memory-chefs-repository'
-import { Tag } from '@/domain/enterprise/entities/tag'
-import { Ingredient } from '@/domain/enterprise/entities/ingredient'
 import { makeCreateRecipeUseCaseRequest } from 'test/factories/make-recipe'
+import { makeTag } from 'test/factories/make-tag'
+import { makeIngredient } from 'test/factories/make-ingredient'
 import { RecipeCatalogResolver } from '../services/recipe-catalog-resolver'
 import { RecipeStatus } from '@/domain/enterprise/entities/recipe'
 import { MeasurementUnit } from '@/domain/enterprise/entities/recipe-ingredient'
@@ -45,9 +45,7 @@ describe('Create Recipe', () => {
   })
 
   it('should be able to create a recipe', async () => {
-    const result = await sut.execute(
-      makeCreateRecipeUseCaseRequest({ tags: ['tag1', 'tag2'] }),
-    )
+    const result = await sut.execute(makeCreateRecipeUseCaseRequest())
 
     expect(result.isRight()).toBe(true)
 
@@ -61,8 +59,7 @@ describe('Create Recipe', () => {
   })
 
   it('should reuse an existing tag when only casing differs', async () => {
-    // TODO: usar factory
-    await inMemoryTagsRepository.create(Tag.create({ name: 'Ovo' }))
+    await inMemoryTagsRepository.create(makeTag({ name: 'Ovo' }))
 
     await sut.execute(makeCreateRecipeUseCaseRequest({ tags: ['ovo'] }))
 
@@ -131,9 +128,8 @@ describe('Create Recipe', () => {
   })
 
   it('should reuse an existing ingredient when only casing differs', async () => {
-    // TODO: usar factory
     await inMemoryIngredientsRepository.create(
-      Ingredient.create({ name: 'Tomate' }),
+      makeIngredient({ name: 'Tomate' }),
     )
 
     await sut.execute(

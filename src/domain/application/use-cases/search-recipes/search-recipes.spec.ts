@@ -18,12 +18,9 @@ import { RecipeCatalogCard } from '@/domain/enterprise/entities/value-objects/re
 import { RecipeAuthorWorkspaceItem } from '@/domain/enterprise/entities/value-objects/recipe-author-workspace-item'
 import { RecipeSearchResultItem } from '@/domain/enterprise/entities/value-objects/recipe-search-result-item'
 import { SearchIngredientTermsResolver } from '../../services/search-ingredient-terms-resolver'
-import { Ingredient } from '@/domain/enterprise/entities/ingredient'
+import { makeIngredient } from 'test/factories/make-ingredient'
+import { makeRecipeIngredient } from 'test/factories/make-recipe-ingredient'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
-import {
-  MeasurementUnit,
-  RecipeIngredient,
-} from '@/domain/enterprise/entities/recipe-ingredient'
 import { RecipeIngredientList } from '@/domain/enterprise/entities/recipe-ingredient-list'
 
 let inMemoryChefsRepository: InMemoryChefsRepository
@@ -34,8 +31,7 @@ let inMemoryRecipesRepository: InMemoryRecipesRepository
 let sut: SearchRecipesUseCase
 
 async function seedIngredient(name: string, id?: UniqueEntityID) {
-  // TODO: usar factory
-  const ingredient = Ingredient.create({ name }, id)
+  const ingredient = makeIngredient({ name }, id)
 
   await inMemoryIngredientsRepository.create(ingredient)
 
@@ -50,14 +46,10 @@ function makeRecipeWithIngredients(
 ) {
   const ingredients = new RecipeIngredientList(
     ingredientIds.map((ingredientId, index) =>
-      // TODO: usar factory
-      RecipeIngredient.create({
+      makeRecipeIngredient({
         recipeId,
         ingredientId,
-        amount: 1,
-        unit: MeasurementUnit.CUP,
         position: index,
-        note: null,
       }),
     ),
   )
@@ -111,7 +103,6 @@ describe('Search Recipes', () => {
     const draftRecipe = makeRecipe({
       authorId: authorB.id,
       name: 'Draft Recipe',
-      status: RecipeStatus.DRAFT,
     })
 
     await inMemoryRecipesRepository.create(publishedRecipe)
@@ -140,7 +131,6 @@ describe('Search Recipes', () => {
     const draftRecipe = makeRecipe({
       authorId: author.id,
       name: 'My Draft',
-      status: RecipeStatus.DRAFT,
     })
 
     await inMemoryRecipesRepository.create(draftRecipe)
@@ -192,7 +182,6 @@ describe('Search Recipes', () => {
 
     const recipe = makeRecipe({
       authorId: author.id,
-      status: RecipeStatus.DRAFT,
     })
 
     await inMemoryRecipesRepository.create(recipe)
@@ -221,7 +210,6 @@ describe('Search Recipes', () => {
     const draftRecipe = makeRecipe({
       authorId: author.id,
       name: 'My Draft',
-      status: RecipeStatus.DRAFT,
     })
 
     const publishedRecipe = makeRecipe({
@@ -504,7 +492,6 @@ describe('Search Recipes', () => {
     const draftRecipe = makeRecipe({
       authorId: author.id,
       name: 'Bolo Draft',
-      status: RecipeStatus.DRAFT,
     })
 
     await inMemoryRecipesRepository.create(draftRecipe)

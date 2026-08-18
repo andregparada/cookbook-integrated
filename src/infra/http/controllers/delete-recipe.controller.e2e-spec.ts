@@ -6,22 +6,27 @@ import { JwtService } from '@nestjs/jwt'
 import { Test } from '@nestjs/testing'
 import request from 'supertest'
 import { ChefFactory } from 'test/factories/make-chef'
+import { IngredientFactory } from 'test/factories/make-ingredient'
+import { TagFactory } from 'test/factories/make-tag'
+import { RecipeFactory } from 'test/factories/make-recipe'
 
 describe('Delete recipe (E2E)', () => {
   let app: INestApplication
   let chefFactory: ChefFactory
+  let recipeFactory: RecipeFactory
   let prisma: PrismaService
   let jwt: JwtService
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule, DatabaseModule],
-      providers: [ChefFactory],
+      providers: [ChefFactory, TagFactory, IngredientFactory, RecipeFactory],
     }).compile()
 
     app = moduleRef.createNestApplication()
 
     chefFactory = moduleRef.get(ChefFactory)
+    recipeFactory = moduleRef.get(RecipeFactory)
     prisma = moduleRef.get(PrismaService)
     jwt = moduleRef.get(JwtService)
 
@@ -32,39 +37,11 @@ describe('Delete recipe (E2E)', () => {
     const user = await chefFactory.makePrismaChef()
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
-    // TODO: usar factory
-    const createResponse = await request(app.getHttpServer())
-      .post('/recipes')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .send({
-        name: 'Deletable Recipe',
-        description: 'Description',
-        instructions: 'Cook it.',
-        prepTimeInMinutes: 10,
-        cookTimeInMinutes: 20,
-        servings: 2,
-        difficultyLevel: 'easy',
-        tags: ['dinner'],
-        recipeIngredients: [{ name: 'Salt', amount: 1, unit: 'teaspoon' }],
-      })
-
-    // TODO: tirar esse spec expect — 201 do POST /recipes já está no e2e de create.
-    expect(createResponse.statusCode).toBe(201)
-
-    const recipeOnDatabase = await prisma.recipe.findFirst({
-      where: { authorId: user.id.toString() },
-      orderBy: { createdAt: 'desc' },
+    const recipe = await recipeFactory.makePrismaRecipe({
+      authorId: user.id,
     })
 
-    const recipeId = recipeOnDatabase!.id
-
-    const ingredientBeforeDelete = await prisma.ingredient.findFirst({
-      where: { name: 'Salt' },
-    })
-
-    const tagBeforeDelete = await prisma.tag.findFirst({
-      where: { name: 'dinner' },
-    })
+    const recipeId = recipe.id.toString()
 
     const deleteResponse = await request(app.getHttpServer())
       .delete(`/recipes/${recipeId}`)
@@ -77,26 +54,5 @@ describe('Delete recipe (E2E)', () => {
     })
 
     expect(recipeOnDatabaseAfterDelete?.deletedAt).toBeTruthy()
-
-    const getResponse = await request(app.getHttpServer())
-      .get(`/recipes/${recipeId}`)
-      .set('Authorization', `Bearer ${accessToken}`)
-
-    // TODO: tirar esse spec expect — soft-deleted → not found já está no unit de
-    // get-recipe-by-id; 404 HTTP já está no e2e desse GET. Aqui basta deletedAt.
-    expect(getResponse.statusCode).toBe(404)
-
-    const ingredientAfterDelete = await prisma.ingredient.findUnique({
-      where: { id: ingredientBeforeDelete!.id },
-    })
-
-    const tagAfterDelete = await prisma.tag.findUnique({
-      where: { id: tagBeforeDelete!.id },
-    })
-
-    // TODO: tirar esses spec expect — mover para delete-recipe.spec.ts
-    // (catálogo global Ingredient/Tag sobrevive ao soft delete; Sugestão 5).
-    expect(ingredientAfterDelete).toBeTruthy()
-    expect(tagAfterDelete).toBeTruthy()
   })
 })

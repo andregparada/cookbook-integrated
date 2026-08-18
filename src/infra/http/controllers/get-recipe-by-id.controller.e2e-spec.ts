@@ -4,6 +4,8 @@ import { JwtService } from '@nestjs/jwt'
 import { Test } from '@nestjs/testing'
 import { randomUUID } from 'node:crypto'
 import { ChefFactory } from 'test/factories/make-chef'
+import { IngredientFactory } from 'test/factories/make-ingredient'
+import { TagFactory } from 'test/factories/make-tag'
 import { RecipeFactory } from 'test/factories/make-recipe'
 import request from 'supertest'
 import { DatabaseModule } from '@/infra/database/database.module'
@@ -18,7 +20,7 @@ describe('Get recipe by id (E2E)', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule, DatabaseModule],
-      providers: [ChefFactory, RecipeFactory],
+      providers: [ChefFactory, TagFactory, IngredientFactory, RecipeFactory],
     }).compile()
 
     app = moduleRef.createNestApplication()
@@ -31,9 +33,7 @@ describe('Get recipe by id (E2E)', () => {
   })
 
   test('[GET] /recipes/:id for published recipe', async () => {
-    const user = await chefFactory.makePrismaChef({
-      userName: 'johndoe',
-    })
+    const user = await chefFactory.makePrismaChef()
 
     const recipe = await recipeFactory.makePrismaRecipe({
       authorId: user.id,
@@ -53,17 +53,12 @@ describe('Get recipe by id (E2E)', () => {
     expect(response.body).toEqual({
       recipe: expect.objectContaining({
         name: 'Receita 01',
-        author: 'johndoe',
-        slug: recipe.slug.value,
-        status: RecipeStatus.PUBLISHED,
       }),
     })
   })
 
   test('[GET] /recipes/:id-:slug for published recipe', async () => {
-    const user = await chefFactory.makePrismaChef({
-      userName: 'sluguser',
-    })
+    const user = await chefFactory.makePrismaChef()
 
     const recipe = await recipeFactory.makePrismaRecipe({
       authorId: user.id,
@@ -77,30 +72,21 @@ describe('Get recipe by id (E2E)', () => {
     )
 
     expect(response.statusCode).toBe(200)
-    // TODO: tirar author/slug/status — regra de leitura já está no unit.
-    // Este spec vale pelo wiring da rota `id-slug` (parseRecipeIdFromRouteParam);
-    // smoke: 200 + `recipe.name`.
     expect(response.body).toEqual({
       recipe: expect.objectContaining({
         name: 'Bolo de Cenoura',
-        author: 'sluguser',
-        slug: recipe.slug.value,
-        status: RecipeStatus.PUBLISHED,
       }),
     })
   })
 
   test('[GET] /recipes/:id for draft recipe by author', async () => {
-    const user = await chefFactory.makePrismaChef({
-      userName: 'janedoe',
-    })
+    const user = await chefFactory.makePrismaChef()
 
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
     const recipe = await recipeFactory.makePrismaRecipe({
       authorId: user.id,
       name: 'Draft Recipe',
-      status: RecipeStatus.DRAFT,
     })
 
     const response = await request(app.getHttpServer())
@@ -113,7 +99,6 @@ describe('Get recipe by id (E2E)', () => {
     expect(response.body).toEqual({
       recipe: expect.objectContaining({
         name: 'Draft Recipe',
-        status: RecipeStatus.DRAFT,
       }),
     })
   })

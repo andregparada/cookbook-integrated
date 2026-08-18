@@ -24,16 +24,16 @@ describe('Authenticate Chef', () => {
   })
 
   it('should be able to authenticate a chef', async () => {
+    const password = '123456'
     const chef = makeChef({
-      email: 'johndoe@example.com',
-      hashedPassword: await fakeHasher.hash('123456'),
+      hashedPassword: await fakeHasher.hash(password),
     })
 
     inMemoryChefsRepository.items.push(chef)
 
     const result = await sut.execute({
-      email: 'johndoe@example.com',
-      password: '123456',
+      email: chef.email,
+      password,
     })
 
     expect(result.isRight()).toBe(true)
@@ -43,16 +43,17 @@ describe('Authenticate Chef', () => {
   })
 
   it('should be able to authenticate with a different email casing', async () => {
+    const password = '123456'
     const chef = makeChef({
       email: 'johndoe@example.com',
-      hashedPassword: await fakeHasher.hash('123456'),
+      hashedPassword: await fakeHasher.hash(password),
     })
 
     inMemoryChefsRepository.items.push(chef)
 
     const result = await sut.execute({
       email: 'JohnDoe@Example.com',
-      password: '123456',
+      password,
     })
 
     expect(result.isRight()).toBe(true)
@@ -72,15 +73,15 @@ describe('Authenticate Chef', () => {
   })
 
   it('should not be able to authenticate with a wrong password', async () => {
+    const password = '123456'
     const chef = makeChef({
-      email: 'johndoe@example.com',
-      hashedPassword: await fakeHasher.hash('123456'),
+      hashedPassword: await fakeHasher.hash(password),
     })
 
     inMemoryChefsRepository.items.push(chef)
 
     const result = await sut.execute({
-      email: 'johndoe@example.com',
+      email: chef.email,
       password: 'wrong-password',
     })
 

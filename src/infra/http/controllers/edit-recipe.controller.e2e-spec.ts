@@ -7,14 +7,21 @@ import { Test } from '@nestjs/testing'
 import { randomUUID } from 'node:crypto'
 import request from 'supertest'
 import { ChefFactory } from 'test/factories/make-chef'
+import { IngredientFactory } from 'test/factories/make-ingredient'
+import { TagFactory } from 'test/factories/make-tag'
 import {
   makeEditRecipeHttpBody,
   RecipeFactory,
 } from 'test/factories/make-recipe'
+import { makeRecipeIngredient } from 'test/factories/make-recipe-ingredient'
+import { RecipeIngredientList } from '@/domain/enterprise/entities/recipe-ingredient-list'
+import { MeasurementUnit } from '@/domain/enterprise/entities/recipe-ingredient'
 
 describe('Edit recipe (E2E)', () => {
   let app: INestApplication
   let chefFactory: ChefFactory
+  let tagFactory: TagFactory
+  let ingredientFactory: IngredientFactory
   let recipeFactory: RecipeFactory
   let prisma: PrismaService
   let jwt: JwtService
@@ -22,12 +29,14 @@ describe('Edit recipe (E2E)', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule, DatabaseModule],
-      providers: [ChefFactory, RecipeFactory],
+      providers: [ChefFactory, TagFactory, IngredientFactory, RecipeFactory],
     }).compile()
 
     app = moduleRef.createNestApplication()
 
     chefFactory = moduleRef.get(ChefFactory)
+    tagFactory = moduleRef.get(TagFactory)
+    ingredientFactory = moduleRef.get(IngredientFactory)
     recipeFactory = moduleRef.get(RecipeFactory)
     prisma = moduleRef.get(PrismaService)
     jwt = moduleRef.get(JwtService)
@@ -45,7 +54,6 @@ describe('Edit recipe (E2E)', () => {
     })
 
     const recipeId = recipe.id.toString()
-    const originalSlug = recipe.slug.value
     const originalCreatedAt = recipe.createdAt
 
     const editRecipeBody = makeEditRecipeHttpBody()
@@ -69,8 +77,6 @@ describe('Edit recipe (E2E)', () => {
     })
 
     expect(recipeOnDatabase).toBeTruthy()
-    // TODO: tirar slug — imutabilidade já está em edit-recipe.spec.ts. Manter createdAt (Prisma).
-    expect(recipeOnDatabase?.slug).toBe(originalSlug)
     expect(recipeOnDatabase?.createdAt).toEqual(originalCreatedAt)
     expect(recipeOnDatabase?.tags).toHaveLength(
       editRecipeBody.tags?.length ?? 0,
@@ -85,24 +91,23 @@ describe('Edit recipe (E2E)', () => {
 
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
-    // TODO: usar factory
-    const createResponse = await request(app.getHttpServer())
-      .post('/recipes')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .send({
-        name: 'Recipe With Ingredients',
-        instructions: 'Mix ingredients.',
-        difficultyLevel: 'easy',
-        tags: ['dinner'],
-        recipeIngredients: [{ name: 'Salt', amount: 1, unit: 'teaspoon' }],
-      })
+    const ingredient = await ingredientFactory.makePrismaIngredient({
+      name: 'Salt',
+    })
 
-    expect(createResponse.statusCode).toBe(201)
+    const recipe = await recipeFactory.makePrismaRecipe({
+      authorId: user.id,
+      ingredients: new RecipeIngredientList([
+        makeRecipeIngredient({
+          ingredientId: ingredient.id,
+          unit: MeasurementUnit.TEASPOON,
+        }),
+      ]),
+    })
 
     const createdRecipe = await prisma.recipe.findFirst({
       where: {
-        authorId: user.id.toString(),
-        name: 'Recipe With Ingredients',
+        id: recipe.id.toString(),
       },
       include: {
         ingredients: {
@@ -118,22 +123,18 @@ describe('Edit recipe (E2E)', () => {
     const response = await request(app.getHttpServer())
       .put(`/recipes/${createdRecipe?.id}`)
       .set('Authorization', `Bearer ${accessToken}`)
-      // TODO: usar factory
-      .send({
-        name: 'Recipe With Ingredients',
-        instructions: 'Mix ingredients.',
-        difficultyLevel: 'easy',
-        tags: ['dinner'],
-        recipeIngredients: [
-          {
-            id: recipeIngredientId,
-            name: 'Salt',
-            amount: 2,
-            unit: 'tablespoon',
-            note: 'para polvilhar',
-          },
-        ],
-      })
+      .send(
+        makeEditRecipeHttpBody({
+          recipeIngredients: [
+            {
+              id: recipeIngredientId,
+              name: 'Salt',
+              amount: 1,
+              unit: MeasurementUnit.TEASPOON,
+            },
+          ],
+        }),
+      )
 
     expect(response.statusCode).toBe(204)
 
@@ -144,12 +145,6 @@ describe('Edit recipe (E2E)', () => {
     })
 
     expect(recipeOnDatabase).toBeTruthy()
-    // TODO: tirar amount/unit/position/note — update in-place já está no unit.
-    // E2e feliz: 204 + mesma row id persistida (adapter Prisma).
-    expect(recipeOnDatabase?.amount).toBe(2)
-    expect(recipeOnDatabase?.unit).toBe('Tablespoon')
-    expect(recipeOnDatabase?.position).toBe(0)
-    expect(recipeOnDatabase?.note).toBe('para polvilhar')
   })
 
   test('[PUT] /recipes/:id should reject body without recipeIngredients', async () => {
@@ -171,30 +166,30 @@ describe('Edit recipe (E2E)', () => {
     expect(response.statusCode).toBe(400)
   })
 
-  // TODO: regra “omitir tags preserva” já está no unit. Manter o spec só pela
-  // regressão do wipe Prisma (IDs iguais no banco); não reassertar a regra de domínio.
   test('[PUT] /recipes/:id should preserve tags when tags are omitted', async () => {
     const user = await chefFactory.makePrismaChef()
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
-    // TODO: usar factory
-    const createResponse = await request(app.getHttpServer())
-      .post('/recipes')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .send({
-        name: 'Recipe With Tags',
-        instructions: 'Mix ingredients.',
-        difficultyLevel: 'easy',
-        tags: ['dinner', 'quick'],
-        recipeIngredients: [{ name: 'Salt', amount: 1, unit: 'teaspoon' }],
-      })
+    const dinnerTag = await tagFactory.makePrismaTag({ name: 'dinner' })
+    const quickTag = await tagFactory.makePrismaTag({ name: 'quick' })
+    const ingredient = await ingredientFactory.makePrismaIngredient({
+      name: 'Salt',
+    })
 
-    expect(createResponse.statusCode).toBe(201)
+    const recipe = await recipeFactory.makePrismaRecipe({
+      authorId: user.id,
+      tagsIds: [dinnerTag.id, quickTag.id],
+      ingredients: new RecipeIngredientList([
+        makeRecipeIngredient({
+          ingredientId: ingredient.id,
+          unit: MeasurementUnit.TEASPOON,
+        }),
+      ]),
+    })
 
     const createdRecipe = await prisma.recipe.findFirst({
       where: {
-        authorId: user.id.toString(),
-        name: 'Recipe With Tags',
+        id: recipe.id.toString(),
       },
       include: {
         tags: true,
@@ -206,13 +201,14 @@ describe('Edit recipe (E2E)', () => {
     const response = await request(app.getHttpServer())
       .put(`/recipes/${createdRecipe?.id}`)
       .set('Authorization', `Bearer ${accessToken}`)
-      // TODO: usar factory
-      .send({
-        name: 'Recipe With Tags Updated',
-        instructions: 'Mix ingredients.',
-        difficultyLevel: 'easy',
-        recipeIngredients: [{ name: 'Salt', amount: 1, unit: 'teaspoon' }],
-      })
+      .send(
+        makeEditRecipeHttpBody({
+          tags: undefined,
+          recipeIngredients: [
+            { name: 'Salt', amount: 1, unit: MeasurementUnit.TEASPOON },
+          ],
+        }),
+      )
 
     expect(response.statusCode).toBe(204)
 

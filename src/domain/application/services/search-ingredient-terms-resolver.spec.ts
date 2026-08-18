@@ -1,6 +1,6 @@
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
-import { Ingredient } from '@/domain/enterprise/entities/ingredient'
 import { InMemoryIngredientsRepository } from 'test/repositories/in-memory-ingredients-repository'
+import { makeIngredient } from 'test/factories/make-ingredient'
 import { SearchIngredientTermsResolver } from './search-ingredient-terms-resolver'
 
 let inMemoryIngredientsRepository: InMemoryIngredientsRepository
@@ -13,8 +13,7 @@ describe('SearchIngredientTermsResolver', () => {
   })
 
   it('should resolve ingredient by normalized name', async () => {
-    // TODO: usar factory
-    const chicken = Ingredient.create({ name: 'Frango' }, new UniqueEntityID())
+    const chicken = makeIngredient({ name: 'Frango' }, new UniqueEntityID())
 
     await inMemoryIngredientsRepository.create(chicken)
 
@@ -27,8 +26,7 @@ describe('SearchIngredientTermsResolver', () => {
   })
 
   it('should resolve ingredient by id', async () => {
-    // TODO: usar factory
-    const potato = Ingredient.create({ name: 'Batata' }, new UniqueEntityID())
+    const potato = makeIngredient({ name: 'Batata' }, new UniqueEntityID())
 
     await inMemoryIngredientsRepository.create(potato)
 
@@ -41,8 +39,7 @@ describe('SearchIngredientTermsResolver', () => {
   })
 
   it('should deduplicate repeated terms by normalized name', async () => {
-    // TODO: usar factory
-    const chicken = Ingredient.create({ name: 'Frango' }, new UniqueEntityID())
+    const chicken = makeIngredient({ name: 'Frango' }, new UniqueEntityID())
 
     await inMemoryIngredientsRepository.create(chicken)
 
@@ -55,8 +52,7 @@ describe('SearchIngredientTermsResolver', () => {
   })
 
   it('should deduplicate repeated terms by id', async () => {
-    // TODO: usar factory
-    const chicken = Ingredient.create({ name: 'Frango' }, new UniqueEntityID())
+    const chicken = makeIngredient({ name: 'Frango' }, new UniqueEntityID())
 
     await inMemoryIngredientsRepository.create(chicken)
 
@@ -92,8 +88,7 @@ describe('SearchIngredientTermsResolver', () => {
   })
 
   it('should resolve mixed known and unknown terms', async () => {
-    // TODO: usar factory
-    const chicken = Ingredient.create({ name: 'Frango' }, new UniqueEntityID())
+    const chicken = makeIngredient({ name: 'Frango' }, new UniqueEntityID())
 
     await inMemoryIngredientsRepository.create(chicken)
 

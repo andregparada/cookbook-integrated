@@ -11,12 +11,10 @@ import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { InMemoryChefsRepository } from 'test/repositories/in-memory-chefs-repository'
 import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
-import { Tag } from '@/domain/enterprise/entities/tag'
-import { Ingredient } from '@/domain/enterprise/entities/ingredient'
-import {
-  RecipeIngredient,
-  MeasurementUnit,
-} from '@/domain/enterprise/entities/recipe-ingredient'
+import { makeTag } from 'test/factories/make-tag'
+import { makeIngredient } from 'test/factories/make-ingredient'
+import { makeRecipeIngredient } from 'test/factories/make-recipe-ingredient'
+import { MeasurementUnit } from '@/domain/enterprise/entities/recipe-ingredient'
 import { RecipeIngredientList } from '@/domain/enterprise/entities/recipe-ingredient-list'
 import { RecipeCatalogResolver } from '../services/recipe-catalog-resolver'
 import { RecipeNotPublishableError } from '@/domain/enterprise/errors/recipe-not-publishable-error'
@@ -118,23 +116,18 @@ describe('Edit Recipe', () => {
   })
 
   it('should clear tags and recipe ingredients when empty arrays are sent', async () => {
-    // TODO: usar factory
-    const tag1 = Tag.create({ name: 'tag1' })
-    const tag2 = Tag.create({ name: 'tag2' })
+    const tag1 = makeTag({ name: 'tag1' })
+    const tag2 = makeTag({ name: 'tag2' })
     await inMemoryTagsRepository.create(tag1)
     await inMemoryTagsRepository.create(tag2)
 
-    // TODO: usar factory
-    const ingredient = Ingredient.create({ name: 'flour' })
+    const ingredient = makeIngredient({ name: 'flour' })
     await inMemoryIngredientsRepository.create(ingredient)
 
-    const recipeIngredient = RecipeIngredient.create({
+    const recipeIngredient = makeRecipeIngredient({
       recipeId: new UniqueEntityID('recipe-1'),
       ingredientId: ingredient.id,
       amount: 2,
-      unit: MeasurementUnit.CUP,
-      position: 0,
-      note: null,
     })
 
     const newRecipe = makeRecipe(
@@ -166,9 +159,8 @@ describe('Edit Recipe', () => {
   })
 
   it('should preserve tags when they are omitted from the request', async () => {
-    // TODO: usar factory
-    const tag1 = Tag.create({ name: 'tag1' })
-    const tag2 = Tag.create({ name: 'tag2' })
+    const tag1 = makeTag({ name: 'tag1' })
+    const tag2 = makeTag({ name: 'tag2' })
     await inMemoryTagsRepository.create(tag1)
     await inMemoryTagsRepository.create(tag2)
 
@@ -233,17 +225,13 @@ describe('Edit Recipe', () => {
   })
 
   it('should update amount and unit for the same ingredient without duplicating rows', async () => {
-    // TODO: usar factory
-    const ingredient = Ingredient.create({ name: 'Salt' })
+    const ingredient = makeIngredient({ name: 'Salt' })
     await inMemoryIngredientsRepository.create(ingredient)
 
-    const recipeIngredient = RecipeIngredient.create({
+    const recipeIngredient = makeRecipeIngredient({
       recipeId: new UniqueEntityID('recipe-1'),
       ingredientId: ingredient.id,
-      amount: 1,
       unit: MeasurementUnit.TEASPOON,
-      position: 0,
-      note: null,
     })
 
     const newRecipe = makeRecipe(
@@ -536,17 +524,13 @@ describe('Edit Recipe', () => {
   })
 
   it('should not be able to remove all ingredients from a published recipe', async () => {
-    // TODO: usar factory
-    const ingredient = Ingredient.create({ name: 'Salt' })
+    const ingredient = makeIngredient({ name: 'Salt' })
     await inMemoryIngredientsRepository.create(ingredient)
 
-    const recipeIngredient = RecipeIngredient.create({
+    const recipeIngredient = makeRecipeIngredient({
       recipeId: new UniqueEntityID('recipe-1'),
       ingredientId: ingredient.id,
-      amount: 1,
       unit: MeasurementUnit.TEASPOON,
-      position: 0,
-      note: null,
     })
 
     const newRecipe = makeRecipe(
@@ -575,17 +559,13 @@ describe('Edit Recipe', () => {
   })
 
   it('should not be able to clear name from a published recipe', async () => {
-    // TODO: usar factory
-    const ingredient = Ingredient.create({ name: 'Salt' })
+    const ingredient = makeIngredient({ name: 'Salt' })
     await inMemoryIngredientsRepository.create(ingredient)
 
-    const recipeIngredient = RecipeIngredient.create({
+    const recipeIngredient = makeRecipeIngredient({
       recipeId: new UniqueEntityID('recipe-1'),
       ingredientId: ingredient.id,
-      amount: 1,
       unit: MeasurementUnit.TEASPOON,
-      position: 0,
-      note: null,
     })
 
     const newRecipe = makeRecipe(
@@ -616,17 +596,13 @@ describe('Edit Recipe', () => {
   })
 
   it('should not be able to clear instructions from a published recipe', async () => {
-    // TODO: usar factory
-    const ingredient = Ingredient.create({ name: 'Salt' })
+    const ingredient = makeIngredient({ name: 'Salt' })
     await inMemoryIngredientsRepository.create(ingredient)
 
-    const recipeIngredient = RecipeIngredient.create({
+    const recipeIngredient = makeRecipeIngredient({
       recipeId: new UniqueEntityID('recipe-1'),
       ingredientId: ingredient.id,
-      amount: 1,
       unit: MeasurementUnit.TEASPOON,
-      position: 0,
-      note: null,
     })
 
     const newRecipe = makeRecipe(
@@ -710,28 +686,23 @@ describe('Edit Recipe', () => {
   })
 
   it('should update position when recipe ingredients are reordered', async () => {
-    // TODO: usar factory
-    const ingredientA = Ingredient.create({ name: 'Salt' })
-    const ingredientB = Ingredient.create({ name: 'Pepper' })
+    const ingredientA = makeIngredient({ name: 'Salt' })
+    const ingredientB = makeIngredient({ name: 'Pepper' })
     await inMemoryIngredientsRepository.create(ingredientA)
     await inMemoryIngredientsRepository.create(ingredientB)
 
-    const recipeIngredientA = RecipeIngredient.create({
+    const recipeIngredientA = makeRecipeIngredient({
       recipeId: new UniqueEntityID('recipe-1'),
       ingredientId: ingredientA.id,
-      amount: 1,
       unit: MeasurementUnit.TEASPOON,
-      position: 0,
-      note: null,
     })
 
-    const recipeIngredientB = RecipeIngredient.create({
+    const recipeIngredientB = makeRecipeIngredient({
       recipeId: new UniqueEntityID('recipe-1'),
       ingredientId: ingredientB.id,
       amount: 2,
       unit: MeasurementUnit.PINCH,
       position: 1,
-      note: null,
     })
 
     const newRecipe = makeRecipe(

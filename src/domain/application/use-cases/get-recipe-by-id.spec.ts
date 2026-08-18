@@ -92,7 +92,6 @@ describe('Get Recipe By Id', () => {
 
     const newRecipe = makeRecipe({
       authorId: chef.id,
-      status: RecipeStatus.DRAFT,
     })
 
     await inMemoryRecipesRepository.create(newRecipe)
@@ -113,7 +112,6 @@ describe('Get Recipe By Id', () => {
 
     const newRecipe = makeRecipe({
       authorId: chef.id,
-      status: RecipeStatus.DRAFT,
     })
 
     await inMemoryRecipesRepository.create(newRecipe)

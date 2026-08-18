@@ -24,12 +24,13 @@ describe('Edit Chef', () => {
 
     await inMemoryChefsRepository.create(newChef)
 
-    // TODO: usar factory
-    const result = await sut.execute({
-      actorId: 'chef-1',
-      chefId: newChef.id.toValue(),
-      firstName: 'Outro Nome',
-    })
+    const result = await sut.execute(
+      makeEditChefUseCaseRequest({
+        actorId: 'chef-1',
+        chefId: newChef.id.toValue(),
+        firstName: 'Outro Nome',
+      }),
+    )
 
     expect(result.isRight()).toBe(true)
     expect(inMemoryChefsRepository.items[0]).toMatchObject({
@@ -45,12 +46,13 @@ describe('Edit Chef', () => {
 
     await inMemoryChefsRepository.create(newChef)
 
-    // TODO: usar factory
-    const result = await sut.execute({
-      actorId: 'chef-1',
-      chefId: newChef.id.toValue(),
-      userName: 'legacy name',
-    })
+    const result = await sut.execute(
+      makeEditChefUseCaseRequest({
+        actorId: 'chef-1',
+        chefId: newChef.id.toValue(),
+        userName: 'legacy name',
+      }),
+    )
 
     expect(result.isRight()).toBe(true)
     expect(inMemoryChefsRepository.items[0].userName).toBe('legacy name')
@@ -64,12 +66,13 @@ describe('Edit Chef', () => {
 
     await inMemoryChefsRepository.create(newChef)
 
-    // TODO: usar factory
-    const result = await sut.execute({
-      actorId: 'chef-2',
-      chefId: newChef.id.toValue(),
-      firstName: 'Outro Nome',
-    })
+    const result = await sut.execute(
+      makeEditChefUseCaseRequest({
+        actorId: 'chef-2',
+        chefId: newChef.id.toValue(),
+        firstName: 'Outro Nome',
+      }),
+    )
 
     expect(result.isLeft()).toBe(true)
     expect(result.value).toBeInstanceOf(NotAllowedError)
@@ -79,12 +82,13 @@ describe('Edit Chef', () => {
   })
 
   it('should not be able to edit a non-existing chef', async () => {
-    // TODO: usar factory
-    const result = await sut.execute({
-      actorId: 'chef-1',
-      chefId: 'non-existing-chef-id',
-      firstName: 'Outro Nome',
-    })
+    const result = await sut.execute(
+      makeEditChefUseCaseRequest({
+        actorId: 'chef-1',
+        chefId: 'non-existing-chef-id',
+        firstName: 'Outro Nome',
+      }),
+    )
 
     expect(result.isLeft()).toBe(true)
     expect(result.value).toBeInstanceOf(ResourceNotFoundError)

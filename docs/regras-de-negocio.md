@@ -646,27 +646,14 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 
 ## 6. Veredito e Próximos Passos
 
-O modelo conceitual do **Cookbook** possui base sólida após a fundação MF-01…MF-10: agregado de receita, sync atômico, normalização de catálogo, autorização de mutações e mapeamento de erros. A principal evolução é transicionar de um CRUD básico para um **catálogo público pesquisável** com ciclo de vida de publicação.
+Fundação (MF-01…MF-10), ciclo de vida da receita e a base da busca já estão no código: escopos (12.a), read models (12.b), `query` (12.c), `ingredients[]` (12.d) e paginação. Planos concluídos ficam em [`docs/plans/completed/`](plans/completed/) e no backlog da [§5](#5-inconsistências-do-código-vs-regras-backlog).
 
-**Sequência sugerida de planos derivados:**
+**Ainda falta (Fase 1):**
 
-| Ordem | Plano | Escopo principal |
+| Ordem | Plano | Escopo |
 | :---: | :--- | :--- |
-| 0 | **MF-18 — Autoria imutável** ✅ | `actorId` em edit; `authorId` do JWT no create; omit no Prisma `save` |
-| 1 | **MF-11 — Publicação e status** ✅ | `RecipeStatus`, `publishedAt`, `PublishRecipeUseCase`, leitura pública |
-| 2 | **MF-12 — Invariantes de Chef** ✅ | Unicidade de `userName`, formato, nomes reservados |
-| 3 | **MF-13 — Semântica de null em tempos e porções** ✅ | Defaults `null`, validação de faixa, `null` explícito na edição |
-| 3a | **MF-21 — Enum de unidades** ✅ | `MeasurementUnit` |
-| 3b | **MF-22 — Ordem e observação de ingredientes** ✅ | `position`/`note` |
-| 3c | **MF-23 — Instruções em texto livre** ✅ | `RecipeInstructions` (normalização + limite); `description` limpável |
-| 3d | **MF-24 — Limites e semântica de tags** ✅ | `RecipeTagNames` (máx. 10, 50 chars, dedup); omitir preserva; fix wipe no Prisma |
-| 4 | **MF-14 — Busca e paginação** | Filtros combinados (Sugestões 12.c–12.l); read models finais (12.b); base em **MF-25** ✅ |
-| 4a | **MF-25 — Escopos de consulta** ✅ | `GET /recipes` `scope=global|mine`, paginação, visibilidade 12.a; `RecipeSummary` transitório |
-| 4b | **MF-26 — Read models de listagem** ✅ | `RecipeCatalogCard`, `RecipeAuthorWorkspaceItem`, `RecipeSearchResultItem`; contrato `SearchRecipesParams`; helpers de composição 12.b |
-| 4c | **MF-27 — Busca textual livre** ✅ | Filtro `query` (12.c): substring case-insensitive em `name`/`description`; Zod máx. 100 chars |
-| 4d | **MF-28 — Filtro por ingredientes exigidos** ✅ | `ingredients[]` + `ingredientMatch` (12.d): resolução por ID/`normalizedName`, modos `ALL`/`ANY`, presença na receita |
-| 5 | **MF-15 — Perfil público** | `GetChefProfileUseCase`, listagem por autor |
-| 6 | **MF-16 — Exclusão (soft delete)** ✅ | `DeleteRecipeUseCase`, `deletedAt` |
-| 7 | **MF-17 — Modo despensa** | Ranqueamento por cobertura de ingredientes |
+| 1 | **MF-14 — Filtros restantes da busca** | 12.e `excludeIngredients[]`; 12.f `tags[]`/`tagMatch`; 12.g `difficultyLevel`; 12.h `maxTotalTimeInMinutes`; 12.i `authorUserName`; 12.j `sortBy`; 12.l `minServings` |
+| 2 | **MF-15 — Perfil público** | `GetChefProfileUseCase`, listagem por autor (`/@userName`) |
+| 3 | **MF-17 — Modo despensa** | `pantryIngredients[]`, cobertura e `missingIngredients[]` |
 
-Cada plano deve seguir o [template do guia de fundação](plans/completed/plano-melhorias-fundacao.md#template-para-planos-derivados): critério de pronto (unit para regras, e2e para wiring), sem duplicar branches de use case em e2e.
+Cada plano deve seguir o [template do guia de fundação](plans/completed/plano-melhorias-fundacao.md#template-para-planos-derivados): critério de pronto (unit para regras, e2e para wiring), sem duplicar branches de use case em e2e. Os filtros da busca continuam como MFs derivados (como MF-27 e MF-28).

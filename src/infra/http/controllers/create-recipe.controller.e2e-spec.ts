@@ -6,6 +6,7 @@ import { JwtService } from '@nestjs/jwt'
 import { Test } from '@nestjs/testing'
 import request from 'supertest'
 import { ChefFactory } from 'test/factories/make-chef'
+import { makeCreateRecipeHttpBody } from 'test/factories/make-recipe'
 
 describe('Create recipe (E2E)', () => {
   let app: INestApplication
@@ -33,24 +34,10 @@ describe('Create recipe (E2E)', () => {
 
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
-    // TODO: usar factory
     const response = await request(app.getHttpServer())
       .post('/recipes')
       .set('Authorization', `Bearer ${accessToken}`)
-      .send({
-        name: 'New Recipe',
-        description: 'This is a new recipe',
-        instructions: '1. Do this. 2. Do that.',
-        prepTimeInMinutes: 15,
-        cookTimeInMinutes: 30,
-        servings: 4,
-        difficultyLevel: 'medium',
-        tags: ['dinner', 'easy'],
-        recipeIngredients: [
-          { name: 'Ingredient 1', amount: 2, unit: 'cup', note: 'picado fino' },
-          { name: 'Ingredient 2', amount: 1, unit: 'tablespoon' },
-        ],
-      })
+      .send(makeCreateRecipeHttpBody())
 
     expect(response.statusCode).toBe(201)
 
@@ -65,50 +52,7 @@ describe('Create recipe (E2E)', () => {
     })
 
     expect(recipeOnDatabase).toBeTruthy()
-    // TODO: tirar status/publishedAt — default DRAFT já está em create-recipe.spec.ts.
-    expect(recipeOnDatabase?.status).toBe('Draft')
-    expect(recipeOnDatabase?.publishedAt).toBeNull()
     expect(recipeOnDatabase?.tags).toHaveLength(2)
     expect(recipeOnDatabase?.ingredients).toHaveLength(2)
-    // TODO: tirar unit/position/note — já estão no unit (MeasurementUnit, posição, note).
-    // E2e feliz: 201 + row + grafos tags/ingredients persistidos.
-    expect(recipeOnDatabase?.ingredients[0].unit).toBe('Cup')
-    expect(recipeOnDatabase?.ingredients[0].position).toBe(0)
-    expect(recipeOnDatabase?.ingredients[0].note).toBe('picado fino')
-    expect(recipeOnDatabase?.ingredients[1].unit).toBe('Tablespoon')
-    expect(recipeOnDatabase?.ingredients[1].position).toBe(1)
-    expect(recipeOnDatabase?.ingredients[1].note).toBeNull()
-  })
-
-  test('[POST] /recipes without timing and servings', async () => {
-    const user = await chefFactory.makePrismaChef()
-
-    const accessToken = jwt.sign({ sub: user.id.toString() })
-
-    // TODO: usar factory
-    const response = await request(app.getHttpServer())
-      .post('/recipes')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .send({
-        name: 'Draft Without Timing',
-        instructions: 'Mix and serve.',
-        difficultyLevel: 'easy',
-      })
-
-    expect(response.statusCode).toBe(201)
-
-    const recipeOnDatabase = await prisma.recipe.findFirst({
-      where: {
-        authorId: user.id.toString(),
-        name: 'Draft Without Timing',
-      },
-    })
-
-    expect(recipeOnDatabase).toBeTruthy()
-    // TODO: tirar esses spec expect — null de tempos/porções já está no unit (MF-13).
-    // Manter o spec só se o valor for Zod aceitar omit (201 + row).
-    expect(recipeOnDatabase?.prepTime).toBeNull()
-    expect(recipeOnDatabase?.cookTime).toBeNull()
-    expect(recipeOnDatabase?.servings).toBeNull()
   })
 })

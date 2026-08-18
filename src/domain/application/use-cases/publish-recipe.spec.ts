@@ -3,6 +3,7 @@ import { InMemoryTagsRepository } from 'test/repositories/in-memory-tags-reposit
 import { InMemoryRecipesRepository } from 'test/repositories/in-memory-recipes-repository'
 import {
   makePublishRecipeUseCaseRequest,
+  makePublishableRecipe,
   makeRecipe,
 } from 'test/factories/make-recipe'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
@@ -11,11 +12,9 @@ import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 import { RecipeStatus } from '@/domain/enterprise/entities/recipe'
 import { RecipeNotPublishableError } from '@/domain/enterprise/errors/recipe-not-publishable-error'
-import { Ingredient } from '@/domain/enterprise/entities/ingredient'
-import {
-  RecipeIngredient,
-  MeasurementUnit,
-} from '@/domain/enterprise/entities/recipe-ingredient'
+import { makeIngredient } from 'test/factories/make-ingredient'
+import { makeRecipeIngredient } from 'test/factories/make-recipe-ingredient'
+import { MeasurementUnit } from '@/domain/enterprise/entities/recipe-ingredient'
 import { RecipeIngredientList } from '@/domain/enterprise/entities/recipe-ingredient-list'
 import { PublishRecipeUseCase } from './publish-recipe'
 
@@ -43,27 +42,12 @@ describe('Publish Recipe', () => {
   })
 
   it('should be able to publish a recipe', async () => {
-    // TODO: usar factory
-    const ingredient = Ingredient.create({ name: 'Salt' })
-
-    const recipeIngredient = RecipeIngredient.create({
-      recipeId: new UniqueEntityID('recipe-1'),
-      ingredientId: ingredient.id,
-      amount: 1,
-      unit: MeasurementUnit.TEASPOON,
-      position: 0,
-      note: null,
-    })
-
-    const newRecipe = makeRecipe(
-      {
-        authorId: new UniqueEntityID('author-1'),
-        ingredients: new RecipeIngredientList([recipeIngredient]),
-      },
+    const { recipe, recipeIngredient } = makePublishableRecipe(
+      { authorId: new UniqueEntityID('author-1') },
       new UniqueEntityID('recipe-1'),
     )
 
-    await inMemoryRecipesRepository.create(newRecipe)
+    await inMemoryRecipesRepository.create(recipe)
     await inMemoryRecipeIngredientsRepository.createMany([recipeIngredient])
 
     const result = await sut.execute(
@@ -81,29 +65,16 @@ describe('Publish Recipe', () => {
   })
 
   it('should keep publishedAt when republishing after unpublish', async () => {
-    // TODO: usar factory
-    const ingredient = Ingredient.create({ name: 'Salt' })
-    const recipeIngredient = RecipeIngredient.create({
-      recipeId: new UniqueEntityID('recipe-1'),
-      ingredientId: ingredient.id,
-      amount: 1,
-      unit: MeasurementUnit.TEASPOON,
-      position: 0,
-      note: null,
-    })
-
     const publishedAt = new Date('2024-01-01T00:00:00.000Z')
-    const newRecipe = makeRecipe(
+    const { recipe } = makePublishableRecipe(
       {
         authorId: new UniqueEntityID('author-1'),
-        status: RecipeStatus.DRAFT,
         publishedAt,
-        ingredients: new RecipeIngredientList([recipeIngredient]),
       },
       new UniqueEntityID('recipe-1'),
     )
 
-    await inMemoryRecipesRepository.create(newRecipe)
+    await inMemoryRecipesRepository.create(recipe)
 
     const result = await sut.execute(
       makePublishRecipeUseCaseRequest({
@@ -117,15 +88,11 @@ describe('Publish Recipe', () => {
   })
 
   it('should load ingredients from repository before validating publishability', async () => {
-    // TODO: usar factory
-    const ingredient = Ingredient.create({ name: 'Salt' })
-    const recipeIngredient = RecipeIngredient.create({
+    const ingredient = makeIngredient({ name: 'Salt' })
+    const recipeIngredient = makeRecipeIngredient({
       recipeId: new UniqueEntityID('recipe-1'),
       ingredientId: ingredient.id,
-      amount: 1,
       unit: MeasurementUnit.TEASPOON,
-      position: 0,
-      note: null,
     })
 
     const newRecipe = makeRecipe(
@@ -183,27 +150,15 @@ describe('Publish Recipe', () => {
   })
 
   it('should not be able to publish a recipe with empty instructions', async () => {
-    // TODO: usar factory
-    const ingredient = Ingredient.create({ name: 'Salt' })
-    const recipeIngredient = RecipeIngredient.create({
-      recipeId: new UniqueEntityID('recipe-1'),
-      ingredientId: ingredient.id,
-      amount: 1,
-      unit: MeasurementUnit.TEASPOON,
-      position: 0,
-      note: null,
-    })
-
-    const newRecipe = makeRecipe(
+    const { recipe } = makePublishableRecipe(
       {
         authorId: new UniqueEntityID('author-1'),
         instructions: '',
-        ingredients: new RecipeIngredientList([recipeIngredient]),
       },
       new UniqueEntityID('recipe-1'),
     )
 
-    await inMemoryRecipesRepository.create(newRecipe)
+    await inMemoryRecipesRepository.create(recipe)
 
     const result = await sut.execute(
       makePublishRecipeUseCaseRequest({

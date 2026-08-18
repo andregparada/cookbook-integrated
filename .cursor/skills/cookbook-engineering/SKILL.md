@@ -41,15 +41,20 @@ Distinguish **what** you are building:
 
 | Helper | Use in | Example |
 |--------|--------|---------|
-| `makeRecipe` / `RecipeFactory` | Domain entity or Prisma seed (e2e) | recipe already in DB |
+| `makeRecipe` / `RecipeFactory` | Domain entity or Prisma seed (e2e fixture) | recipe + tags + ingredients in DB |
+| `makePublishableRecipe` / `RecipeFactory.makePrismaPublishableRecipe` | Publishable recipe fixture (unit + e2e) | tag + ingredient + valid measurement graph |
+| `makeTag` / `TagFactory` | Tag entity or Prisma seed | named tag before linking to recipe |
+| `makeIngredient` / `IngredientFactory` | Ingredient entity or Prisma seed | catalog row before recipe ingredient |
+| `makeRecipeIngredient` | `RecipeIngredient` on `RecipeIngredientList` | unit seed or `RecipeFactory` graph |
 | `makeCreateRecipeUseCaseRequest` | Unit specs calling `CreateRecipeUseCase.execute` | in-memory repos, business rules |
 | `makeEditRecipeUseCaseRequest` | Unit specs calling `EditRecipeUseCase.execute` | in-memory repos, business rules |
+| `makeCreateRecipeHttpBody` / `makeEditRecipeHttpBody` | E2E request under test (`POST` / `PUT`) | HTTP happy path only |
 | `makeTagsInput` / `makeRecipeIngredientsInput` | Shared list defaults for use-case request factories | override only when the test asserts tag/ingredient behavior |
 | `makeChef` / `ChefFactory` | Chef entity or auth in e2e | JWT + persisted user |
 
-- Do **not** inline large request objects in specs when a factory exists — use `makeXxxRequest(override)` and override **only** what the test cares about (ids, fields under assertion, or the branch being exercised).
+- Do **not** inline large request objects in specs when a factory exists — use `makeXxxRequest(override)` or `makeXxxHttpBody(override)` and override **only** what the test cares about (ids, fields under assertion, or the branch being exercised).
 - `makeRecipe` / `RecipeFactory` stores `ingredients: RecipeIngredientList` (and `tagsIds`); use-case factories store **inputs** (`tags`, `recipeIngredients`). Do not mix the two shapes in `makeRecipeScalars`.
-- E2E may keep a minimal inline JSON body for the HTTP happy path; business-rule variants belong in unit specs with factories.
+- E2E **fixture** (precondition): seed with `ChefFactory` / `TagFactory` / `IngredientFactory` / `RecipeFactory` — not `POST` to another route. E2E **request under test**: `makeCreateRecipeHttpBody` / `makeEditRecipeHttpBody` or minimal inline JSON when the body itself is the case (validation 400, login).
 
 ## Scalability without over-engineering
 
