@@ -61,6 +61,7 @@ describe('Create Recipe', () => {
   })
 
   it('should reuse an existing tag when only casing differs', async () => {
+    // TODO: usar factory
     await inMemoryTagsRepository.create(Tag.create({ name: 'Ovo' }))
 
     await sut.execute(makeCreateRecipeUseCaseRequest({ tags: ['ovo'] }))
@@ -69,6 +70,8 @@ describe('Create Recipe', () => {
     expect(inMemoryTagsRepository.items[0].name).toBe('Ovo')
   })
 
+  // TODO: dedup do payload já está em recipe-tag-names.spec.ts.
+  // Aqui vale o catálogo (1 Tag persistida / tagsIds na receita).
   it('should deduplicate tags within the same request', async () => {
     const result = await sut.execute(
       makeCreateRecipeUseCaseRequest({
@@ -86,6 +89,8 @@ describe('Create Recipe', () => {
     expect(inMemoryTagsRepository.items[0].name).toBe('Café da Manhã')
   })
 
+  // TODO: limite MAX_TAGS já está em recipe-tag-names.spec.ts.
+  // Manter só InvalidRecipeTagsError + receita não persistida.
   it('should not allow more than the maximum number of tags', async () => {
     const tags = Array.from(
       { length: RecipeTagNames.MAX_TAGS + 1 },
@@ -99,6 +104,8 @@ describe('Create Recipe', () => {
     expect(inMemoryRecipesRepository.items).toHaveLength(0)
   })
 
+  // TODO: tag vazia já está em recipe-tag-names.spec.ts.
+  // Manter só InvalidRecipeTagsError + receita não persistida.
   it('should not allow empty tag names', async () => {
     const result = await sut.execute(
       makeCreateRecipeUseCaseRequest({ tags: [''] }),
@@ -109,6 +116,7 @@ describe('Create Recipe', () => {
     expect(inMemoryRecipesRepository.items).toHaveLength(0)
   })
 
+  // TODO: fundir com “reuse existing tag when only casing differs” — os dois cobrem o mesmo find-or-create.
   it('should preserve the display name from the first tag registration', async () => {
     await sut.execute(
       makeCreateRecipeUseCaseRequest({ tags: ['Café da Manhã'] }),
@@ -123,6 +131,7 @@ describe('Create Recipe', () => {
   })
 
   it('should reuse an existing ingredient when only casing differs', async () => {
+    // TODO: usar factory
     await inMemoryIngredientsRepository.create(
       Ingredient.create({ name: 'Tomate' }),
     )
@@ -270,6 +279,8 @@ describe('Create Recipe', () => {
     }
   })
 
+  // TODO: tirar a asserção da string normalizada — já está em recipe-instructions.spec.ts.
+  // No use case basta isRight (o execute aplica o VO).
   it('should normalize instructions line breaks', async () => {
     const result = await sut.execute(
       makeCreateRecipeUseCaseRequest({
@@ -286,6 +297,8 @@ describe('Create Recipe', () => {
     }
   })
 
+  // TODO: limite de tamanho já está em recipe-instructions.spec.ts.
+  // Manter só InvalidRecipeInstructionsError + receita não persistida.
   it('should not allow instructions longer than the maximum length', async () => {
     const result = await sut.execute(
       makeCreateRecipeUseCaseRequest({

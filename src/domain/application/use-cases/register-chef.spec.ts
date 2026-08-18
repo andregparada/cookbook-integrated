@@ -105,6 +105,8 @@ describe('Register Chef', () => {
     expect(inMemoryChefsRepository.items).toHaveLength(1)
   })
 
+  // TODO: formato de userName já está em user-name.spec.ts.
+  // Manter só InvalidUserNameError + chef não persistido.
   it('should not be able to register a chef with an invalid user name', async () => {
     const result = await sut.execute(
       makeRegisterChefUseCaseRequest({

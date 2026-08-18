@@ -64,6 +64,7 @@ describe('Get Recipe By Id', () => {
     expect(result.value).toBeInstanceOf(ResourceNotFoundError)
   })
 
+  // TODO: fundir com “should be able to get a recipe by id” — o primeiro já executa sem actorId.
   it('should be able to get a published recipe without actorId', async () => {
     const chef = makeChef({ userName: 'John_Doe' })
 

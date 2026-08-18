@@ -32,6 +32,7 @@ describe('Delete recipe (E2E)', () => {
     const user = await chefFactory.makePrismaChef()
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
+    // TODO: usar factory
     const createResponse = await request(app.getHttpServer())
       .post('/recipes')
       .set('Authorization', `Bearer ${accessToken}`)
@@ -47,6 +48,7 @@ describe('Delete recipe (E2E)', () => {
         recipeIngredients: [{ name: 'Salt', amount: 1, unit: 'teaspoon' }],
       })
 
+    // TODO: tirar esse spec expect — 201 do POST /recipes já está no e2e de create.
     expect(createResponse.statusCode).toBe(201)
 
     const recipeOnDatabase = await prisma.recipe.findFirst({
@@ -80,6 +82,8 @@ describe('Delete recipe (E2E)', () => {
       .get(`/recipes/${recipeId}`)
       .set('Authorization', `Bearer ${accessToken}`)
 
+    // TODO: tirar esse spec expect — soft-deleted → not found já está no unit de
+    // get-recipe-by-id; 404 HTTP já está no e2e desse GET. Aqui basta deletedAt.
     expect(getResponse.statusCode).toBe(404)
 
     const ingredientAfterDelete = await prisma.ingredient.findUnique({
@@ -90,6 +94,8 @@ describe('Delete recipe (E2E)', () => {
       where: { id: tagBeforeDelete!.id },
     })
 
+    // TODO: tirar esses spec expect — mover para delete-recipe.spec.ts
+    // (catálogo global Ingredient/Tag sobrevive ao soft delete; Sugestão 5).
     expect(ingredientAfterDelete).toBeTruthy()
     expect(tagAfterDelete).toBeTruthy()
   })

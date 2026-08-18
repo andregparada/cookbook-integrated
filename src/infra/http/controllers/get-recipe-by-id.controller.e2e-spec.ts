@@ -47,6 +47,9 @@ describe('Get recipe by id (E2E)', () => {
     )
 
     expect(response.statusCode).toBe(200)
+
+    // TODO: tirar author/slug/status — já estão em get-recipe-by-id.spec.ts.
+    // Manter só smoke do envelope HTTP (`recipe` + name) para provar presenter + Prisma.
     expect(response.body).toEqual({
       recipe: expect.objectContaining({
         name: 'Receita 01',
@@ -74,6 +77,9 @@ describe('Get recipe by id (E2E)', () => {
     )
 
     expect(response.statusCode).toBe(200)
+    // TODO: tirar author/slug/status — regra de leitura já está no unit.
+    // Este spec vale pelo wiring da rota `id-slug` (parseRecipeIdFromRouteParam);
+    // smoke: 200 + `recipe.name`.
     expect(response.body).toEqual({
       recipe: expect.objectContaining({
         name: 'Bolo de Cenoura',
@@ -102,6 +108,8 @@ describe('Get recipe by id (E2E)', () => {
       .set('Authorization', `Bearer ${accessToken}`)
 
     expect(response.statusCode).toBe(200)
+    // TODO: tirar status DRAFT — “autor lê rascunho” já está no unit.
+    // Este spec vale pelo JWT → actorId; smoke: 200 + `recipe.name`.
     expect(response.body).toEqual({
       recipe: expect.objectContaining({
         name: 'Draft Recipe',

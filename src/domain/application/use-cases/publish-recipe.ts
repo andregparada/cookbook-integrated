@@ -46,6 +46,7 @@ export class PublishRecipeUseCase {
 
     recipe.ingredients = new RecipeIngredientList(recipeIngredients)
 
+    // TODO: mudar para padrão left/right
     try {
       recipe.publish()
     } catch (error) {

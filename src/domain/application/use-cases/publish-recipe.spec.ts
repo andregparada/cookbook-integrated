@@ -43,6 +43,7 @@ describe('Publish Recipe', () => {
   })
 
   it('should be able to publish a recipe', async () => {
+    // TODO: usar factory
     const ingredient = Ingredient.create({ name: 'Salt' })
 
     const recipeIngredient = RecipeIngredient.create({
@@ -80,6 +81,7 @@ describe('Publish Recipe', () => {
   })
 
   it('should keep publishedAt when republishing after unpublish', async () => {
+    // TODO: usar factory
     const ingredient = Ingredient.create({ name: 'Salt' })
     const recipeIngredient = RecipeIngredient.create({
       recipeId: new UniqueEntityID('recipe-1'),
@@ -115,6 +117,7 @@ describe('Publish Recipe', () => {
   })
 
   it('should load ingredients from repository before validating publishability', async () => {
+    // TODO: usar factory
     const ingredient = Ingredient.create({ name: 'Salt' })
     const recipeIngredient = RecipeIngredient.create({
       recipeId: new UniqueEntityID('recipe-1'),
@@ -180,6 +183,7 @@ describe('Publish Recipe', () => {
   })
 
   it('should not be able to publish a recipe with empty instructions', async () => {
+    // TODO: usar factory
     const ingredient = Ingredient.create({ name: 'Salt' })
     const recipeIngredient = RecipeIngredient.create({
       recipeId: new UniqueEntityID('recipe-1'),

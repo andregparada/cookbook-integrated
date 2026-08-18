@@ -75,6 +75,7 @@ export class EditRecipeUseCase {
     recipeIngredients,
   }: EditRecipeUseCaseRequest): Promise<EditRecipeUseCaseResponse> {
     const recipe = await this.recipesRepository.findById(recipeId)
+    // TODO: criar funções utilitárias dentro do use-case para facilitar a leitura do código (ou não?)
 
     if (!recipe) {
       return left(new ResourceNotFoundError())

@@ -31,6 +31,7 @@ export enum MeasurementUnit {
   TO_TASTE = 'to_taste',
 }
 
+// TODO: tentar lembrar o que eu queria acrescentar aqui
 export interface RecipeIngredientProps {
   recipeId: UniqueEntityID
   ingredientId: UniqueEntityID

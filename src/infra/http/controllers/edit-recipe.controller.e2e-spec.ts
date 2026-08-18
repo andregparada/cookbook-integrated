@@ -69,6 +69,7 @@ describe('Edit recipe (E2E)', () => {
     })
 
     expect(recipeOnDatabase).toBeTruthy()
+    // TODO: tirar slug — imutabilidade já está em edit-recipe.spec.ts. Manter createdAt (Prisma).
     expect(recipeOnDatabase?.slug).toBe(originalSlug)
     expect(recipeOnDatabase?.createdAt).toEqual(originalCreatedAt)
     expect(recipeOnDatabase?.tags).toHaveLength(
@@ -84,6 +85,7 @@ describe('Edit recipe (E2E)', () => {
 
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
+    // TODO: usar factory
     const createResponse = await request(app.getHttpServer())
       .post('/recipes')
       .set('Authorization', `Bearer ${accessToken}`)
@@ -116,6 +118,7 @@ describe('Edit recipe (E2E)', () => {
     const response = await request(app.getHttpServer())
       .put(`/recipes/${createdRecipe?.id}`)
       .set('Authorization', `Bearer ${accessToken}`)
+      // TODO: usar factory
       .send({
         name: 'Recipe With Ingredients',
         instructions: 'Mix ingredients.',
@@ -141,6 +144,8 @@ describe('Edit recipe (E2E)', () => {
     })
 
     expect(recipeOnDatabase).toBeTruthy()
+    // TODO: tirar amount/unit/position/note — update in-place já está no unit.
+    // E2e feliz: 204 + mesma row id persistida (adapter Prisma).
     expect(recipeOnDatabase?.amount).toBe(2)
     expect(recipeOnDatabase?.unit).toBe('Tablespoon')
     expect(recipeOnDatabase?.position).toBe(0)
@@ -166,10 +171,13 @@ describe('Edit recipe (E2E)', () => {
     expect(response.statusCode).toBe(400)
   })
 
+  // TODO: regra “omitir tags preserva” já está no unit. Manter o spec só pela
+  // regressão do wipe Prisma (IDs iguais no banco); não reassertar a regra de domínio.
   test('[PUT] /recipes/:id should preserve tags when tags are omitted', async () => {
     const user = await chefFactory.makePrismaChef()
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
+    // TODO: usar factory
     const createResponse = await request(app.getHttpServer())
       .post('/recipes')
       .set('Authorization', `Bearer ${accessToken}`)
@@ -198,6 +206,7 @@ describe('Edit recipe (E2E)', () => {
     const response = await request(app.getHttpServer())
       .put(`/recipes/${createdRecipe?.id}`)
       .set('Authorization', `Bearer ${accessToken}`)
+      // TODO: usar factory
       .send({
         name: 'Recipe With Tags Updated',
         instructions: 'Mix ingredients.',

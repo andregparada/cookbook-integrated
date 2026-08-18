@@ -24,6 +24,7 @@ describe('Edit Chef', () => {
 
     await inMemoryChefsRepository.create(newChef)
 
+    // TODO: usar factory
     const result = await sut.execute({
       actorId: 'chef-1',
       chefId: newChef.id.toValue(),
@@ -44,6 +45,7 @@ describe('Edit Chef', () => {
 
     await inMemoryChefsRepository.create(newChef)
 
+    // TODO: usar factory
     const result = await sut.execute({
       actorId: 'chef-1',
       chefId: newChef.id.toValue(),
@@ -62,6 +64,7 @@ describe('Edit Chef', () => {
 
     await inMemoryChefsRepository.create(newChef)
 
+    // TODO: usar factory
     const result = await sut.execute({
       actorId: 'chef-2',
       chefId: newChef.id.toValue(),
@@ -76,6 +79,7 @@ describe('Edit Chef', () => {
   })
 
   it('should not be able to edit a non-existing chef', async () => {
+    // TODO: usar factory
     const result = await sut.execute({
       actorId: 'chef-1',
       chefId: 'non-existing-chef-id',
@@ -138,6 +142,8 @@ describe('Edit Chef', () => {
     expect(inMemoryChefsRepository.items[0].email).toBe('chef1@example.com')
   })
 
+  // TODO: formato de userName já está em user-name.spec.ts.
+  // Manter só InvalidUserNameError + userName inalterado.
   it('should not be able to change to an invalid user name', async () => {
     const newChef = makeChef(
       { userName: 'chef_one' },

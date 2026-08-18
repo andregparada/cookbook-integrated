@@ -118,11 +118,13 @@ describe('Edit Recipe', () => {
   })
 
   it('should clear tags and recipe ingredients when empty arrays are sent', async () => {
+    // TODO: usar factory
     const tag1 = Tag.create({ name: 'tag1' })
     const tag2 = Tag.create({ name: 'tag2' })
     await inMemoryTagsRepository.create(tag1)
     await inMemoryTagsRepository.create(tag2)
 
+    // TODO: usar factory
     const ingredient = Ingredient.create({ name: 'flour' })
     await inMemoryIngredientsRepository.create(ingredient)
 
@@ -164,6 +166,7 @@ describe('Edit Recipe', () => {
   })
 
   it('should preserve tags when they are omitted from the request', async () => {
+    // TODO: usar factory
     const tag1 = Tag.create({ name: 'tag1' })
     const tag2 = Tag.create({ name: 'tag2' })
     await inMemoryTagsRepository.create(tag1)
@@ -200,6 +203,8 @@ describe('Edit Recipe', () => {
     expect(inMemoryRecipesRepository.items[0].name).toBe('Updated Name')
   })
 
+  // TODO: limite MAX_TAGS já está em recipe-tag-names.spec.ts.
+  // Manter só InvalidRecipeTagsError.
   it('should not allow more than the maximum number of tags', async () => {
     const newRecipe = makeRecipe(
       {
@@ -228,6 +233,7 @@ describe('Edit Recipe', () => {
   })
 
   it('should update amount and unit for the same ingredient without duplicating rows', async () => {
+    // TODO: usar factory
     const ingredient = Ingredient.create({ name: 'Salt' })
     await inMemoryIngredientsRepository.create(ingredient)
 
@@ -352,6 +358,8 @@ describe('Edit Recipe', () => {
     expect(inMemoryRecipesRepository.items[0].description).toBeNull()
   })
 
+  // TODO: tirar a asserção da string normalizada — já está em recipe-instructions.spec.ts.
+  // No use case basta isRight (o execute aplica o VO).
   it('should normalize instructions line breaks', async () => {
     const newRecipe = makeRecipe(
       {
@@ -376,6 +384,8 @@ describe('Edit Recipe', () => {
     )
   })
 
+  // TODO: limite de tamanho já está em recipe-instructions.spec.ts.
+  // Manter só InvalidRecipeInstructionsError + instructions inalteradas.
   it('should not allow instructions longer than the maximum length', async () => {
     const newRecipe = makeRecipe(
       {
@@ -526,6 +536,7 @@ describe('Edit Recipe', () => {
   })
 
   it('should not be able to remove all ingredients from a published recipe', async () => {
+    // TODO: usar factory
     const ingredient = Ingredient.create({ name: 'Salt' })
     await inMemoryIngredientsRepository.create(ingredient)
 
@@ -564,6 +575,7 @@ describe('Edit Recipe', () => {
   })
 
   it('should not be able to clear name from a published recipe', async () => {
+    // TODO: usar factory
     const ingredient = Ingredient.create({ name: 'Salt' })
     await inMemoryIngredientsRepository.create(ingredient)
 
@@ -604,6 +616,7 @@ describe('Edit Recipe', () => {
   })
 
   it('should not be able to clear instructions from a published recipe', async () => {
+    // TODO: usar factory
     const ingredient = Ingredient.create({ name: 'Salt' })
     await inMemoryIngredientsRepository.create(ingredient)
 
@@ -697,6 +710,7 @@ describe('Edit Recipe', () => {
   })
 
   it('should update position when recipe ingredients are reordered', async () => {
+    // TODO: usar factory
     const ingredientA = Ingredient.create({ name: 'Salt' })
     const ingredientB = Ingredient.create({ name: 'Pepper' })
     await inMemoryIngredientsRepository.create(ingredientA)

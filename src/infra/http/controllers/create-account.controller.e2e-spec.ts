@@ -21,6 +21,7 @@ describe('Create account (E2E)', () => {
   })
 
   test('[POST] /accounts', async () => {
+    // TODO: usar factory
     const response = await request(app.getHttpServer()).post('/accounts').send({
       firstName: 'John',
       lastName: 'Doe',

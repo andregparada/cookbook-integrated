@@ -50,6 +50,7 @@ export class EditChefUseCase {
     bio,
   }: EditChefUseCaseRequest): Promise<EditChefUseCaseResponse> {
     const chef = await this.chefsRepository.findById(chefId)
+    // TODO: criar funções utilitárias dentro do use-case para facilitar a leitura do código (ou não?)
 
     if (!chef) {
       return left(new ResourceNotFoundError())

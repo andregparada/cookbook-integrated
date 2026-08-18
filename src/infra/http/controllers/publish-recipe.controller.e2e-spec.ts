@@ -32,6 +32,7 @@ describe('Publish recipe (E2E)', () => {
     const user = await chefFactory.makePrismaChef()
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
+    // TODO: usar factory
     const createResponse = await request(app.getHttpServer())
       .post('/recipes')
       .set('Authorization', `Bearer ${accessToken}`)
@@ -71,14 +72,18 @@ describe('Publish recipe (E2E)', () => {
 
     expect(recipeOnDatabaseAfterPublish?.status).toBe('Published')
     expect(recipeOnDatabaseAfterPublish?.publishedAt).toBeTruthy()
+    // TODO: tirar esses spec expect — tags não fazem parte de publicar; já cobertas no create.
     expect(recipeOnDatabaseAfterPublish?.tags).toHaveLength(1)
     expect(recipeOnDatabaseAfterPublish?.tags[0].name).toBe('dinner')
   })
 
+  // TODO: mover para unpublish-recipe.controller.e2e-spec.ts (rota distinta).
+  // Não fundir com edit-recipe: são use cases e rotas diferentes.
   test('[POST] /recipes/:id/unpublish', async () => {
     const user = await chefFactory.makePrismaChef()
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
+    // TODO: usar factory
     const createResponse = await request(app.getHttpServer())
       .post('/recipes')
       .set('Authorization', `Bearer ${accessToken}`)
@@ -122,6 +127,7 @@ describe('Publish recipe (E2E)', () => {
     })
 
     expect(recipeOnDatabase?.status).toBe('Draft')
+    // TODO: tirar publishedAt — preservação na despublicação já está em unpublish-recipe.spec.ts.
     expect(recipeOnDatabase?.publishedAt).toEqual(publishedRecipe?.publishedAt)
   })
 })

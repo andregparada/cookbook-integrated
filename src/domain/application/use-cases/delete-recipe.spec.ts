@@ -52,6 +52,9 @@ describe('Delete Recipe', () => {
     expect(inMemoryRecipesRepository.items[0].deletedAt).toBeTruthy()
   })
 
+  // TODO: cobrir aqui que Ingredient/Tag globais sobrevivem ao soft delete
+  // (Sugestão 5). Hoje isso só existe no e2e de delete-recipe.
+
   it('should not be able to delete a recipe from another chef', async () => {
     const newRecipe = makeRecipe(
       {

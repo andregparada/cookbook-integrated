@@ -33,6 +33,7 @@ describe('Create recipe (E2E)', () => {
 
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
+    // TODO: usar factory
     const response = await request(app.getHttpServer())
       .post('/recipes')
       .set('Authorization', `Bearer ${accessToken}`)
@@ -64,10 +65,13 @@ describe('Create recipe (E2E)', () => {
     })
 
     expect(recipeOnDatabase).toBeTruthy()
+    // TODO: tirar status/publishedAt — default DRAFT já está em create-recipe.spec.ts.
     expect(recipeOnDatabase?.status).toBe('Draft')
     expect(recipeOnDatabase?.publishedAt).toBeNull()
     expect(recipeOnDatabase?.tags).toHaveLength(2)
     expect(recipeOnDatabase?.ingredients).toHaveLength(2)
+    // TODO: tirar unit/position/note — já estão no unit (MeasurementUnit, posição, note).
+    // E2e feliz: 201 + row + grafos tags/ingredients persistidos.
     expect(recipeOnDatabase?.ingredients[0].unit).toBe('Cup')
     expect(recipeOnDatabase?.ingredients[0].position).toBe(0)
     expect(recipeOnDatabase?.ingredients[0].note).toBe('picado fino')
@@ -81,6 +85,7 @@ describe('Create recipe (E2E)', () => {
 
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
+    // TODO: usar factory
     const response = await request(app.getHttpServer())
       .post('/recipes')
       .set('Authorization', `Bearer ${accessToken}`)
@@ -100,6 +105,8 @@ describe('Create recipe (E2E)', () => {
     })
 
     expect(recipeOnDatabase).toBeTruthy()
+    // TODO: tirar esses spec expect — null de tempos/porções já está no unit (MF-13).
+    // Manter o spec só se o valor for Zod aceitar omit (201 + row).
     expect(recipeOnDatabase?.prepTime).toBeNull()
     expect(recipeOnDatabase?.cookTime).toBeNull()
     expect(recipeOnDatabase?.servings).toBeNull()
