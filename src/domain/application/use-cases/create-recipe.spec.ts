@@ -165,21 +165,25 @@ describe('Create Recipe', () => {
     }
   })
 
-  it('should default timing and servings to null when omitted', async () => {
+  it('should default omitted nullable scalars to null', async () => {
     const result = await sut.execute(
       makeCreateRecipeUseCaseRequest({
+        description: undefined,
         prepTimeInMinutes: undefined,
         cookTimeInMinutes: undefined,
         servings: undefined,
+        difficultyLevel: undefined,
       }),
     )
 
     expect(result.isRight()).toBe(true)
 
     if (result.isRight()) {
+      expect(result.value.recipe.description).toBeNull()
       expect(result.value.recipe.prepTimeInMinutes).toBeNull()
       expect(result.value.recipe.cookTimeInMinutes).toBeNull()
       expect(result.value.recipe.servings).toBeNull()
+      expect(result.value.recipe.difficultyLevel).toBeNull()
     }
   })
 

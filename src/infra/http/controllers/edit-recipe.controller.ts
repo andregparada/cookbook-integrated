@@ -15,7 +15,7 @@ const editRecipeBodySchema = z.object({
   prepTimeInMinutes: z.number().int().nonnegative().nullish(),
   cookTimeInMinutes: z.number().int().nonnegative().nullish(),
   servings: z.number().int().min(1).nullish(),
-  difficultyLevel: z.nativeEnum(DifficultyLevel).optional(),
+  difficultyLevel: z.nativeEnum(DifficultyLevel).nullish(),
   tags: z.array(z.string()).optional(),
   recipeIngredients: z.array(
     z.object({

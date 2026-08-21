@@ -34,7 +34,7 @@ export interface EditRecipeUseCaseRequest {
   prepTimeInMinutes?: number | null
   cookTimeInMinutes?: number | null
   servings?: number | null
-  difficultyLevel?: DifficultyLevel
+  difficultyLevel?: DifficultyLevel | null
   tags?: string[]
   recipeIngredients: RecipeIngredientInput[]
 }
@@ -143,7 +143,9 @@ export class EditRecipeUseCase {
       recipe.servings = servings
     }
 
-    recipe.difficultyLevel = difficultyLevel ?? recipe.difficultyLevel
+    if (difficultyLevel !== undefined) {
+      recipe.difficultyLevel = difficultyLevel
+    }
 
     if (tags !== undefined) {
       const tagNamesResult = RecipeTagNames.create(tags)

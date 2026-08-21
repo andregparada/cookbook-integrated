@@ -25,7 +25,10 @@ import { InvalidRecipeInstructionsError } from '@/domain/enterprise/errors/inval
 import { InvalidRecipeTagsError } from '@/domain/enterprise/errors/invalid-recipe-tags-error'
 import { RecipeInstructions } from '@/domain/enterprise/entities/value-objects/recipe-instructions'
 import { RecipeTagNames } from '@/domain/enterprise/entities/value-objects/recipe-tag-names'
-import { RecipeStatus } from '@/domain/enterprise/entities/recipe'
+import {
+  DifficultyLevel,
+  RecipeStatus,
+} from '@/domain/enterprise/entities/recipe'
 
 let inMemoryChefsRepository: InMemoryChefsRepository
 let inMemoryIngredientsRepository: InMemoryIngredientsRepository
@@ -289,6 +292,7 @@ describe('Edit Recipe', () => {
         prepTimeInMinutes: 10,
         cookTimeInMinutes: 20,
         servings: 4,
+        difficultyLevel: DifficultyLevel.HARD,
       },
       new UniqueEntityID('recipe-1'),
     )
@@ -304,6 +308,7 @@ describe('Edit Recipe', () => {
         prepTimeInMinutes: undefined,
         cookTimeInMinutes: undefined,
         servings: undefined,
+        difficultyLevel: undefined,
         tags: ['dinner'],
         recipeIngredients: [
           { name: 'Salt', amount: 1, unit: MeasurementUnit.TEASPOON },
@@ -318,6 +323,7 @@ describe('Edit Recipe', () => {
       prepTimeInMinutes: 10,
       cookTimeInMinutes: 20,
       servings: 4,
+      difficultyLevel: DifficultyLevel.HARD,
     })
     expect(inMemoryRecipesRepository.items[0].tagsIds).toHaveLength(1)
     expect(inMemoryRecipeIngredientsRepository.items).toHaveLength(1)
@@ -407,6 +413,7 @@ describe('Edit Recipe', () => {
         prepTimeInMinutes: 10,
         cookTimeInMinutes: 20,
         servings: 4,
+        difficultyLevel: DifficultyLevel.MEDIUM,
       },
       new UniqueEntityID('recipe-1'),
     )
@@ -420,6 +427,7 @@ describe('Edit Recipe', () => {
         prepTimeInMinutes: null,
         cookTimeInMinutes: undefined,
         servings: undefined,
+        difficultyLevel: null,
         tags: ['dinner'],
         recipeIngredients: [
           { name: 'Salt', amount: 1, unit: MeasurementUnit.TEASPOON },
@@ -431,6 +439,7 @@ describe('Edit Recipe', () => {
     expect(inMemoryRecipesRepository.items[0].prepTimeInMinutes).toBeNull()
     expect(inMemoryRecipesRepository.items[0].cookTimeInMinutes).toBe(20)
     expect(inMemoryRecipesRepository.items[0].servings).toBe(4)
+    expect(inMemoryRecipesRepository.items[0].difficultyLevel).toBeNull()
   })
 
   it('should not allow negative prep time', async () => {

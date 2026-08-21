@@ -20,12 +20,12 @@ import {
 export interface CreateRecipeUseCaseRequest {
   authorId: string
   name: string
-  description: string | null
+  description?: string | null
   instructions: string
   prepTimeInMinutes?: number | null
   cookTimeInMinutes?: number | null
   servings?: number | null
-  difficultyLevel: DifficultyLevel
+  difficultyLevel?: DifficultyLevel | null
   tags?: string[]
   recipeIngredients?: RecipeIngredientInput[]
 }

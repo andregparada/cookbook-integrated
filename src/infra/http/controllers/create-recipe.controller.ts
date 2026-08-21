@@ -10,18 +10,19 @@ import { MeasurementUnit } from '@/domain/enterprise/entities/recipe-ingredient'
 
 const createRecipeBodySchema = z.object({
   name: z.string(),
-  description: z.string().optional(),
+  description: z.string().nullish(),
   instructions: z.string(),
   prepTimeInMinutes: z.number().int().nonnegative().nullish(),
   cookTimeInMinutes: z.number().int().nonnegative().nullish(),
   servings: z.number().int().min(1).nullish(),
-  difficultyLevel: z.nativeEnum(DifficultyLevel),
+  difficultyLevel: z.nativeEnum(DifficultyLevel).nullish(),
   tags: z.array(z.string()).optional(),
   recipeIngredients: z
     .array(
       z.object({
         name: z.string(),
         amount: z.number().positive().nullable(),
+        // TODO: ver nativeEnum deprecated
         unit: z.nativeEnum(MeasurementUnit),
         note: z.string().trim().max(200).nullish(),
       }),
@@ -58,7 +59,7 @@ export class CreateRecipeController {
     const result = await this.createRecipe.execute({
       authorId: userId,
       name,
-      description: description ?? null,
+      description,
       instructions,
       prepTimeInMinutes,
       cookTimeInMinutes,

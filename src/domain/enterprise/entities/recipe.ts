@@ -238,9 +238,11 @@ export class Recipe extends AggregateRoot<RecipeProps> {
       | 'createdAt'
       | 'tagsIds'
       | 'ingredients'
+      | 'description'
       | 'prepTimeInMinutes'
       | 'cookTimeInMinutes'
       | 'servings'
+      | 'difficultyLevel'
       | 'status'
       | 'publishedAt'
       | 'deletedAt'
@@ -253,9 +255,11 @@ export class Recipe extends AggregateRoot<RecipeProps> {
         slug: props.slug ?? Slug.createFromText(props.name),
         tagsIds: props.tagsIds ?? [],
         ingredients: props.ingredients ?? new RecipeIngredientList(),
+        description: props.description ?? null,
         prepTimeInMinutes: props.prepTimeInMinutes ?? null,
         cookTimeInMinutes: props.cookTimeInMinutes ?? null,
         servings: props.servings ?? null,
+        difficultyLevel: props.difficultyLevel ?? null,
         status: props.status ?? RecipeStatus.DRAFT,
         publishedAt: props.publishedAt ?? null,
         deletedAt: props.deletedAt ?? null,
