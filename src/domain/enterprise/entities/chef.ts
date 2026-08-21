@@ -14,6 +14,15 @@ export interface ChefProps {
   updatedAt?: Date | null
 }
 
+export type UpdateChefProps = {
+  firstName?: string
+  lastName?: string
+  userName?: string
+  email?: string
+  avatarId?: string | null
+  bio?: string | null
+}
+
 export class Chef extends Entity<ChefProps> {
   get firstName() {
     return this.props.firstName
@@ -88,6 +97,43 @@ export class Chef extends Entity<ChefProps> {
 
   private touch() {
     this.props.updatedAt = new Date()
+  }
+
+  updateInfo(update: UpdateChefProps) {
+    if (update.firstName !== undefined) {
+      this.props.firstName = update.firstName
+    }
+
+    if (update.lastName !== undefined) {
+      this.props.lastName = update.lastName
+    }
+
+    if (update.userName !== undefined) {
+      this.props.userName = update.userName
+    }
+
+    if (update.email !== undefined) {
+      this.props.email = update.email
+    }
+
+    if (update.avatarId !== undefined) {
+      this.props.avatarId = update.avatarId
+    }
+
+    if (update.bio !== undefined) {
+      this.props.bio = update.bio
+    }
+
+    if (
+      update.firstName !== undefined ||
+      update.lastName !== undefined ||
+      update.userName !== undefined ||
+      update.email !== undefined ||
+      update.avatarId !== undefined ||
+      update.bio !== undefined
+    ) {
+      this.touch()
+    }
   }
 
   static create(

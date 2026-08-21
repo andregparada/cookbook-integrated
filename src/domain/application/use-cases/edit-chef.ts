@@ -1,7 +1,7 @@
 import { Either, left, right } from '@/core/either'
 import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
-import { Chef } from '@/domain/enterprise/entities/chef'
+import { Chef, UpdateChefProps } from '@/domain/enterprise/entities/chef'
 import { Injectable } from '@nestjs/common'
 import { ChefsRepository } from '../repositories/chefs-repository'
 import { HashGenerator } from '../cryptography/hash-generator'
@@ -50,7 +50,6 @@ export class EditChefUseCase {
     bio,
   }: EditChefUseCaseRequest): Promise<EditChefUseCaseResponse> {
     const chef = await this.chefsRepository.findById(chefId)
-    // TODO: criar funções utilitárias dentro do use-case para facilitar a leitura do código (ou não?)
 
     if (!chef) {
       return left(new ResourceNotFoundError())
@@ -59,6 +58,8 @@ export class EditChefUseCase {
     if (actorId !== chef.id.toString()) {
       return left(new NotAllowedError())
     }
+
+    const updateProps: UpdateChefProps = {}
 
     if (
       userName !== undefined &&
@@ -73,14 +74,11 @@ export class EditChefUseCase {
       const chefWithSameUserName =
         await this.chefsRepository.findByUserName(userName)
 
-      if (
-        chefWithSameUserName &&
-        chefWithSameUserName.id.toString() !== chef.id.toString()
-      ) {
+      if (chefWithSameUserName && !chefWithSameUserName.id.equals(chef.id)) {
         return left(new ChefAlreadyExistsError(userName))
       }
 
-      chef.userName = userNameResult.value.value
+      updateProps.userName = userNameResult.value.value
     }
 
     if (
@@ -89,24 +87,25 @@ export class EditChefUseCase {
     ) {
       const chefWithSameEmail = await this.chefsRepository.findByEmail(email)
 
-      if (
-        chefWithSameEmail &&
-        chefWithSameEmail.id.toString() !== chef.id.toString()
-      ) {
+      if (chefWithSameEmail && !chefWithSameEmail.id.equals(chef.id)) {
         return left(new ChefAlreadyExistsError(email))
       }
 
-      chef.email = email
+      updateProps.email = email
     }
 
-    chef.firstName = firstName ?? chef.firstName
-    chef.lastName = lastName ?? chef.lastName
-    if (password) {
-      const hashedPassword = await this.hashGenerator.hash(password)
-      chef.hashedPassword = hashedPassword
+    if (firstName !== undefined) updateProps.firstName = firstName
+    if (lastName !== undefined) updateProps.lastName = lastName
+    if (avatarId !== undefined) updateProps.avatarId = avatarId
+    if (bio !== undefined) updateProps.bio = bio
+
+    if (Object.keys(updateProps).length > 0) {
+      chef.updateInfo(updateProps)
     }
-    chef.avatarId = avatarId ?? chef.avatarId
-    chef.bio = bio ?? chef.bio
+
+    if (password) {
+      chef.hashedPassword = await this.hashGenerator.hash(password)
+    }
 
     await this.chefsRepository.save(chef)
 
