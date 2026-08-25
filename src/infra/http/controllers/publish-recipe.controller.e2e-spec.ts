@@ -55,9 +55,6 @@ describe('Publish recipe (E2E)', () => {
 
     expect(recipeOnDatabaseAfterPublish?.status).toBe('Published')
     expect(recipeOnDatabaseAfterPublish?.publishedAt).toBeTruthy()
-    // TODO: tirar esses spec expect — tags não fazem parte de publicar; já cobertas no create.
-    expect(recipeOnDatabaseAfterPublish?.tags).toHaveLength(1)
-    expect(recipeOnDatabaseAfterPublish?.tags[0].name).toBe('dinner')
   })
 
   // TODO: mover para unpublish-recipe.controller.e2e-spec.ts (rota distinta).
@@ -87,7 +84,5 @@ describe('Publish recipe (E2E)', () => {
     })
 
     expect(recipeOnDatabase?.status).toBe('Draft')
-    // TODO: tirar publishedAt — preservação na despublicação já está em unpublish-recipe.spec.ts.
-    expect(recipeOnDatabase?.publishedAt).toEqual(publishedRecipe?.publishedAt)
   })
 })
