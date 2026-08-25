@@ -11,6 +11,7 @@ From `package.json` (run from repo root):
 ```bash
 pnpm start:dev     # API watch (port 3333)
 pnpm lint          # ESLint with --fix — modifies files in place
+pnpm format        # same as lint (ESLint --fix; not Prettier in isolation)
 pnpm typecheck     # tsc --noEmit
 pnpm build         # nest build
 pnpm test          # unit (vitest)
@@ -18,7 +19,7 @@ pnpm test:e2e      # e2e (requires Postgres)
 pnpm prisma migrate dev
 ```
 
-**Warnings:** `pnpm lint` runs `eslint --fix` and edits files — expect working-tree changes. Do **not** use `pnpm format`: it runs Prettier in isolation (no `.prettierrc`; formatting lives in the ESLint `prettier/prettier` rule) and would reformat the repo to the wrong style.
+**Warnings:** `pnpm lint` and `pnpm format` both run `eslint --fix` and edit files — expect working-tree changes. Formatting lives in the ESLint `prettier/prettier` rule (`@rocketseat/eslint-config/node`); there is no `.prettierrc`, so `prettier --write` would reformat to the wrong style.
 
 Before finishing a change: `pnpm lint && pnpm typecheck && pnpm build && pnpm test` (+ `pnpm test:e2e` when HTTP, guards, pipes, or Prisma adapters changed).
 
