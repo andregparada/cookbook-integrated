@@ -59,10 +59,10 @@ export class CreateRecipeUseCase {
     tags = [],
     recipeIngredients = [],
   }: CreateRecipeUseCaseRequest): Promise<CreateRecipeUseCaseResponse> {
-    const instructionsResult = RecipeInstructions.create(instructions)
+    const instructionsOrErros = RecipeInstructions.create(instructions)
 
-    if (instructionsResult.isLeft()) {
-      return left(instructionsResult.value)
+    if (instructionsOrErros.isLeft()) {
+      return left(instructionsOrErros.value)
     }
 
     const tagNamesResult = RecipeTagNames.create(tags)
@@ -88,7 +88,7 @@ export class CreateRecipeUseCase {
         authorId: new UniqueEntityID(authorId),
         name,
         description,
-        instructions: instructionsResult.value.value,
+        instructions: instructionsOrErros.value.value,
         prepTimeInMinutes,
         cookTimeInMinutes,
         servings,
