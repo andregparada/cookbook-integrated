@@ -1,0 +1,19 @@
+---
+description: >-
+  SOLID and DDD constraints for Cookbook domain code. Use when editing files
+  under `src/domain/`.
+globs: "src/domain/**"
+alwaysApply: false
+---
+
+# Domain layer
+
+`src/domain` must not import from `src/infra`. Use cases return `Either` for expected failures; keep repository ports small and focused.
+
+## SOLID (applied here)
+
+- **Single responsibility:** one use case = one application action
+- **Open/closed:** extend via new use cases and ports, not by bending entities for infra
+- **Liskov:** Prisma and in-memory repositories honor the same port contract
+- **Interface segregation:** small ports (`RecipesRepository`, `HashComparer`)
+- **Dependency inversion:** domain depends on abstractions; bind implementations in `DatabaseModule` / `HttpModule`

@@ -1,0 +1,31 @@
+---
+description: >-
+  Splits unit vs e2e tests for Cookbook specs. Use when writing or editing
+  `*.spec.ts` or `*.e2e-spec.ts` files.
+globs: "**/*.spec.ts, **/*.e2e-spec.ts"
+alwaysApply: false
+---
+
+# Test pyramid
+
+Same split as `05-nest-clean`:
+
+| Layer | Test | Do not test |
+|-------|------|-------------|
+| **Unit (use case)** | Business rules, `Either` branches (`NotAllowedError`, `ResourceNotFoundError`), orchestration | HTTP status, JWT, Zod, Prisma wiring |
+| **E2E (controller)** | Happy path: route, auth, validation, persistence end-to-end | Rules already covered in unit specs |
+
+**Examples**
+
+- `authorId !== recipe.authorId` → unit only (`edit-recipe.spec.ts`)
+- Ingredient/tag dedup (`Ovo` vs `ovo`) → unit only (`create-recipe.spec.ts`)
+- `PUT /recipes/:id` returns 204 and persists → e2e only (`edit-recipe.controller.e2e-spec.ts`)
+- `POST /recipes` returns 201 and row exists → e2e happy path only (no dedup branch)
+
+Do **not** duplicate use-case branches in e2e — including success paths for rules already covered in unit specs.
+
+**E2e negative cases are justified only when**
+
+- Auth guard rejects unauthenticated requests before the use case
+- Controller maps specific errors to specific HTTP statuses (after MF-06)
+- Middleware or pipe enforces policy outside the use case

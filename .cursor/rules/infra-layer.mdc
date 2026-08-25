@@ -1,0 +1,20 @@
+---
+description: >-
+  HTTP, Prisma, and boundary conventions for Cookbook infra. Use when editing
+  files under `src/infra/`.
+globs: "src/infra/**"
+alwaysApply: false
+---
+
+# Infra layer
+
+Controllers handle HTTP only — delegate to use cases. Validate input with Zod pipes; shape responses with presenters. Persist aggregate graphs in the repository (transactions), not in scattered loops inside use cases.
+
+## HTTP boundary
+
+- **Public routes:** `POST /accounts` (`CreateAccountController` → `RegisterChefUseCase`) and `PUT /user/me` (`EditChefController`)
+- **JWT:** `CurrentUser` / `UserPayload` (Nest convention)
+
+## Prisma enums
+
+- **`DifficultyLevel`:** domain `easy` | `medium` | `hard`; Prisma `Easy` | `Medium` | `Hard` — convert in `src/infra/database/prisma/mappers/enum-mappers.ts`
