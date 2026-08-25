@@ -3,7 +3,7 @@
 ## Contexto
 
 - Item: `docs/regras-de-negocio.md` → Sugestão 12.d; roadmap §6 → MF-14 derivado (após MF-27)
-- Padrões: `.cursor/skills/cookbook-engineering/SKILL.md`
+- Padrões: `.cursor/skills/create-use-case/SKILL.md`; HTTP: `.cursor/skills/create-controller-e2e/SKILL.md`
 - Base: MF-25 (escopos + paginação), MF-26 (`SearchRecipesParams`, read models), MF-27 (`query`)
 
 ## Problema

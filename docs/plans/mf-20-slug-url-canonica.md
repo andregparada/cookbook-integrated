@@ -3,7 +3,7 @@
 ## Contexto
 
 - Item: `docs/regras-de-negocio.md` → Sugestão 6 (Bloco B); roadmap §6 → MF-20
-- Padrões: `.cursor/skills/cookbook-engineering/SKILL.md`
+- Padrões: `.cursor/skills/create-use-case/SKILL.md`; HTTP: `.cursor/skills/create-controller-e2e/SKILL.md`
 - Precedente: MF-11 deferiu `GET /recipes/:id-:slug`; MF-04/MF-05 estabilizaram `Slug` no agregado
 
 ## Problema

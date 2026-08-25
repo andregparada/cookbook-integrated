@@ -3,7 +3,7 @@
 ## Contexto
 
 - Item: `docs/regras-de-negocio.md` → Sugestão 5 (Bloco B); roadmap §6 → MF-16
-- Padrões: `.cursor/skills/cookbook-engineering/SKILL.md`
+- Padrões: `.cursor/skills/create-use-case/SKILL.md`; HTTP: `.cursor/skills/create-controller-e2e/SKILL.md`
 - Precedente: MF-18 (`actorId`, ownership → `NotAllowedError`); MF-06 (map de erros)
 
 ## Problema

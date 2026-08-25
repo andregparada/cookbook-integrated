@@ -3,7 +3,7 @@
 ## Contexto
 
 - Item: `docs/regras-de-negocio.md` → Sugestão 4 (Bloco B); roadmap §6 → MF-19
-- Padrões: `.cursor/skills/cookbook-engineering/SKILL.md`
+- Padrões: `.cursor/skills/create-use-case/SKILL.md`; HTTP: `.cursor/skills/create-controller-e2e/SKILL.md`
 - Precedente: MF-11 (publish strict + edit-published guard; excluiu rascunho tolerante no Zod)
 
 ## Problema
