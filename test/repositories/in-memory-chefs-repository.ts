@@ -4,6 +4,10 @@ import { Chef } from '@/domain/enterprise/entities/chef'
 export class InMemoryChefsRepository implements ChefsRepository {
   public items: Chef[] = []
 
+  async create(chef: Chef) {
+    this.items.push(chef)
+  }
+
   async findById(id: string) {
     const chef = this.items.find((item) => item.id.toString() === id)
 
@@ -38,10 +42,6 @@ export class InMemoryChefsRepository implements ChefsRepository {
     }
 
     return chef
-  }
-
-  async create(chef: Chef) {
-    this.items.push(chef)
   }
 
   async save(chef: Chef) {
