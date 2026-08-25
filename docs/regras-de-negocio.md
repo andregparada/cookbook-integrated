@@ -649,7 +649,8 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 Fundação (MF-01…MF-10), ciclo de vida da receita e a base da busca já estão no código: escopos (12.a), read models (12.b), `query` (12.c), `ingredients[]` (12.d) e paginação. Planos concluídos ficam em [`docs/plans/completed/`](plans/completed/) e no backlog da [§5](#5-inconsistências-do-código-vs-regras-backlog).
 
 **Ainda falta (Fase 1):**
-
+Rever orientações pra IA
+Fazer TODOS
 | Ordem | Plano | Escopo |
 | :---: | :--- | :--- |
 | 1 | **MF-14 — Filtros restantes da busca** | 12.e `excludeIngredients[]`; 12.f `tags[]`/`tagMatch`; 12.g `difficultyLevel`; 12.h `maxTotalTimeInMinutes`; 12.i `authorUserName`; 12.j `sortBy`; 12.l `minServings` |
