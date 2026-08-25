@@ -86,6 +86,7 @@ describe('Edit recipe (E2E)', () => {
     )
   })
 
+  // TODO: esse teste é necessário? ele deve ser unit?
   test('[PUT] /recipes/:id should preserve recipe ingredient id on update', async () => {
     const user = await chefFactory.makePrismaChef()
 
@@ -147,6 +148,7 @@ describe('Edit recipe (E2E)', () => {
     expect(recipeOnDatabase).toBeTruthy()
   })
 
+  // TODO: Esse teste não é unit? se for para mapear o 400, deve renomear
   test('[PUT] /recipes/:id should reject body without recipeIngredients', async () => {
     const user = await chefFactory.makePrismaChef()
 
@@ -166,6 +168,7 @@ describe('Edit recipe (E2E)', () => {
     expect(response.statusCode).toBe(400)
   })
 
+  // TODO: Esse teste não é unit?
   test('[PUT] /recipes/:id should preserve tags when tags are omitted', async () => {
     const user = await chefFactory.makePrismaChef()
     const accessToken = jwt.sign({ sub: user.id.toString() })
