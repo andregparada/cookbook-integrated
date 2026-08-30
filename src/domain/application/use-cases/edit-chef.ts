@@ -99,12 +99,12 @@ export class EditChefUseCase {
     if (avatarId !== undefined) updateProps.avatarId = avatarId
     if (bio !== undefined) updateProps.bio = bio
 
-    if (Object.keys(updateProps).length > 0) {
-      chef.updateInfo(updateProps)
+    if (password) {
+      updateProps.hashedPassword = await this.hashGenerator.hash(password)
     }
 
-    if (password) {
-      chef.hashedPassword = await this.hashGenerator.hash(password)
+    if (Object.keys(updateProps).length > 0) {
+      chef.updateInfo(updateProps)
     }
 
     await this.chefsRepository.save(chef)

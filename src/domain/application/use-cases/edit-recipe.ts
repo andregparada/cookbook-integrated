@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { Either, left, right } from '@/core/either'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 
 import {
   DifficultyLevel,
@@ -75,7 +76,6 @@ export class EditRecipeUseCase {
     recipeIngredients,
   }: EditRecipeUseCaseRequest): Promise<EditRecipeUseCaseResponse> {
     const recipe = await this.recipesRepository.findById(recipeId)
-    // TODO: criar funções utilitárias dentro do use-case para facilitar a leitura do código (ou não?)
 
     if (!recipe) {
       return left(new ResourceNotFoundError())
@@ -114,12 +114,7 @@ export class EditRecipeUseCase {
 
     recipeIngredientList.update(recipeIngredientEntities)
 
-    recipe.ingredients = recipeIngredientList
-    recipe.name = name ?? recipe.name
-
-    if (description !== undefined) {
-      recipe.description = description
-    }
+    let resolvedInstructions: string | undefined
 
     if (instructions !== undefined) {
       const instructionsResult = RecipeInstructions.create(instructions)
@@ -128,24 +123,10 @@ export class EditRecipeUseCase {
         return left(instructionsResult.value)
       }
 
-      recipe.instructions = instructionsResult.value.value
+      resolvedInstructions = instructionsResult.value.value
     }
 
-    if (prepTimeInMinutes !== undefined) {
-      recipe.prepTimeInMinutes = prepTimeInMinutes
-    }
-
-    if (cookTimeInMinutes !== undefined) {
-      recipe.cookTimeInMinutes = cookTimeInMinutes
-    }
-
-    if (servings !== undefined) {
-      recipe.servings = servings
-    }
-
-    if (difficultyLevel !== undefined) {
-      recipe.difficultyLevel = difficultyLevel
-    }
+    let resolvedTagsIds: UniqueEntityID[] | undefined
 
     if (tags !== undefined) {
       const tagNamesResult = RecipeTagNames.create(tags)
@@ -154,12 +135,22 @@ export class EditRecipeUseCase {
         return left(tagNamesResult.value)
       }
 
-      const tagsIds = await this.catalogResolver.resolveTagsIds(
+      resolvedTagsIds = await this.catalogResolver.resolveTagsIds(
         tagNamesResult.value,
       )
-
-      recipe.tagsIds = tagsIds
     }
+
+    recipe.updateContent({
+      name,
+      description,
+      instructions: resolvedInstructions,
+      prepTimeInMinutes,
+      cookTimeInMinutes,
+      servings,
+      difficultyLevel,
+      tagsIds: resolvedTagsIds,
+      ingredients: recipeIngredientList,
+    })
 
     const timingIssues = recipe.getTimingAndServingsIssues()
 

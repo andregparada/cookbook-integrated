@@ -27,10 +27,6 @@ export class Ingredient extends Entity<IngredientProps> {
     return this.props.updatedAt
   }
 
-  private touch() {
-    this.props.updatedAt = new Date()
-  }
-
   static create(
     props: Optional<IngredientProps, 'createdAt' | 'normalizedName'>,
     id?: UniqueEntityID,

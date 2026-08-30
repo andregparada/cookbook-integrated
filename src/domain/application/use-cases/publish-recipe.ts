@@ -44,7 +44,7 @@ export class PublishRecipeUseCase {
     const recipeIngredients =
       await this.recipeIngredientsRepository.findManyByRecipeId(recipeId)
 
-    recipe.ingredients = new RecipeIngredientList(recipeIngredients)
+    recipe.restoreIngredients(new RecipeIngredientList(recipeIngredients))
 
     // TODO: mudar para padrão left/right
     try {

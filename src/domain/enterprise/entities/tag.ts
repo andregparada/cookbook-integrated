@@ -27,10 +27,6 @@ export class Tag extends Entity<TagProps> {
     return this.props.updatedAt
   }
 
-  private touch() {
-    this.props.updatedAt = new Date()
-  }
-
   static create(
     props: Optional<TagProps, 'createdAt' | 'normalizedName'>,
     id?: UniqueEntityID,

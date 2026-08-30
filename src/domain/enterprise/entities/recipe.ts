@@ -35,6 +35,18 @@ export interface RecipeProps {
   updatedAt?: Date | null
 }
 
+export type UpdateRecipeContentProps = {
+  name?: string
+  description?: string | null
+  instructions?: string
+  prepTimeInMinutes?: number | null
+  cookTimeInMinutes?: number | null
+  servings?: number | null
+  difficultyLevel?: DifficultyLevel | null
+  tagsIds?: UniqueEntityID[]
+  ingredients?: RecipeIngredientList
+}
+
 export class Recipe extends AggregateRoot<RecipeProps> {
   get authorId() {
     return this.props.authorId
@@ -42,11 +54,6 @@ export class Recipe extends AggregateRoot<RecipeProps> {
 
   get name() {
     return this.props.name
-  }
-
-  set name(name: string) {
-    this.props.name = name
-    this.touch()
   }
 
   get slug() {
@@ -57,54 +64,24 @@ export class Recipe extends AggregateRoot<RecipeProps> {
     return this.props.description
   }
 
-  set description(description: string | null) {
-    this.props.description = description
-    this.touch()
-  }
-
   get instructions() {
     return this.props.instructions
-  }
-
-  set instructions(instructions: string) {
-    this.props.instructions = instructions
-    this.touch()
   }
 
   get prepTimeInMinutes() {
     return this.props.prepTimeInMinutes
   }
 
-  set prepTimeInMinutes(prepTimeInMinutes: number | null) {
-    this.props.prepTimeInMinutes = prepTimeInMinutes
-    this.touch()
-  }
-
   get cookTimeInMinutes() {
     return this.props.cookTimeInMinutes
-  }
-
-  set cookTimeInMinutes(cookTimeInMinutes: number | null) {
-    this.props.cookTimeInMinutes = cookTimeInMinutes
-    this.touch()
   }
 
   get servings() {
     return this.props.servings
   }
 
-  set servings(servings: number | null) {
-    this.props.servings = servings
-    this.touch()
-  }
-
   get difficultyLevel() {
     return this.props.difficultyLevel
-  }
-
-  set difficultyLevel(difficultyLevel: DifficultyLevel | null) {
-    this.props.difficultyLevel = difficultyLevel
-    this.touch()
   }
 
   get status() {
@@ -123,18 +100,8 @@ export class Recipe extends AggregateRoot<RecipeProps> {
     return this.props.tagsIds
   }
 
-  set tagsIds(tagsIds: UniqueEntityID[]) {
-    this.props.tagsIds = tagsIds
-    this.touch()
-  }
-
   get ingredients() {
     return this.props.ingredients
-  }
-
-  set ingredients(ingredients: RecipeIngredientList) {
-    this.props.ingredients = ingredients
-    this.touch()
   }
 
   get createdAt() {
@@ -225,6 +192,63 @@ export class Recipe extends AggregateRoot<RecipeProps> {
   softDelete(): void {
     this.props.deletedAt = new Date()
     this.touch()
+  }
+
+  updateContent(update: UpdateRecipeContentProps): void {
+    let changed = false
+
+    if (update.name !== undefined) {
+      this.props.name = update.name
+      changed = true
+    }
+
+    if (update.description !== undefined) {
+      this.props.description = update.description
+      changed = true
+    }
+
+    if (update.instructions !== undefined) {
+      this.props.instructions = update.instructions
+      changed = true
+    }
+
+    if (update.prepTimeInMinutes !== undefined) {
+      this.props.prepTimeInMinutes = update.prepTimeInMinutes
+      changed = true
+    }
+
+    if (update.cookTimeInMinutes !== undefined) {
+      this.props.cookTimeInMinutes = update.cookTimeInMinutes
+      changed = true
+    }
+
+    if (update.servings !== undefined) {
+      this.props.servings = update.servings
+      changed = true
+    }
+
+    if (update.difficultyLevel !== undefined) {
+      this.props.difficultyLevel = update.difficultyLevel
+      changed = true
+    }
+
+    if (update.tagsIds !== undefined) {
+      this.props.tagsIds = update.tagsIds
+      changed = true
+    }
+
+    if (update.ingredients !== undefined) {
+      this.props.ingredients = update.ingredients
+      changed = true
+    }
+
+    if (changed) {
+      this.touch()
+    }
+  }
+
+  restoreIngredients(ingredients: RecipeIngredientList): void {
+    this.props.ingredients = ingredients
   }
 
   private touch() {
