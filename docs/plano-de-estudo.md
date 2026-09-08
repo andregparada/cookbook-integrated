@@ -271,12 +271,12 @@ Dúvida em aberto:
 
 ## Checklist
 
-- [ ] Sessão 0 — mapa de camadas + `http.module.ts` + skim regras 1–2
-- [ ] Fatia 1 — `POST /accounts`
-- [ ] Fatia 2 — `POST /sessions` + JWT
-- [ ] Fatia 3 — `POST /recipes` (bloco longo; peças compartilhadas de receita)
-- [ ] Releitura das regras de publicação / invariantes de receita
-- [ ] Fatia 4 — `PUT /recipes/:id`
+- [x ] Sessão 0 — mapa de camadas + `http.module.ts` + skim regras 1–2
+- [ x] Fatia 1 — `POST /accounts`
+- [ x] Fatia 2 — `POST /sessions` + JWT
+- [ x] Fatia 3 — `POST /recipes` (bloco longo; peças compartilhadas de receita)
+- [ x] Releitura das regras de publicação / invariantes de receita
+- [ x] Fatia 4 — `PUT /recipes/:id`
 - [ ] Fatia 5 — publish / unpublish / delete
 - [ ] Fatia 6 — `GET /recipes/:id`
 - [ ] Fatia 7 — `GET /recipes` (busca)
