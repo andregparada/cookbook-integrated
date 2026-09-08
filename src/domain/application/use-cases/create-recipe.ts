@@ -8,6 +8,7 @@ import { InvalidRecipeTimingOrServingsError } from '@/domain/enterprise/errors/i
 import { InvalidRecipeIngredientMeasurementError } from '@/domain/enterprise/errors/invalid-recipe-ingredient-measurement-error'
 import { InvalidRecipeInstructionsError } from '@/domain/enterprise/errors/invalid-recipe-instructions-error'
 import { InvalidRecipeTagsError } from '@/domain/enterprise/errors/invalid-recipe-tags-error'
+import { validateRecipeContentForPersist } from '../services/validate-recipe-content-for-persist'
 import { RecipeInstructions } from '@/domain/enterprise/entities/value-objects/recipe-instructions'
 import { RecipeTagNames } from '@/domain/enterprise/entities/value-objects/recipe-tag-names'
 
@@ -99,18 +100,10 @@ export class CreateRecipeUseCase {
       recipeId,
     )
 
-    const timingIssues = recipe.getTimingAndServingsIssues()
+    const contentValidation = validateRecipeContentForPersist(recipe)
 
-    if (timingIssues.length > 0) {
-      return left(new InvalidRecipeTimingOrServingsError(timingIssues))
-    }
-
-    const measurementIssues = recipe.getIngredientMeasurementIssues()
-
-    if (measurementIssues.length > 0) {
-      return left(
-        new InvalidRecipeIngredientMeasurementError(measurementIssues),
-      )
+    if (contentValidation.isLeft()) {
+      return left(contentValidation.value)
     }
 
     await this.recipesRepository.create(recipe)

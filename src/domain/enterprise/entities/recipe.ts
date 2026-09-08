@@ -47,6 +47,11 @@ export type UpdateRecipeContentProps = {
   ingredients?: RecipeIngredientList
 }
 
+export type RecipeContentConstraintIssues = {
+  timing: string[]
+  measurement: string[]
+}
+
 export class Recipe extends AggregateRoot<RecipeProps> {
   get authorId() {
     return this.props.authorId
@@ -163,6 +168,13 @@ export class Recipe extends AggregateRoot<RecipeProps> {
       .flatMap((item, index) =>
         item.hasValidMeasurement() ? [] : [`recipeIngredients[${index}]`],
       )
+  }
+
+  getContentConstraintIssues(): RecipeContentConstraintIssues {
+    return {
+      timing: this.getTimingAndServingsIssues(),
+      measurement: this.getIngredientMeasurementIssues(),
+    }
   }
 
   assertPublishable(): void {

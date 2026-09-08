@@ -21,6 +21,7 @@ import { RecipeNotPublishableError } from '@/domain/enterprise/errors/recipe-not
 import { InvalidRecipeTimingOrServingsError } from '@/domain/enterprise/errors/invalid-recipe-timing-or-servings-error'
 import { InvalidRecipeIngredientMeasurementError } from '@/domain/enterprise/errors/invalid-recipe-ingredient-measurement-error'
 import { UnknownRecipeIngredientError } from '@/domain/enterprise/errors/unknown-recipe-ingredient-error'
+import { validateRecipeContentForPersist } from '../services/validate-recipe-content-for-persist'
 import { InvalidRecipeInstructionsError } from '@/domain/enterprise/errors/invalid-recipe-instructions-error'
 import { InvalidRecipeTagsError } from '@/domain/enterprise/errors/invalid-recipe-tags-error'
 import { RecipeInstructions } from '@/domain/enterprise/entities/value-objects/recipe-instructions'
@@ -152,26 +153,12 @@ export class EditRecipeUseCase {
       ingredients: recipeIngredientList,
     })
 
-    const timingIssues = recipe.getTimingAndServingsIssues()
+    const contentValidation = validateRecipeContentForPersist(recipe, {
+      checkPublishability: recipe.status === RecipeStatus.PUBLISHED,
+    })
 
-    if (timingIssues.length > 0) {
-      return left(new InvalidRecipeTimingOrServingsError(timingIssues))
-    }
-
-    const measurementIssues = recipe.getIngredientMeasurementIssues()
-
-    if (measurementIssues.length > 0) {
-      return left(
-        new InvalidRecipeIngredientMeasurementError(measurementIssues),
-      )
-    }
-
-    if (recipe.status === RecipeStatus.PUBLISHED) {
-      const issues = recipe.getPublishabilityIssues()
-
-      if (issues.length > 0) {
-        return left(new RecipeNotPublishableError(issues))
-      }
+    if (contentValidation.isLeft()) {
+      return left(contentValidation.value)
     }
 
     await this.recipesRepository.save(recipe)
