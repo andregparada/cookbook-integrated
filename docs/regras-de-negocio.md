@@ -656,5 +656,6 @@ Fazer TODOS
 | 1 | **MF-14 — Filtros restantes da busca** | 12.e `excludeIngredients[]`; 12.f `tags[]`/`tagMatch`; 12.g `difficultyLevel`; 12.h `maxTotalTimeInMinutes`; 12.i `authorUserName`; 12.j `sortBy`; 12.l `minServings` |
 | 2 | **MF-15 — Perfil público** | `GetChefProfileUseCase`, listagem por autor (`/@userName`) |
 | 3 | **MF-17 — Modo despensa** | `pantryIngredients[]`, cobertura e `missingIngredients[]` |
+Verificar os class-validators e class-transformer e documentação de api (swagger ou openapi)
 
 Cada plano deve seguir o [template do guia de fundação](plans/completed/plano-melhorias-fundacao.md#template-para-planos-derivados): critério de pronto (unit para regras, e2e para wiring), sem duplicar branches de use case em e2e. Os filtros da busca continuam como MFs derivados (como MF-27 e MF-28).
