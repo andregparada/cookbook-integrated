@@ -1,3 +1,4 @@
+import { Either, left, right } from '@/core/either'
 import { AggregateRoot } from '@/core/entities/aggregate-root'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { Optional } from '@/core/types/optional'
@@ -177,16 +178,12 @@ export class Recipe extends AggregateRoot<RecipeProps> {
     }
   }
 
-  assertPublishable(): void {
+  publish(): Either<RecipeNotPublishableError, void> {
     const issues = this.getPublishabilityIssues()
 
     if (issues.length > 0) {
-      throw new RecipeNotPublishableError(issues)
+      return left(new RecipeNotPublishableError(issues))
     }
-  }
-
-  publish(): void {
-    this.assertPublishable()
 
     if (this.props.publishedAt === null) {
       this.props.publishedAt = new Date()
@@ -194,6 +191,8 @@ export class Recipe extends AggregateRoot<RecipeProps> {
 
     this.props.status = RecipeStatus.PUBLISHED
     this.touch()
+
+    return right(undefined)
   }
 
   unpublish(): void {

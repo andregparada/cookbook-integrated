@@ -46,15 +46,10 @@ export class PublishRecipeUseCase {
 
     recipe.restoreIngredients(new RecipeIngredientList(recipeIngredients))
 
-    // TODO: mudar para padrão left/right
-    try {
-      recipe.publish()
-    } catch (error) {
-      if (error instanceof RecipeNotPublishableError) {
-        return left(error)
-      }
+    const publishResult = recipe.publish()
 
-      throw error
+    if (publishResult.isLeft()) {
+      return left(publishResult.value)
     }
 
     await this.recipesRepository.save(recipe)
