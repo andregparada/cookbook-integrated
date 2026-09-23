@@ -53,6 +53,7 @@ describe('Delete recipe (E2E)', () => {
       where: { id: recipeId },
     })
 
+    // TODO: esse teste já não está sendo feito em unit?
     expect(recipeOnDatabaseAfterDelete?.deletedAt).toBeTruthy()
   })
 })

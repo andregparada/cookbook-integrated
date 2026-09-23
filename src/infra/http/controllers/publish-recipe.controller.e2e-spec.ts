@@ -53,6 +53,7 @@ describe('Publish recipe (E2E)', () => {
       where: { id: recipeId },
     })
 
+    // TODO: necessário esses expects ou está no unit? preciosismo tirar?
     expect(recipeOnDatabaseAfterPublish?.status).toBe('Published')
     expect(recipeOnDatabaseAfterPublish?.publishedAt).toBeTruthy()
   })
@@ -83,6 +84,7 @@ describe('Publish recipe (E2E)', () => {
       where: { id: recipeId },
     })
 
+    // TODO: necessário esses expects ou está no unit? preciosismo tirar?
     expect(recipeOnDatabase?.status).toBe('Draft')
   })
 })

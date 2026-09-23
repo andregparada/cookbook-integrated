@@ -73,6 +73,7 @@ export class SearchRecipesController {
   ) {
     const user = request.user as UserPayload | undefined
 
+    // TODO: essa validação não é responsabilidade do caso de uso?
     if (scope === RecipeSearchScope.MINE && !user?.sub) {
       throw new UnauthorizedException()
     }

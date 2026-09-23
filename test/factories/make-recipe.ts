@@ -88,6 +88,11 @@ export type MakePrismaPublishableRecipeOverride =
     tagName?: string
   }
 
+// TODO: existe a necessidade de um makePulishable?
+// não pode ser só um makeRecipe? se o makeRecipe
+// precisar ser unpublishabel, basta usar override ná hora de aplicar
+// TODO: nome do ingrediente não usa faker
+
 export function makePublishableRecipe(
   override: MakePublishableRecipeOverride = {},
   id?: UniqueEntityID,
@@ -190,6 +195,7 @@ export function makePublishRecipeUseCaseRequest(
   }
 }
 
+// TODO muitos makes iguais aqui, pode ser refatorado?
 export function makeUnpublishRecipeUseCaseRequest(
   override: Partial<UnpublishRecipeUseCaseRequest> = {},
 ): UnpublishRecipeUseCaseRequest {

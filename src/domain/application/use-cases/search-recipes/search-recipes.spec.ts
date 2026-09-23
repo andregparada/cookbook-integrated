@@ -38,6 +38,7 @@ async function seedIngredient(name: string, id?: UniqueEntityID) {
   return ingredient
 }
 
+// TODO: esse método pertence aos factories
 function makeRecipeWithIngredients(
   authorId: UniqueEntityID,
   ingredientIds: UniqueEntityID[],
@@ -175,6 +176,7 @@ describe('Search Recipes', () => {
     }
   })
 
+  // TODO: faz sentido juntar esses dois testes?
   it('should hide soft-deleted recipes in mine scope', async () => {
     const author = makeChef({ userName: 'author' })
 
@@ -237,6 +239,7 @@ describe('Search Recipes', () => {
 
     expect(result.isRight()).toBe(true)
 
+    // TODO: faz sentido esse if? se o teste ja espera que o result.isRight, então esse if não faz sentido
     if (result.isRight()) {
       expect(result.value.listReadModel).toBe(
         RecipeListReadModel.AUTHOR_WORKSPACE_ITEM,
@@ -262,6 +265,7 @@ describe('Search Recipes', () => {
   })
 
   it('should paginate results with correct meta defaults', async () => {
+    // TODO: aqui não tem um método makePrismaChef, que já está no repositório?
     const author = makeChef({ userName: 'author' })
 
     inMemoryChefsRepository.items.push(author)
@@ -285,6 +289,7 @@ describe('Search Recipes', () => {
 
     expect(result.isRight()).toBe(true)
 
+    // TODO: faz sentido esse if? se o teste ja espera que o result.isRight, então esse if não faz sentido
     if (result.isRight()) {
       expect(result.value.result.items).toHaveLength(2)
       expect(result.value.result.meta).toEqual({
@@ -399,6 +404,7 @@ describe('Search Recipes', () => {
   })
 
   it('should filter recipes by query matching name case-insensitively', async () => {
+    // TODO: aqui não tem um método makePrismaChef, que já está no repositório?
     const author = makeChef({ userName: 'author' })
 
     inMemoryChefsRepository.items.push(author)
@@ -533,6 +539,7 @@ describe('Search Recipes', () => {
     }
   })
 
+  // TODO: ver essa regra de negocio; retorna só o que combinarem com tudo? o padrão é checar tudo e deve ser implementado o any?
   it('should return recipes that contain all required ingredients by default', async () => {
     const author = makeChef({ userName: 'author' })
 
