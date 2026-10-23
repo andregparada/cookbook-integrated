@@ -109,6 +109,7 @@ erDiagram
 | `RecipeIngredientList` | — | Coleção em memória (`WatchedList`); não é tabela |
 | `RecipeDetails` | — | Read model para consulta enriquecida |
 | `NormalizedName` | `normalized_name` | Value object; chave de dedup |
+| `CatalogDisplayName` | `name` | Value object; exibição canônica do catálogo |
 | `Slug` | `slug` | Value object; imutável após create |
 
 ### Capacidades atuais vs. lacunas de negócio
@@ -557,11 +558,12 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 * **Análise de Domínio:** `normalizedName` é a chave canônica de dedup e filtro. O catálogo acumula vocabulário do sistema e sobrevive à exclusão de receitas. Em escala, sinônimos e plurais exigirão mecanismo de alias (futuro).
 * **Regras de Negócio Formalizadas:**
   1. **Chave canônica:** `normalizedName` (gerado via `NormalizedName.createFromText`) é único por entidade e usado em find-or-create e filtros de busca.
-  2. **Find-or-create:** Ao associar tag ou ingrediente a uma receita, o sistema busca por `normalizedName`; se não existir, cria com `name` informado pelo usuário.
+  2. **Find-or-create:** Ao associar tag ou ingrediente a uma receita, o sistema busca por `normalizedName`; se não existir, cria com `name` canônico de exibição derivado do texto informado (não persiste a grafia crua do usuário).
   3. **Sobrevivência:** Exclusão de receita não remove `Ingredient` nem `Tag` do catálogo global.
   4. **Anti-poluição:**
      - Rejeitar nomes vazios ou só espaços.
-     - Limite de 100 caracteres para `name`.
+     - Limite de 100 caracteres para `name` de `Ingredient` e 50 para `Tag` (entrada trimada).
+     - **`CatalogDisplayName`:** formata o `name` persistido em composto PT-BR (partículas como `de`, `da`, `e`, `com` permanecem minúsculas no meio da expressão; ex.: `açúcar de confeiteiro` → `Açúcar de Confeiteiro`). A chave `normalizedName` continua independente e é derivada do texto trimado de entrada.
      - Normalização impede duplicatas por caixa/acentos, mas não por sinônimos (`"tomate"` vs `"tomates"` permanecem distintos na Fase 1).
   5. **Alias futuro:** Mecanismo de sinônimos/plurais (`IngredientAlias`) fica fora de escopo da Fase 1; documentar como evolução planejada.
 

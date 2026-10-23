@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common'
+import { Either, left, right } from '@/core/either'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { Ingredient } from '@/domain/enterprise/entities/ingredient'
 import {
@@ -6,6 +7,8 @@ import {
   MeasurementUnit,
 } from '@/domain/enterprise/entities/recipe-ingredient'
 import { Tag } from '@/domain/enterprise/entities/tag'
+import { InvalidCatalogDisplayNameError } from '@/domain/enterprise/errors/invalid-catalog-display-name-error'
+import { CatalogDisplayName } from '@/domain/enterprise/entities/value-objects/catalog-display-name'
 import { NormalizedName } from '@/domain/enterprise/entities/value-objects/normalized-name'
 import { RecipeTagNames } from '@/domain/enterprise/entities/value-objects/recipe-tag-names'
 import { IngredientsRepository } from '../repositories/ingredients-repository'
@@ -47,17 +50,42 @@ export class RecipeCatalogResolver {
   async resolveRecipeIngredients(
     recipeId: UniqueEntityID,
     recipeIngredients: RecipeIngredientInput[],
-  ): Promise<RecipeIngredient[]> {
+  ): Promise<Either<InvalidCatalogDisplayNameError, RecipeIngredient[]>> {
+    const issues: string[] = []
+    const displayNames = new Map<number, CatalogDisplayName>()
+
+    for (const [index, input] of recipeIngredients.entries()) {
+      const nameResult = CatalogDisplayName.createFromText(input.name, {
+        maxLength: CatalogDisplayName.MAX_LENGTH_INGREDIENT,
+      })
+
+      if (nameResult.isLeft()) {
+        for (const issue of nameResult.value.issues) {
+          issues.push(`recipeIngredients[${index}]: ${issue}`)
+        }
+        continue
+      }
+
+      displayNames.set(index, nameResult.value)
+    }
+
+    if (issues.length > 0) {
+      return left(new InvalidCatalogDisplayNameError(issues))
+    }
+
     const recipeIngredientEntities: RecipeIngredient[] = []
 
     for (const [index, input] of recipeIngredients.entries()) {
-      const normalizedName = NormalizedName.createFromText(input.name)
+      const catalogName = displayNames.get(index)!
+      const normalizedName = NormalizedName.createFromText(
+        catalogName.normalizationSource,
+      )
 
       let ingredient =
         await this.ingredientsRepository.findByNormalizedName(normalizedName)
 
       if (!ingredient) {
-        ingredient = Ingredient.create({ name: input.name })
+        ingredient = Ingredient.create({ name: catalogName })
         await this.ingredientsRepository.create(ingredient)
       }
 
@@ -83,6 +111,6 @@ export class RecipeCatalogResolver {
       recipeIngredientEntities.push(recipeIngredient)
     }
 
-    return recipeIngredientEntities
+    return right(recipeIngredientEntities)
   }
 }

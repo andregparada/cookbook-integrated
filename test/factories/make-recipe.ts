@@ -24,6 +24,10 @@ import { Tag } from '@/domain/enterprise/entities/tag'
 import { Ingredient } from '@/domain/enterprise/entities/ingredient'
 import { faker } from '@faker-js/faker'
 import { Injectable } from '@nestjs/common'
+import {
+  makeCatalogDisplayNameForIngredient,
+  makeCatalogDisplayNameForTag,
+} from './make-catalog-display-name'
 import { makeIngredient, IngredientFactory } from './make-ingredient'
 import { makeRecipeIngredient } from './make-recipe-ingredient'
 import { TagFactory } from './make-tag'
@@ -301,7 +305,7 @@ export class RecipeFactory {
       if (!existingTag) {
         const tag = Tag.create(
           {
-            name: `tag-${tagId.toString()}`,
+            name: makeCatalogDisplayNameForTag(`tag-${tagId.toString()}`),
           },
           tagId,
         )
@@ -331,7 +335,11 @@ export class RecipeFactory {
 
       if (!existingIngredient) {
         const ingredient = Ingredient.create(
-          { name: `ingredient-${ingredientId}` },
+          {
+            name: makeCatalogDisplayNameForIngredient(
+              `ingredient-${ingredientId}`,
+            ),
+          },
           recipeIngredient.ingredientId,
         )
 

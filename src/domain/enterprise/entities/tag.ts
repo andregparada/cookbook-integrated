@@ -1,10 +1,11 @@
 import { Entity } from '@/core/entities/entity'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { Optional } from '@/core/types/optional'
+import { CatalogDisplayName } from './value-objects/catalog-display-name'
 import { NormalizedName } from './value-objects/normalized-name'
 
 export interface TagProps {
-  name: string // TODO normalizar para titulo
+  name: CatalogDisplayName
   normalizedName: NormalizedName
   createdAt: Date
   updatedAt?: Date | null
@@ -12,6 +13,10 @@ export interface TagProps {
 
 export class Tag extends Entity<TagProps> {
   get name() {
+    return this.props.name.value
+  }
+
+  get catalogDisplayName() {
     return this.props.name
   }
 
@@ -35,8 +40,9 @@ export class Tag extends Entity<TagProps> {
       {
         ...props,
         normalizedName:
-          props.normalizedName ?? NormalizedName.createFromText(props.name),
-        createdAt: new Date(),
+          props.normalizedName ??
+          NormalizedName.createFromText(props.name.normalizationSource),
+        createdAt: props.createdAt ?? new Date(),
       },
       id,
     )

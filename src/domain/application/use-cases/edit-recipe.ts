@@ -23,6 +23,7 @@ import { InvalidRecipeIngredientMeasurementError } from '@/domain/enterprise/err
 import { UnknownRecipeIngredientError } from '@/domain/enterprise/errors/unknown-recipe-ingredient-error'
 import { validateRecipeContentForPersist } from '../services/validate-recipe-content-for-persist'
 import { InvalidRecipeInstructionsError } from '@/domain/enterprise/errors/invalid-recipe-instructions-error'
+import { InvalidCatalogDisplayNameError } from '@/domain/enterprise/errors/invalid-catalog-display-name-error'
 import { InvalidRecipeTagsError } from '@/domain/enterprise/errors/invalid-recipe-tags-error'
 import { RecipeInstructions } from '@/domain/enterprise/entities/value-objects/recipe-instructions'
 import { RecipeTagNames } from '@/domain/enterprise/entities/value-objects/recipe-tag-names'
@@ -47,6 +48,7 @@ type EditRecipeUseCaseResponse = Either<
   | RecipeNotPublishableError
   | InvalidRecipeInstructionsError
   | InvalidRecipeTagsError
+  | InvalidCatalogDisplayNameError
   | InvalidRecipeTimingOrServingsError
   | InvalidRecipeIngredientMeasurementError
   | UnknownRecipeIngredientError,
@@ -107,13 +109,17 @@ export class EditRecipeUseCase {
       currentRecipeIngredients,
     )
 
-    const recipeIngredientEntities =
+    const recipeIngredientEntitiesResult =
       await this.catalogResolver.resolveRecipeIngredients(
         recipe.id,
         recipeIngredients,
       )
 
-    recipeIngredientList.update(recipeIngredientEntities)
+    if (recipeIngredientEntitiesResult.isLeft()) {
+      return left(recipeIngredientEntitiesResult.value)
+    }
+
+    recipeIngredientList.update(recipeIngredientEntitiesResult.value)
 
     let resolvedInstructions: string | undefined
 

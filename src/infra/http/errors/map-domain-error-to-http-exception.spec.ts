@@ -5,6 +5,7 @@ import { WrongCredentialsError } from '@/domain/application/use-cases/errors/wro
 import { InvalidUserNameError } from '@/domain/enterprise/errors/invalid-user-name-error'
 import { RecipeNotPublishableError } from '@/domain/enterprise/errors/recipe-not-publishable-error'
 import { InvalidRecipeInstructionsError } from '@/domain/enterprise/errors/invalid-recipe-instructions-error'
+import { InvalidCatalogDisplayNameError } from '@/domain/enterprise/errors/invalid-catalog-display-name-error'
 import { InvalidRecipeTagsError } from '@/domain/enterprise/errors/invalid-recipe-tags-error'
 import {
   BadRequestException,
@@ -70,6 +71,17 @@ describe('mapDomainErrorToHttpException', () => {
       new InvalidRecipeInstructionsError(
         'Recipe instructions must be at most 10000 characters.',
       ),
+    )
+
+    expect(error).toBeInstanceOf(BadRequestException)
+    expect(error.getStatus()).toBe(400)
+  })
+
+  it('should map InvalidCatalogDisplayNameError to 400', () => {
+    const error = mapDomainErrorToHttpException(
+      new InvalidCatalogDisplayNameError([
+        'recipeIngredients[0]: must not be empty',
+      ]),
     )
 
     expect(error).toBeInstanceOf(BadRequestException)

@@ -1,15 +1,16 @@
 import { Either, left, right } from '@/core/either'
 import { InvalidRecipeTagsError } from '@/domain/enterprise/errors/invalid-recipe-tags-error'
+import { CatalogDisplayName } from './catalog-display-name'
 import { NormalizedName } from './normalized-name'
 
 export type RecipeTagName = {
-  name: string
+  name: CatalogDisplayName
   normalizedName: NormalizedName
 }
 
 export class RecipeTagNames {
   static readonly MAX_TAGS = 10
-  static readonly MAX_NAME_LENGTH = 50
+  static readonly MAX_NAME_LENGTH = CatalogDisplayName.MAX_LENGTH_TAG
 
   public readonly items: RecipeTagName[]
 
@@ -25,26 +26,21 @@ export class RecipeTagNames {
     const items: RecipeTagName[] = []
 
     for (const [index, rawValue] of values.entries()) {
-      const name = rawValue.trim()
+      const nameResult = CatalogDisplayName.createFromText(rawValue, {
+        maxLength: CatalogDisplayName.MAX_LENGTH_TAG,
+      })
 
-      if (name.length === 0) {
-        issues.push(`tags[${index}]: must not be empty`)
+      if (nameResult.isLeft()) {
+        for (const issue of nameResult.value.issues) {
+          issues.push(`tags[${index}]: ${issue}`)
+        }
         continue
       }
 
-      if (name.length > RecipeTagNames.MAX_NAME_LENGTH) {
-        issues.push(
-          `tags[${index}]: must be at most ${RecipeTagNames.MAX_NAME_LENGTH} characters`,
-        )
-        continue
-      }
-
-      const normalizedName = NormalizedName.createFromText(name)
-
-      if (normalizedName.value.length === 0) {
-        issues.push(`tags[${index}]: must not be empty`)
-        continue
-      }
+      const name = nameResult.value
+      const normalizedName = NormalizedName.createFromText(
+        name.normalizationSource,
+      )
 
       if (seenNormalizedNames.has(normalizedName.value)) {
         continue

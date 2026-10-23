@@ -7,6 +7,7 @@ import { CurrentUser } from '@/infra/auth/current-user-decorator'
 import type { UserPayload } from '@/infra/auth/jwt.strategy'
 import { DifficultyLevel } from '@/domain/enterprise/entities/recipe'
 import { MeasurementUnit } from '@/domain/enterprise/entities/recipe-ingredient'
+import { CatalogDisplayName } from '@/domain/enterprise/entities/value-objects/catalog-display-name'
 
 const createRecipeBodySchema = z.object({
   name: z.string(),
@@ -16,11 +17,17 @@ const createRecipeBodySchema = z.object({
   cookTimeInMinutes: z.number().int().nonnegative().nullish(),
   servings: z.number().int().min(1).nullish(),
   difficultyLevel: z.nativeEnum(DifficultyLevel).nullish(),
-  tags: z.array(z.string()).optional(),
+  tags: z
+    .array(z.string().trim().min(1).max(CatalogDisplayName.MAX_LENGTH_TAG))
+    .optional(),
   recipeIngredients: z
     .array(
       z.object({
-        name: z.string(),
+        name: z
+          .string()
+          .trim()
+          .min(1)
+          .max(CatalogDisplayName.MAX_LENGTH_INGREDIENT),
         amount: z.number().positive().nullable(),
         // TODO: ver nativeEnum deprecated
         unit: z.nativeEnum(MeasurementUnit),

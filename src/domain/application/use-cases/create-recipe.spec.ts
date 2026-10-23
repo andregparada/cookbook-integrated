@@ -92,6 +92,26 @@ describe('Create Recipe', () => {
     expect(inMemoryRecipesRepository.items).toHaveLength(0)
   })
 
+  it('should format new ingredient catalog names on create', async () => {
+    const result = await sut.execute(
+      makeCreateRecipeUseCaseRequest({
+        recipeIngredients: [
+          {
+            name: '  açúcar de confeiteiro ',
+            amount: 1,
+            unit: MeasurementUnit.KILOGRAM,
+          },
+        ],
+      }),
+    )
+
+    expect(result.isRight()).toBe(true)
+    expect(inMemoryIngredientsRepository.items).toHaveLength(1)
+    expect(inMemoryIngredientsRepository.items[0].name).toBe(
+      'Açúcar de Confeiteiro',
+    )
+  })
+
   it('should reuse an existing ingredient when only casing differs', async () => {
     await inMemoryIngredientsRepository.create(
       makeIngredient({ name: 'Tomate' }),

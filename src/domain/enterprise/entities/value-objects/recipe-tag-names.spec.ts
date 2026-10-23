@@ -8,7 +8,7 @@ describe('RecipeTagNames', () => {
     expect(result.isRight()).toBe(true)
     if (result.isRight()) {
       expect(result.value.items).toHaveLength(1)
-      expect(result.value.items[0].name).toBe('vegetariana')
+      expect(result.value.items[0].name.value).toBe('Vegetariana')
     }
   })
 
@@ -56,7 +56,7 @@ describe('RecipeTagNames', () => {
     expect(result.isRight()).toBe(true)
     if (result.isRight()) {
       expect(result.value.items).toHaveLength(1)
-      expect(result.value.items[0].name).toBe('Café da Manhã')
+      expect(result.value.items[0].name.value).toBe('Café da Manhã')
       expect(result.value.items[0].normalizedName.value).toBe('cafe-da-manha')
     }
   })

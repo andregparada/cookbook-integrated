@@ -7,6 +7,7 @@ import { RecipeIngredientList } from '@/domain/enterprise/entities/recipe-ingred
 import { InvalidRecipeTimingOrServingsError } from '@/domain/enterprise/errors/invalid-recipe-timing-or-servings-error'
 import { InvalidRecipeIngredientMeasurementError } from '@/domain/enterprise/errors/invalid-recipe-ingredient-measurement-error'
 import { InvalidRecipeInstructionsError } from '@/domain/enterprise/errors/invalid-recipe-instructions-error'
+import { InvalidCatalogDisplayNameError } from '@/domain/enterprise/errors/invalid-catalog-display-name-error'
 import { InvalidRecipeTagsError } from '@/domain/enterprise/errors/invalid-recipe-tags-error'
 import { validateRecipeContentForPersist } from '../services/validate-recipe-content-for-persist'
 import { RecipeInstructions } from '@/domain/enterprise/entities/value-objects/recipe-instructions'
@@ -34,6 +35,7 @@ export interface CreateRecipeUseCaseRequest {
 type CreateRecipeUseCaseResponse = Either<
   | InvalidRecipeInstructionsError
   | InvalidRecipeTagsError
+  | InvalidCatalogDisplayNameError
   | InvalidRecipeTimingOrServingsError
   | InvalidRecipeIngredientMeasurementError,
   {
@@ -78,11 +80,17 @@ export class CreateRecipeUseCase {
       tagNamesResult.value,
     )
 
-    const recipeIngredientEntities =
+    const recipeIngredientEntitiesResult =
       await this.catalogResolver.resolveRecipeIngredients(
         recipeId,
         recipeIngredients,
       )
+
+    if (recipeIngredientEntitiesResult.isLeft()) {
+      return left(recipeIngredientEntitiesResult.value)
+    }
+
+    const recipeIngredientEntities = recipeIngredientEntitiesResult.value
 
     const recipe = Recipe.create(
       {

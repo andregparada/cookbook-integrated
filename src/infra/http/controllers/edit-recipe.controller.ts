@@ -6,6 +6,7 @@ import { CurrentUser } from '@/infra/auth/current-user-decorator'
 import type { UserPayload } from '@/infra/auth/jwt.strategy'
 import { DifficultyLevel } from '@/domain/enterprise/entities/recipe'
 import { MeasurementUnit } from '@/domain/enterprise/entities/recipe-ingredient'
+import { CatalogDisplayName } from '@/domain/enterprise/entities/value-objects/catalog-display-name'
 import { EditRecipeUseCase } from '@/domain/application/use-cases/edit-recipe'
 
 const editRecipeBodySchema = z.object({
@@ -17,11 +18,17 @@ const editRecipeBodySchema = z.object({
   servings: z.number().int().min(1).nullish(),
   // TODO: mudar nativeEnum depreciado
   difficultyLevel: z.nativeEnum(DifficultyLevel).nullish(),
-  tags: z.array(z.string()).optional(),
+  tags: z
+    .array(z.string().trim().min(1).max(CatalogDisplayName.MAX_LENGTH_TAG))
+    .optional(),
   recipeIngredients: z.array(
     z.object({
       id: z.string().uuid().optional(),
-      name: z.string(),
+      name: z
+        .string()
+        .trim()
+        .min(1)
+        .max(CatalogDisplayName.MAX_LENGTH_INGREDIENT),
       amount: z.number().positive().nullable(),
       unit: z.nativeEnum(MeasurementUnit),
       note: z.string().trim().max(200).nullish(),

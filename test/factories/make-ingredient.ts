@@ -3,19 +3,29 @@ import {
   Ingredient,
   IngredientProps,
 } from '@/domain/enterprise/entities/ingredient'
+import { CatalogDisplayName } from '@/domain/enterprise/entities/value-objects/catalog-display-name'
 import { PrismaIngredientMapper } from '@/infra/database/prisma/mappers/prisma-ingredient-mapper'
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { faker } from '@faker-js/faker'
 import { Injectable } from '@nestjs/common'
+import { makeCatalogDisplayNameForIngredient } from './make-catalog-display-name'
+
+type MakeIngredientOverride = Partial<Omit<IngredientProps, 'name'>> & {
+  name?: string | CatalogDisplayName
+}
 
 export function makeIngredient(
-  override: Partial<IngredientProps> = {},
+  override: MakeIngredientOverride = {},
   id?: UniqueEntityID,
 ) {
+  const { name: nameOverride, ...rest } = override
+
   const ingredient = Ingredient.create(
     {
-      name: faker.food.ingredient(),
-      ...override,
+      name: nameOverride
+        ? makeCatalogDisplayNameForIngredient(nameOverride)
+        : makeCatalogDisplayNameForIngredient(faker.food.ingredient()),
+      ...rest,
     },
     id,
   )
@@ -28,7 +38,7 @@ export class IngredientFactory {
   constructor(private prisma: PrismaService) {}
 
   async makePrismaIngredient(
-    data: Partial<IngredientProps> = {},
+    data: MakeIngredientOverride = {},
     id?: UniqueEntityID,
   ) {
     const ingredient = makeIngredient(data, id)
