@@ -65,7 +65,6 @@ describe('Publish Recipe', () => {
   })
 
   it('should keep publishedAt when republishing after unpublish', async () => {
-    // TODO: essa data mais legivel?
     const publishedAt = new Date('2024-01-01T00:00:00.000Z')
     const { recipe } = makePublishableRecipe(
       {
@@ -114,7 +113,6 @@ describe('Publish Recipe', () => {
       }),
     )
 
-    // TODO: esse teste está cumprindo seu proposito? está testando de fato se ingredientes são carregados do repositorio antes de validar?
     expect(result.isRight()).toBe(true)
     expect(inMemoryRecipesRepository.items[0].status).toBe(
       RecipeStatus.PUBLISHED,

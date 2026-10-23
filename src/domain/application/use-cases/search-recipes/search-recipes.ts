@@ -83,7 +83,6 @@ export class SearchRecipesUseCase {
     return right({ listReadModel, result })
   }
 
-  // TODO: esse método pertence fora do use case?
   private async resolveIngredientFilters(
     catalogFilters: SearchRecipesCatalogFilters,
   ): Promise<

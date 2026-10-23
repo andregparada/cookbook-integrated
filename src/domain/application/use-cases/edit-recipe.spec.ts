@@ -24,7 +24,6 @@ import { UnknownRecipeIngredientError } from '@/domain/enterprise/errors/unknown
 import { InvalidRecipeInstructionsError } from '@/domain/enterprise/errors/invalid-recipe-instructions-error'
 import { InvalidRecipeTagsError } from '@/domain/enterprise/errors/invalid-recipe-tags-error'
 import { RecipeInstructions } from '@/domain/enterprise/entities/value-objects/recipe-instructions'
-import { RecipeTagNames } from '@/domain/enterprise/entities/value-objects/recipe-tag-names'
 import {
   DifficultyLevel,
   RecipeStatus,
@@ -198,33 +197,31 @@ describe('Edit Recipe', () => {
     expect(inMemoryRecipesRepository.items[0].name).toBe('Updated Name')
   })
 
-  // TODO: limite MAX_TAGS já está em recipe-tag-names.spec.ts.
-  // Manter só InvalidRecipeTagsError.
-  it('should not allow more than the maximum number of tags', async () => {
+  it('should not allow invalid tag names', async () => {
+    const tag = makeTag({ name: 'dinner' })
+    await inMemoryTagsRepository.create(tag)
+
     const newRecipe = makeRecipe(
       {
         authorId: new UniqueEntityID('author-1'),
+        tagsIds: [tag.id],
       },
       new UniqueEntityID('recipe-1'),
     )
 
     await inMemoryRecipesRepository.create(newRecipe)
 
-    const tags = Array.from(
-      { length: RecipeTagNames.MAX_TAGS + 1 },
-      (_, index) => `tag-${index}`,
-    )
-
     const result = await sut.execute(
       makeEditRecipeUseCaseRequest({
         recipeId: newRecipe.id.toValue(),
         actorId: 'author-1',
-        tags,
+        tags: [''],
       }),
     )
 
     expect(result.isLeft()).toBe(true)
     expect(result.value).toBeInstanceOf(InvalidRecipeTagsError)
+    expect(inMemoryRecipesRepository.items[0].tagsIds).toEqual([tag.id])
   })
 
   it('should update amount and unit for the same ingredient without duplicating rows', async () => {
@@ -352,9 +349,12 @@ describe('Edit Recipe', () => {
     expect(inMemoryRecipesRepository.items[0].description).toBeNull()
   })
 
-  // TODO: tirar a asserção da string normalizada — já está em recipe-instructions.spec.ts.
-  // No use case basta isRight (o execute aplica o VO).
-  it('should normalize instructions line breaks', async () => {
+  it('should persist instructions produced by the value object', async () => {
+    const instructions = '  Bata os ovos.\r\nLeve ao forno.  '
+    const instructionsResult = RecipeInstructions.create(instructions)
+
+    expect(instructionsResult.isRight()).toBe(true)
+
     const newRecipe = makeRecipe(
       {
         authorId: new UniqueEntityID('author-1'),
@@ -368,19 +368,21 @@ describe('Edit Recipe', () => {
       makeEditRecipeUseCaseRequest({
         recipeId: newRecipe.id.toValue(),
         actorId: 'author-1',
-        instructions: '  Bata os ovos.\r\nLeve ao forno.  ',
+        instructions,
       }),
     )
 
     expect(result.isRight()).toBe(true)
-    expect(inMemoryRecipesRepository.items[0].instructions).toBe(
-      'Bata os ovos.\nLeve ao forno.',
-    )
+
+    if (result.isRight() && instructionsResult.isRight()) {
+      expect(result.value.recipe.instructions).toBe(
+        instructionsResult.value.value,
+      )
+      expect(result.value.recipe.instructions).not.toBe(instructions)
+    }
   })
 
-  // TODO: limite de tamanho já está em recipe-instructions.spec.ts.
-  // Manter só InvalidRecipeInstructionsError + instructions inalteradas.
-  it('should not allow instructions longer than the maximum length', async () => {
+  it('should leave instructions unchanged when the new value is invalid', async () => {
     const newRecipe = makeRecipe(
       {
         authorId: new UniqueEntityID('author-1'),

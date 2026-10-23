@@ -15,7 +15,6 @@ import { InvalidRecipeIngredientMeasurementError } from '@/domain/enterprise/err
 import { InvalidRecipeInstructionsError } from '@/domain/enterprise/errors/invalid-recipe-instructions-error'
 import { InvalidRecipeTagsError } from '@/domain/enterprise/errors/invalid-recipe-tags-error'
 import { RecipeInstructions } from '@/domain/enterprise/entities/value-objects/recipe-instructions'
-import { RecipeTagNames } from '@/domain/enterprise/entities/value-objects/recipe-tag-names'
 
 let inMemoryChefsRepository: InMemoryChefsRepository
 let inMemoryRecipesRepository: InMemoryRecipesRepository
@@ -67,9 +66,7 @@ describe('Create Recipe', () => {
     expect(inMemoryTagsRepository.items[0].name).toBe('Ovo')
   })
 
-  // TODO: dedup do payload já está em recipe-tag-names.spec.ts.
-  // Aqui vale o catálogo (1 Tag persistida / tagsIds na receita).
-  it('should deduplicate tags within the same request', async () => {
+  it('should persist one tag and link a single tags id when the request repeats a tag', async () => {
     const result = await sut.execute(
       makeCreateRecipeUseCaseRequest({
         tags: ['Café da Manhã', 'cafe da manha'],
@@ -83,26 +80,8 @@ describe('Create Recipe', () => {
     }
 
     expect(inMemoryTagsRepository.items).toHaveLength(1)
-    expect(inMemoryTagsRepository.items[0].name).toBe('Café da Manhã')
   })
 
-  // TODO: limite MAX_TAGS já está em recipe-tag-names.spec.ts.
-  // Manter só InvalidRecipeTagsError + receita não persistida.
-  it('should not allow more than the maximum number of tags', async () => {
-    const tags = Array.from(
-      { length: RecipeTagNames.MAX_TAGS + 1 },
-      (_, index) => `tag-${index}`,
-    )
-
-    const result = await sut.execute(makeCreateRecipeUseCaseRequest({ tags }))
-
-    expect(result.isLeft()).toBe(true)
-    expect(result.value).toBeInstanceOf(InvalidRecipeTagsError)
-    expect(inMemoryRecipesRepository.items).toHaveLength(0)
-  })
-
-  // TODO: tag vazia já está em recipe-tag-names.spec.ts.
-  // Manter só InvalidRecipeTagsError + receita não persistida.
   it('should not allow empty tag names', async () => {
     const result = await sut.execute(
       makeCreateRecipeUseCaseRequest({ tags: [''] }),
@@ -111,20 +90,6 @@ describe('Create Recipe', () => {
     expect(result.isLeft()).toBe(true)
     expect(result.value).toBeInstanceOf(InvalidRecipeTagsError)
     expect(inMemoryRecipesRepository.items).toHaveLength(0)
-  })
-
-  // TODO: fundir com “reuse existing tag when only casing differs” — os dois cobrem o mesmo find-or-create.
-  it('should preserve the display name from the first tag registration', async () => {
-    await sut.execute(
-      makeCreateRecipeUseCaseRequest({ tags: ['Café da Manhã'] }),
-    )
-
-    await sut.execute(
-      makeCreateRecipeUseCaseRequest({ tags: ['cafe da manha'] }),
-    )
-
-    expect(inMemoryTagsRepository.items).toHaveLength(1)
-    expect(inMemoryTagsRepository.items[0].name).toBe('Café da Manhã')
   })
 
   it('should reuse an existing ingredient when only casing differs', async () => {
@@ -279,27 +244,27 @@ describe('Create Recipe', () => {
     }
   })
 
-  // TODO: tirar a asserção da string normalizada — já está em recipe-instructions.spec.ts.
-  // No use case basta isRight (o execute aplica o VO).
-  it('should normalize instructions line breaks', async () => {
+  it('should persist instructions produced by the value object', async () => {
+    const instructions = '  Bata os ovos.\r\nLeve ao forno.  '
+    const instructionsResult = RecipeInstructions.create(instructions)
+
+    expect(instructionsResult.isRight()).toBe(true)
+
     const result = await sut.execute(
-      makeCreateRecipeUseCaseRequest({
-        instructions: '  Bata os ovos.\r\nLeve ao forno.  ',
-      }),
+      makeCreateRecipeUseCaseRequest({ instructions }),
     )
 
     expect(result.isRight()).toBe(true)
 
-    if (result.isRight()) {
+    if (result.isRight() && instructionsResult.isRight()) {
       expect(result.value.recipe.instructions).toBe(
-        'Bata os ovos.\nLeve ao forno.',
+        instructionsResult.value.value,
       )
+      expect(result.value.recipe.instructions).not.toBe(instructions)
     }
   })
 
-  // TODO: limite de tamanho já está em recipe-instructions.spec.ts.
-  // Manter só InvalidRecipeInstructionsError + receita não persistida.
-  it('should not allow instructions longer than the maximum length', async () => {
+  it('should not persist a recipe when instructions are invalid', async () => {
     const result = await sut.execute(
       makeCreateRecipeUseCaseRequest({
         instructions: 'a'.repeat(RecipeInstructions.MAX_LENGTH + 1),

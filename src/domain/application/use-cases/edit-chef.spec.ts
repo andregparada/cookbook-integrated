@@ -146,9 +146,7 @@ describe('Edit Chef', () => {
     expect(inMemoryChefsRepository.items[0].email).toBe('chef1@example.com')
   })
 
-  // TODO: formato de userName já está em user-name.spec.ts.
-  // Manter só InvalidUserNameError + userName inalterado.
-  it('should not be able to change to an invalid user name', async () => {
+  it('should leave the user name unchanged when the new value is invalid', async () => {
     const newChef = makeChef(
       { userName: 'chef_one' },
       new UniqueEntityID('chef-1'),

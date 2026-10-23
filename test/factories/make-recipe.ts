@@ -8,6 +8,7 @@ import {
   DifficultyLevel,
   Recipe,
   RecipeProps,
+  RecipeStatus,
 } from '@/domain/enterprise/entities/recipe'
 import { RecipeIngredientList } from '@/domain/enterprise/entities/recipe-ingredient-list'
 import {
@@ -134,6 +135,34 @@ export function makeRecipe(
   )
 
   return recipe
+}
+
+export function makeRecipeWithIngredients(
+  authorId: UniqueEntityID,
+  ingredientIds: UniqueEntityID[],
+  override: Partial<RecipeProps> = {},
+  recipeId = new UniqueEntityID(),
+) {
+  const ingredients = new RecipeIngredientList(
+    ingredientIds.map((ingredientId, index) =>
+      makeRecipeIngredient({
+        recipeId,
+        ingredientId,
+        position: index,
+      }),
+    ),
+  )
+
+  return makeRecipe(
+    {
+      authorId,
+      ingredients,
+      status: RecipeStatus.PUBLISHED,
+      publishedAt: new Date(),
+      ...override,
+    },
+    recipeId,
+  )
 }
 
 /** Input for `CreateRecipeUseCase.execute` (unit specs). Not the domain entity — use `makeRecipe` for that. */

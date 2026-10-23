@@ -2,11 +2,14 @@ import { InMemoryRecipeIngredientsRepository } from 'test/repositories/in-memory
 import { InMemoryTagsRepository } from 'test/repositories/in-memory-tags-repository'
 import { InMemoryRecipesRepository } from 'test/repositories/in-memory-recipes-repository'
 import { InMemoryIngredientsRepository } from 'test/repositories/in-memory-ingredients-repository'
-import { makeRecipe } from 'test/factories/make-recipe'
+import {
+  makeRecipe,
+  makeRecipeWithIngredients,
+} from 'test/factories/make-recipe'
 import { InMemoryChefsRepository } from 'test/repositories/in-memory-chefs-repository'
 import { makeChef } from 'test/factories/make-chef'
 import { SearchRecipesUseCase } from './search-recipes'
-import { RecipeProps, RecipeStatus } from '@/domain/enterprise/entities/recipe'
+import { RecipeStatus } from '@/domain/enterprise/entities/recipe'
 import { RecipeSearchScope } from '../../repositories/recipes-repository'
 import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
 import { DEFAULT_PER_PAGE } from '@/core/repositories/pagination-params'
@@ -19,9 +22,7 @@ import { RecipeAuthorWorkspaceItem } from '@/domain/enterprise/entities/value-ob
 import { RecipeSearchResultItem } from '@/domain/enterprise/entities/value-objects/recipe-search-result-item'
 import { SearchIngredientTermsResolver } from '../../services/search-ingredient-terms-resolver'
 import { makeIngredient } from 'test/factories/make-ingredient'
-import { makeRecipeIngredient } from 'test/factories/make-recipe-ingredient'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
-import { RecipeIngredientList } from '@/domain/enterprise/entities/recipe-ingredient-list'
 
 let inMemoryChefsRepository: InMemoryChefsRepository
 let inMemoryTagsRepository: InMemoryTagsRepository
@@ -36,35 +37,6 @@ async function seedIngredient(name: string, id?: UniqueEntityID) {
   await inMemoryIngredientsRepository.create(ingredient)
 
   return ingredient
-}
-
-// TODO: esse método pertence aos factories
-function makeRecipeWithIngredients(
-  authorId: UniqueEntityID,
-  ingredientIds: UniqueEntityID[],
-  override: Partial<RecipeProps> = {},
-  recipeId = new UniqueEntityID(),
-) {
-  const ingredients = new RecipeIngredientList(
-    ingredientIds.map((ingredientId, index) =>
-      makeRecipeIngredient({
-        recipeId,
-        ingredientId,
-        position: index,
-      }),
-    ),
-  )
-
-  return makeRecipe(
-    {
-      authorId,
-      ingredients,
-      status: RecipeStatus.PUBLISHED,
-      publishedAt: new Date(),
-      ...override,
-    },
-    recipeId,
-  )
 }
 
 describe('Search Recipes', () => {
@@ -176,7 +148,6 @@ describe('Search Recipes', () => {
     }
   })
 
-  // TODO: faz sentido juntar esses dois testes?
   it('should hide soft-deleted recipes in mine scope', async () => {
     const author = makeChef({ userName: 'author' })
 
@@ -239,7 +210,6 @@ describe('Search Recipes', () => {
 
     expect(result.isRight()).toBe(true)
 
-    // TODO: faz sentido esse if? se o teste ja espera que o result.isRight, então esse if não faz sentido
     if (result.isRight()) {
       expect(result.value.listReadModel).toBe(
         RecipeListReadModel.AUTHOR_WORKSPACE_ITEM,
@@ -265,7 +235,6 @@ describe('Search Recipes', () => {
   })
 
   it('should paginate results with correct meta defaults', async () => {
-    // TODO: aqui não tem um método makePrismaChef, que já está no repositório?
     const author = makeChef({ userName: 'author' })
 
     inMemoryChefsRepository.items.push(author)
@@ -289,7 +258,6 @@ describe('Search Recipes', () => {
 
     expect(result.isRight()).toBe(true)
 
-    // TODO: faz sentido esse if? se o teste ja espera que o result.isRight, então esse if não faz sentido
     if (result.isRight()) {
       expect(result.value.result.items).toHaveLength(2)
       expect(result.value.result.meta).toEqual({
@@ -326,85 +294,7 @@ describe('Search Recipes', () => {
     }
   })
 
-  // TODO: fundir com “only published recipes in global scope” — já asserta CATALOG_CARD.
-  // not.toHaveProperty é shape do VO, não ramo do use case (resolverRecipeListReadModel
-  // já está em search-recipes-params.spec.ts).
-  it('should return catalog card read model for global scope without filters', async () => {
-    const author = makeChef({ userName: 'author' })
-
-    inMemoryChefsRepository.items.push(author)
-
-    const recipe = makeRecipe({
-      authorId: author.id,
-      name: 'Catalog Recipe',
-      status: RecipeStatus.PUBLISHED,
-      publishedAt: new Date(),
-    })
-
-    await inMemoryRecipesRepository.create(recipe)
-
-    const result = await sut.execute({
-      scope: RecipeSearchScope.GLOBAL,
-    })
-
-    expect(result.isRight()).toBe(true)
-
-    if (result.isRight()) {
-      const item = result.value.result.items[0]
-
-      expect(result.value.listReadModel).toBe(RecipeListReadModel.CATALOG_CARD)
-      expect(item).toBeInstanceOf(RecipeCatalogCard)
-      expect(item).not.toHaveProperty('status')
-      expect(item).not.toHaveProperty('author')
-    }
-  })
-
-  // TODO: escolha do read model já está em search-recipes-params.spec.ts e no caso de query abaixo.
-  // Manter um único spec de “filtro liga SEARCH_RESULT_ITEM”.
-  it('should return search result item read model when catalog filters are present', async () => {
-    const author = makeChef({ userName: 'author' })
-
-    inMemoryChefsRepository.items.push(author)
-
-    const recipe = makeRecipe({
-      authorId: author.id,
-      name: 'Filtered Recipe',
-      status: RecipeStatus.PUBLISHED,
-      publishedAt: new Date(),
-    })
-
-    const otherRecipe = makeRecipe({
-      authorId: author.id,
-      name: 'Other Recipe',
-      status: RecipeStatus.PUBLISHED,
-      publishedAt: new Date(),
-    })
-
-    await inMemoryRecipesRepository.create(recipe)
-    await inMemoryRecipesRepository.create(otherRecipe)
-
-    const result = await sut.execute({
-      scope: RecipeSearchScope.GLOBAL,
-      query: 'Filtered',
-    })
-
-    expect(result.isRight()).toBe(true)
-
-    if (result.isRight()) {
-      const item = result.value.result.items[0]
-
-      expect(result.value.listReadModel).toBe(
-        RecipeListReadModel.SEARCH_RESULT_ITEM,
-      )
-      expect(result.value.result.items).toHaveLength(1)
-      expect(result.value.result.meta.totalItems).toBe(1)
-      expect(item).toBeInstanceOf(RecipeSearchResultItem)
-      expect(item.name).toBe('Filtered Recipe')
-    }
-  })
-
   it('should filter recipes by query matching name case-insensitively', async () => {
-    // TODO: aqui não tem um método makePrismaChef, que já está no repositório?
     const author = makeChef({ userName: 'author' })
 
     inMemoryChefsRepository.items.push(author)
@@ -426,7 +316,13 @@ describe('Search Recipes', () => {
     expect(result.isRight()).toBe(true)
 
     if (result.isRight()) {
+      expect(result.value.listReadModel).toBe(
+        RecipeListReadModel.SEARCH_RESULT_ITEM,
+      )
       expect(result.value.result.items).toHaveLength(1)
+      expect(result.value.result.items[0]).toBeInstanceOf(
+        RecipeSearchResultItem,
+      )
       expect(result.value.result.items[0].name).toBe('Bolo de Cenoura')
     }
   })
@@ -488,32 +384,6 @@ describe('Search Recipes', () => {
     }
   })
 
-  // TODO: visibilidade 12.k já está no caso global sem filtro.
-  // Manter só se quiser regressão explícita de “query não bypassa DRAFT”.
-  it('should hide draft recipes when filtering by query in global scope', async () => {
-    const author = makeChef({ userName: 'author' })
-
-    inMemoryChefsRepository.items.push(author)
-
-    const draftRecipe = makeRecipe({
-      authorId: author.id,
-      name: 'Bolo Draft',
-    })
-
-    await inMemoryRecipesRepository.create(draftRecipe)
-
-    const result = await sut.execute({
-      scope: RecipeSearchScope.GLOBAL,
-      query: 'Bolo',
-    })
-
-    expect(result.isRight()).toBe(true)
-
-    if (result.isRight()) {
-      expect(result.value.result.items).toHaveLength(0)
-    }
-  })
-
   it('should treat empty ingredients list as no catalog filter', async () => {
     const author = makeChef({ userName: 'author' })
 
@@ -539,7 +409,6 @@ describe('Search Recipes', () => {
     }
   })
 
-  // TODO: ver essa regra de negocio; retorna só o que combinarem com tudo? o padrão é checar tudo e deve ser implementado o any?
   it('should return recipes that contain all required ingredients by default', async () => {
     const author = makeChef({ userName: 'author' })
 
@@ -575,13 +444,7 @@ describe('Search Recipes', () => {
     expect(result.isRight()).toBe(true)
 
     if (result.isRight()) {
-      expect(result.value.listReadModel).toBe(
-        RecipeListReadModel.SEARCH_RESULT_ITEM,
-      )
       expect(result.value.result.items).toHaveLength(1)
-      expect(result.value.result.items[0]).toBeInstanceOf(
-        RecipeSearchResultItem,
-      )
       expect(result.value.result.items[0].name).toBe('Chicken Potato Stew')
     }
   })
@@ -717,34 +580,6 @@ describe('Search Recipes', () => {
     if (result.isRight()) {
       expect(result.value.result.items).toHaveLength(1)
       expect(result.value.result.items[0].name).toBe('Chicken Dish')
-    }
-  })
-
-  // TODO: visibilidade 12.k já está no caso global sem filtro.
-  // Manter só se quiser regressão explícita de “ingredients[] não bypassa DRAFT”.
-  it('should hide draft recipes when filtering by ingredients in global scope', async () => {
-    const author = makeChef({ userName: 'author' })
-
-    inMemoryChefsRepository.items.push(author)
-
-    const chicken = await seedIngredient('Frango')
-    const draftRecipe = makeRecipeWithIngredients(author.id, [chicken.id], {
-      name: 'Draft Chicken',
-      status: RecipeStatus.DRAFT,
-      publishedAt: null,
-    })
-
-    await inMemoryRecipesRepository.create(draftRecipe)
-
-    const result = await sut.execute({
-      scope: RecipeSearchScope.GLOBAL,
-      ingredients: ['frango'],
-    })
-
-    expect(result.isRight()).toBe(true)
-
-    if (result.isRight()) {
-      expect(result.value.result.items).toHaveLength(0)
     }
   })
 })

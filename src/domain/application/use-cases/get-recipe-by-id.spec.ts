@@ -28,7 +28,7 @@ describe('Get Recipe By Id', () => {
     sut = new GetRecipeByIdUseCase(inMemoryRecipesRepository)
   })
 
-  it('should be able to get a recipe by id', async () => {
+  it('should be able to get a published recipe by id without actorId', async () => {
     const chef = makeChef({ userName: 'John_Doe' })
 
     inMemoryChefsRepository.items.push(chef)
@@ -62,27 +62,6 @@ describe('Get Recipe By Id', () => {
 
     expect(result.isLeft()).toBe(true)
     expect(result.value).toBeInstanceOf(ResourceNotFoundError)
-  })
-
-  // TODO: fundir com “should be able to get a recipe by id” — o primeiro já executa sem actorId.
-  it('should be able to get a published recipe without actorId', async () => {
-    const chef = makeChef({ userName: 'John_Doe' })
-
-    inMemoryChefsRepository.items.push(chef)
-
-    const newRecipe = makeRecipe({
-      authorId: chef.id,
-      status: RecipeStatus.PUBLISHED,
-      publishedAt: new Date(),
-    })
-
-    await inMemoryRecipesRepository.create(newRecipe)
-
-    const result = await sut.execute({
-      id: newRecipe.id.toString(),
-    })
-
-    expect(result.isRight()).toBe(true)
   })
 
   it('should return ResourceNotFoundError when draft is requested by non-author', async () => {
