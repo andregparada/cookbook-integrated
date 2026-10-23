@@ -5,9 +5,11 @@ import { mapDomainErrorToHttpException } from '@/infra/http/errors/map-domain-er
 import { CreateRecipeUseCase } from '@/domain/application/use-cases/create-recipe'
 import { CurrentUser } from '@/infra/auth/current-user-decorator'
 import type { UserPayload } from '@/infra/auth/jwt.strategy'
-import { DifficultyLevel } from '@/domain/enterprise/entities/recipe'
-import { MeasurementUnit } from '@/domain/enterprise/entities/recipe-ingredient'
-import { CatalogDisplayName } from '@/domain/enterprise/entities/value-objects/catalog-display-name'
+import {
+  createRecipeIngredientBodySchema,
+  recipeDifficultyLevelSchema,
+  recipeTagsSchema,
+} from '@/infra/http/schemas/recipe-request.schemas'
 
 const createRecipeBodySchema = z.object({
   name: z.string(),
@@ -16,25 +18,9 @@ const createRecipeBodySchema = z.object({
   prepTimeInMinutes: z.number().int().nonnegative().nullish(),
   cookTimeInMinutes: z.number().int().nonnegative().nullish(),
   servings: z.number().int().min(1).nullish(),
-  difficultyLevel: z.nativeEnum(DifficultyLevel).nullish(),
-  tags: z
-    .array(z.string().trim().min(1).max(CatalogDisplayName.MAX_LENGTH_TAG))
-    .optional(),
-  recipeIngredients: z
-    .array(
-      z.object({
-        name: z
-          .string()
-          .trim()
-          .min(1)
-          .max(CatalogDisplayName.MAX_LENGTH_INGREDIENT),
-        amount: z.number().positive().nullable(),
-        // TODO: ver nativeEnum deprecated
-        unit: z.nativeEnum(MeasurementUnit),
-        note: z.string().trim().max(200).nullish(),
-      }),
-    )
-    .optional(),
+  difficultyLevel: recipeDifficultyLevelSchema,
+  tags: recipeTagsSchema,
+  recipeIngredients: z.array(createRecipeIngredientBodySchema).optional(),
 })
 
 const bodyValidationPipe = new ZodValidationPipe(createRecipeBodySchema)

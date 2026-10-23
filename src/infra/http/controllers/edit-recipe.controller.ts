@@ -4,10 +4,12 @@ import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import z from 'zod'
 import { CurrentUser } from '@/infra/auth/current-user-decorator'
 import type { UserPayload } from '@/infra/auth/jwt.strategy'
-import { DifficultyLevel } from '@/domain/enterprise/entities/recipe'
-import { MeasurementUnit } from '@/domain/enterprise/entities/recipe-ingredient'
-import { CatalogDisplayName } from '@/domain/enterprise/entities/value-objects/catalog-display-name'
 import { EditRecipeUseCase } from '@/domain/application/use-cases/edit-recipe'
+import {
+  editRecipeIngredientBodySchema,
+  recipeDifficultyLevelSchema,
+  recipeTagsSchema,
+} from '@/infra/http/schemas/recipe-request.schemas'
 
 const editRecipeBodySchema = z.object({
   name: z.string().optional(),
@@ -16,24 +18,9 @@ const editRecipeBodySchema = z.object({
   prepTimeInMinutes: z.number().int().nonnegative().nullish(),
   cookTimeInMinutes: z.number().int().nonnegative().nullish(),
   servings: z.number().int().min(1).nullish(),
-  // TODO: mudar nativeEnum depreciado
-  difficultyLevel: z.nativeEnum(DifficultyLevel).nullish(),
-  tags: z
-    .array(z.string().trim().min(1).max(CatalogDisplayName.MAX_LENGTH_TAG))
-    .optional(),
-  recipeIngredients: z.array(
-    z.object({
-      id: z.string().uuid().optional(),
-      name: z
-        .string()
-        .trim()
-        .min(1)
-        .max(CatalogDisplayName.MAX_LENGTH_INGREDIENT),
-      amount: z.number().positive().nullable(),
-      unit: z.nativeEnum(MeasurementUnit),
-      note: z.string().trim().max(200).nullish(),
-    }),
-  ),
+  difficultyLevel: recipeDifficultyLevelSchema,
+  tags: recipeTagsSchema,
+  recipeIngredients: z.array(editRecipeIngredientBodySchema),
 })
 
 const bodyValidationPipe = new ZodValidationPipe(editRecipeBodySchema)
