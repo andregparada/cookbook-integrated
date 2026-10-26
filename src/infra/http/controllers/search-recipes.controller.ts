@@ -1,12 +1,6 @@
 import z from 'zod'
 import { ZodValidationPipe } from '../pipes/zod-validation-pipe'
-import {
-  Controller,
-  Get,
-  Query,
-  Req,
-  UnauthorizedException,
-} from '@nestjs/common'
+import { Controller, Get, Query, Req } from '@nestjs/common'
 import { mapDomainErrorToHttpException } from '@/infra/http/errors/map-domain-error-to-http-exception'
 import { SearchRecipesUseCase } from '@/domain/application/use-cases/search-recipes/search-recipes'
 import { Public } from '@/infra/auth/public'
@@ -72,11 +66,6 @@ export class SearchRecipesController {
     @Req() request: Request,
   ) {
     const user = request.user as UserPayload | undefined
-
-    // TODO: essa validação não é responsabilidade do caso de uso?
-    if (scope === RecipeSearchScope.MINE && !user?.sub) {
-      throw new UnauthorizedException()
-    }
 
     const result = await this.searchRecipes.execute({
       scope,

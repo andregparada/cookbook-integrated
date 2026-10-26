@@ -338,7 +338,7 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
   1. **Escopo padrão (global):** Na ausência de `scope`, a busca retorna receitas `PUBLISHED` e não excluídas de todos os chefs.
   2. **Acesso anônimo ao escopo global:** O escopo global não exige autenticação (`@Public()`). Estar autenticado não altera os resultados do escopo global.
   3. **Escopo `mine`:** Retorna receitas cujo `authorId` é o do chef autenticado, incluindo `DRAFT` e `PUBLISHED`, e exige JWT.
-  4. **`mine` sem autenticação:** Requisição com `scope=mine` sem token válido é rejeitada pelo guard de autenticação (HTTP 401), antes do use case.
+  4. **`mine` sem autenticação:** Requisição com `scope=mine` sem token válido retorna HTTP 401: o use case falha com `UnauthenticatedError` e a camada HTTP mapeia o erro (sem `actorId` derivado da sessão).
   5. **Ator derivado da sessão:** O `actorId` usado no escopo `mine` vem sempre de `@CurrentUser().sub`; o payload nunca aceita `authorId` como parâmetro de escopo (Sugestão 2).
 
 ---

@@ -1,6 +1,5 @@
 import { AppModule } from '@/infra/app.module'
 import { DatabaseModule } from '@/infra/database/database.module'
-import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { INestApplication } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { Test } from '@nestjs/testing'
@@ -14,7 +13,6 @@ describe('Delete recipe (E2E)', () => {
   let app: INestApplication
   let chefFactory: ChefFactory
   let recipeFactory: RecipeFactory
-  let prisma: PrismaService
   let jwt: JwtService
 
   beforeAll(async () => {
@@ -27,7 +25,6 @@ describe('Delete recipe (E2E)', () => {
 
     chefFactory = moduleRef.get(ChefFactory)
     recipeFactory = moduleRef.get(RecipeFactory)
-    prisma = moduleRef.get(PrismaService)
     jwt = moduleRef.get(JwtService)
 
     await app.init()
@@ -48,12 +45,5 @@ describe('Delete recipe (E2E)', () => {
       .set('Authorization', `Bearer ${accessToken}`)
 
     expect(deleteResponse.statusCode).toBe(204)
-
-    const recipeOnDatabaseAfterDelete = await prisma.recipe.findUnique({
-      where: { id: recipeId },
-    })
-
-    // TODO: esse teste já não está sendo feito em unit?
-    expect(recipeOnDatabaseAfterDelete?.deletedAt).toBeTruthy()
   })
 })

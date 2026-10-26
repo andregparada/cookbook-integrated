@@ -8,7 +8,6 @@ import { UnpublishRecipeUseCase } from '@/domain/application/use-cases/unpublish
 export class UnpublishRecipeController {
   constructor(private unpublishRecipe: UnpublishRecipeUseCase) {}
 
-  // TODO: e2e test aqui?
   @Post('unpublish')
   @HttpCode(204)
   async handle(

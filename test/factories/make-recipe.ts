@@ -93,19 +93,16 @@ export type MakePrismaPublishableRecipeOverride =
     tagName?: string
   }
 
-// TODO: existe a necessidade de um makePulishable?
-// não pode ser só um makeRecipe? se o makeRecipe
-// precisar ser unpublishabel, basta usar override ná hora de aplicar
-// TODO: nome do ingrediente não usa faker
-
 export function makePublishableRecipe(
   override: MakePublishableRecipeOverride = {},
   id?: UniqueEntityID,
 ) {
-  const { ingredientName = 'Salt', ...recipeProps } = override
+  const { ingredientName, ...recipeProps } = override
   const recipeId = id ?? new UniqueEntityID()
 
-  const ingredient = makeIngredient({ name: ingredientName })
+  const ingredient = makeIngredient(
+    ingredientName ? { name: ingredientName } : {},
+  )
   const recipeIngredient = makeRecipeIngredient({
     recipeId,
     ingredientId: ingredient.id,
@@ -218,9 +215,9 @@ export function makeCreateRecipeHttpBody(
   }
 }
 
-export function makePublishRecipeUseCaseRequest(
-  override: Partial<PublishRecipeUseCaseRequest> = {},
-): PublishRecipeUseCaseRequest {
+function makeRecipeActorUseCaseRequest(
+  override: Partial<{ recipeId: string; actorId: string }> = {},
+) {
   return {
     recipeId: new UniqueEntityID().toString(),
     actorId: new UniqueEntityID().toString(),
@@ -228,25 +225,22 @@ export function makePublishRecipeUseCaseRequest(
   }
 }
 
-// TODO muitos makes iguais aqui, pode ser refatorado?
+export function makePublishRecipeUseCaseRequest(
+  override: Partial<PublishRecipeUseCaseRequest> = {},
+): PublishRecipeUseCaseRequest {
+  return makeRecipeActorUseCaseRequest(override)
+}
+
 export function makeUnpublishRecipeUseCaseRequest(
   override: Partial<UnpublishRecipeUseCaseRequest> = {},
 ): UnpublishRecipeUseCaseRequest {
-  return {
-    recipeId: new UniqueEntityID().toString(),
-    actorId: new UniqueEntityID().toString(),
-    ...override,
-  }
+  return makeRecipeActorUseCaseRequest(override)
 }
 
 export function makeDeleteRecipeUseCaseRequest(
   override: Partial<DeleteRecipeUseCaseRequest> = {},
 ): DeleteRecipeUseCaseRequest {
-  return {
-    recipeId: new UniqueEntityID().toString(),
-    actorId: new UniqueEntityID().toString(),
-    ...override,
-  }
+  return makeRecipeActorUseCaseRequest(override)
 }
 
 @Injectable()

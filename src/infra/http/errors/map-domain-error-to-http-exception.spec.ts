@@ -1,4 +1,5 @@
 import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
+import { UnauthenticatedError } from '@/core/errors/errors/unauthenticated-error'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 import { ChefAlreadyExistsError } from '@/domain/application/use-cases/errors/chef-already-exists-error'
 import { WrongCredentialsError } from '@/domain/application/use-cases/errors/wrong-credentials-error'
@@ -34,6 +35,13 @@ describe('mapDomainErrorToHttpException', () => {
 
   it('should map WrongCredentialsError to 401', () => {
     const error = mapDomainErrorToHttpException(new WrongCredentialsError())
+
+    expect(error).toBeInstanceOf(UnauthorizedException)
+    expect(error.getStatus()).toBe(401)
+  })
+
+  it('should map UnauthenticatedError to 401', () => {
+    const error = mapDomainErrorToHttpException(new UnauthenticatedError())
 
     expect(error).toBeInstanceOf(UnauthorizedException)
     expect(error.getStatus()).toBe(401)

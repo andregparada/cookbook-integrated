@@ -9,17 +9,11 @@ it('should extract id when route param is uuid only', () => {
   expect(result).toBe(recipeId)
 })
 
-// TODO: fundir com o teste do slug errado — os dois só provam que o slug é ignorado.
-it('should extract id when route param is uuid with correct slug', () => {
-  const result = parseRecipeIdFromRouteParam(`${recipeId}-bolo-de-cenoura`)
-
-  expect(result).toBe(recipeId)
-})
-
-it('should extract id when route param is uuid with wrong slug', () => {
-  const result = parseRecipeIdFromRouteParam(`${recipeId}-slug-errado`)
-
-  expect(result).toBe(recipeId)
+it('should extract id when route param is uuid with slug suffix (slug is ignored)', () => {
+  expect(parseRecipeIdFromRouteParam(`${recipeId}-bolo-de-cenoura`)).toBe(
+    recipeId,
+  )
+  expect(parseRecipeIdFromRouteParam(`${recipeId}-slug-errado`)).toBe(recipeId)
 })
 
 it('should return original value when route param is not a uuid', () => {

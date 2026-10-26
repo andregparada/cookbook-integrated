@@ -11,7 +11,7 @@ import { makeChef } from 'test/factories/make-chef'
 import { SearchRecipesUseCase } from './search-recipes'
 import { RecipeStatus } from '@/domain/enterprise/entities/recipe'
 import { RecipeSearchScope } from '../../repositories/recipes-repository'
-import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
+import { UnauthenticatedError } from '@/core/errors/errors/unauthenticated-error'
 import { DEFAULT_PER_PAGE } from '@/core/repositories/pagination-params'
 import {
   IngredientMatchMode,
@@ -225,13 +225,13 @@ describe('Search Recipes', () => {
     }
   })
 
-  it('should return NotAllowedError when mine scope is requested without actorId', async () => {
+  it('should return UnauthenticatedError when mine scope is requested without actorId', async () => {
     const result = await sut.execute({
       scope: RecipeSearchScope.MINE,
     })
 
     expect(result.isLeft()).toBe(true)
-    expect(result.value).toBeInstanceOf(NotAllowedError)
+    expect(result.value).toBeInstanceOf(UnauthenticatedError)
   })
 
   it('should paginate results with correct meta defaults', async () => {

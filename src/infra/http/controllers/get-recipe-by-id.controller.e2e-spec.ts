@@ -11,6 +11,7 @@ import request from 'supertest'
 import { DatabaseModule } from '@/infra/database/database.module'
 import { RecipeStatus } from '@/domain/enterprise/entities/recipe'
 
+// Smoke HTTP only (`recipe` + name). Domain fields and rules: get-recipe-by-id.spec.ts.
 describe('Get recipe by id (E2E)', () => {
   let app: INestApplication
   let chefFactory: ChefFactory
@@ -47,9 +48,6 @@ describe('Get recipe by id (E2E)', () => {
     )
 
     expect(response.statusCode).toBe(200)
-
-    // TODO: tirar author/slug/status — já estão em get-recipe-by-id.spec.ts.
-    // Manter só smoke do envelope HTTP (`recipe` + name) para provar presenter + Prisma.
     expect(response.body).toEqual({
       recipe: expect.objectContaining({
         name: 'Receita 01',
@@ -94,8 +92,6 @@ describe('Get recipe by id (E2E)', () => {
       .set('Authorization', `Bearer ${accessToken}`)
 
     expect(response.statusCode).toBe(200)
-    // TODO: tirar status DRAFT — “autor lê rascunho” já está no unit.
-    // Este spec vale pelo JWT → actorId; smoke: 200 + `recipe.name`.
     expect(response.body).toEqual({
       recipe: expect.objectContaining({
         name: 'Draft Recipe',

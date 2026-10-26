@@ -1,4 +1,5 @@
 import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
+import { UnauthenticatedError } from '@/core/errors/errors/unauthenticated-error'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 import { ChefAlreadyExistsError } from '@/domain/application/use-cases/errors/chef-already-exists-error'
 import { WrongCredentialsError } from '@/domain/application/use-cases/errors/wrong-credentials-error'
@@ -29,6 +30,10 @@ export function mapDomainErrorToHttpException(error: unknown): HttpException {
   }
 
   if (error instanceof WrongCredentialsError) {
+    return new UnauthorizedException(error.message)
+  }
+
+  if (error instanceof UnauthenticatedError) {
     return new UnauthorizedException(error.message)
   }
 

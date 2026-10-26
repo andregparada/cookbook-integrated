@@ -1,5 +1,5 @@
 import { Either, left, right } from '@/core/either'
-import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
+import { UnauthenticatedError } from '@/core/errors/errors/unauthenticated-error'
 import {
   DEFAULT_PAGE,
   DEFAULT_PER_PAGE,
@@ -23,7 +23,7 @@ import { RecipesRepository } from '../../repositories/recipes-repository'
 import { SearchIngredientTermsResolver } from '../../services/search-ingredient-terms-resolver'
 
 type SearchRecipesUseCaseResponse = Either<
-  NotAllowedError,
+  UnauthenticatedError,
   {
     listReadModel: RecipeListReadModel
     result: PaginatedResult<RecipeListItem>
@@ -57,7 +57,7 @@ export class SearchRecipesUseCase {
 
     if (scope === RecipeSearchScope.MINE) {
       if (!request.actorId) {
-        return left(new NotAllowedError())
+        return left(new UnauthenticatedError())
       }
 
       const result = await this.recipesRepository.findMany({
