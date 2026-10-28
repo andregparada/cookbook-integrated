@@ -10,11 +10,12 @@ alwaysApply: false
 
 Controllers handle HTTP only — delegate to use cases. Validate input with Zod pipes; shape responses with presenters. Persist aggregate graphs in the repository (transactions), not in scattered loops inside use cases.
 
-## HTTP boundary
+## Auth and routes
 
-- **Public routes:** `POST /accounts` (`CreateAccountController` → `RegisterChefUseCase`) and `PUT /user/me` (`EditChefController`)
-- **JWT:** `CurrentUser` / `UserPayload` (Nest convention)
+- **`actorId` / `authorId`:** always from JWT `CurrentUser` / `UserPayload.sub` — never from the request body.
+- **Public (`@Public()`):** `POST /accounts`, `POST /sessions`, `GET /recipes/:id`, `GET /recipes` (anonymous ok for `scope=global`; `scope=mine` requires JWT).
+- **JWT required:** e.g. `PUT /user/me`, recipe mutations, `scope=mine` on search.
 
 ## Prisma enums
 
-- **`DifficultyLevel`:** domain `easy` | `medium` | `hard`; Prisma `Easy` | `Medium` | `Hard` — convert in `src/infra/database/prisma/mappers/enum-mappers.ts`
+- **`DifficultyLevel`:** domain `easy` | `medium` | `hard`; Prisma `Easy` | `Medium` | `Hard` — convert in `src/infra/database/prisma/mappers/enum-mappers.ts`.

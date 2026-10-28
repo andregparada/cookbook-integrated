@@ -17,7 +17,7 @@ A evolução do produto segue duas fases funcionais:
 | **1 — Catálogo público pesquisável** | Conta, CRUD de receitas, publicação (rascunho → publicada), catálogo global de ingredientes/tags, busca global com filtros, perfis públicos | Usuários publicam receitas e encontram receitas de outros com filtros precisos |
 | **2 — Interação entre usuários** | Favoritar, avaliar, seguir chefs, feed cronológico | Descoberta social leve sem perder a qualidade da busca |
 
-**Modelo de publicação adotado:** toda receita nasce como **rascunho (`DRAFT`)** — visível apenas ao autor. O autor publica explicitamente (`PUBLISHED`), tornando a receita visível e pesquisável por qualquer pessoa, inclusive sem login. Rascunhos permitem salvar receitas incompletas; a validação estrita ocorre apenas na publicação.
+**Modelo de publicação adotado:** toda receita nasce como **rascunho (**`DRAFT`**)** — visível apenas ao autor. O autor publica explicitamente (`PUBLISHED`), tornando a receita visível e pesquisável por qualquer pessoa, inclusive sem login. Rascunhos permitem salvar receitas incompletas; a validação estrita ocorre apenas na publicação.
 
 ---
 
@@ -137,26 +137,26 @@ erDiagram
 
 ## 3. Sugestões e Análises Detalhadas por Tópico
 
-Cada sugestão detalha o contexto do problema, a análise conceitual de produto/domínio e as regras de negócio formalizadas.
+Cada sugestão detalha o contexto do problema, a análise conceitual de produto/domínio e as regras de negócio formalizadas. **✅** no título indica implementação já presente no código (detalhes e planos em [§5](#5-inconsistências-do-código-vs-regras-backlog)).
 
 ---
 
 ### Bloco A — Identidade e Autoria
 
-#### Sugestão 1: Invariantes de Identidade do Chef
+#### Sugestão 1: Invariantes de Identidade do Chef ✅
 
 * **Contexto & Problema:** O modelo atual possui `@unique` no schema Prisma para `email` e `userName`, mas `RegisterChefUseCase` valida unicidade apenas de `email`. Em edição de perfil, não há verificação explícita de colisão de `userName`. O `userName` será usado como identificador público de rota (`/@userName`) na Fase 1.
 * **Análise de Domínio:** A entidade `Chef` é o núcleo de identidade. Ambiguidades em `email` ou `userName` geram brechas de segurança, inconsistências de roteamento e conflitos de perfil público. O `avatarId` permanece opcional enquanto o serviço de mídia não estiver especificado.
 * **Regras de Negócio Formalizadas:**
   1. **Unicidade de identificadores:** `email` e `userName` devem ser estritamente únicos em todo o sistema. A verificação ocorre na camada de domínio antes da persistência, com comparação *case-insensitive* para ambos.
   2. **Regra de alteração de perfil:** Ao editar o perfil, o chef pode manter seus valores atuais. Caso altere `email` ou `userName`, o sistema garante que o novo valor não pertence a outro chef.
-  3. **Formatação de `userName`:** Aceita apenas caracteres alfanuméricos, hífens e underlines (`[a-zA-Z0-9_-]`), com tamanho entre 3 e 30 caracteres. Não são permitidos espaços ou caracteres especiais.
+  3. **Formatação de** `userName`**:** Aceita apenas caracteres alfanuméricos, hífens e underlines (`[a-zA-Z0-9_-]`), com tamanho entre 3 e 30 caracteres. Não são permitidos espaços ou caracteres especiais.
   4. **Nomes reservados:** O sistema rejeita `userName` que coincidam com rotas reservadas (ex.: `admin`, `api`, `recipes`, `search`, `accounts`, `sessions`).
   5. **Avatar opcional (stub na Fase 1):** O campo `avatarId` é opcional (`nullable`). O carregamento e deleção de arquivo ficam postergados até a especificação do serviço de mídia.
 
 ---
 
-#### Sugestão 2: Autoria Imutável e Derivada da Sessão
+#### Sugestão 2: Autoria Imutável e Derivada da Sessão ✅
 
 * **Contexto & Problema:** Não há regra explícita de que `authorId` deve ser derivado exclusivamente do token JWT, nunca do payload da requisição. A transferência de autoria não está proibida formalmente.
 * **Análise de Domínio:** Em um catálogo público, a autoria é atributo imutável da receita. Permitir que o cliente informe `authorId` abriria brecha para atribuição fraudulenta. Toda mutação deve verificar que o ator é o autor.
@@ -170,7 +170,7 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 
 ### Bloco B — Ciclo de Vida da Receita
 
-#### Sugestão 3: Estados de Publicação `DRAFT` / `PUBLISHED`
+#### Sugestão 3: Estados de Publicação `DRAFT` / `PUBLISHED` ✅
 
 * **Contexto & Problema:** O modelo atual não possui campo de status de publicação. Toda receita criada é implicitamente legível por qualquer requisição autenticada, sem distinção entre rascunho e conteúdo pronto para compartilhamento.
 * **Análise de Domínio:** Num app social de receitas, o autor precisa salvar trabalho em progresso sem expor conteúdo incompleto. A publicação é um ato explícito que torna a receita parte do catálogo público pesquisável.
@@ -188,7 +188,7 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 
 ---
 
-#### Sugestão 4: Validação em Dois Níveis (Rascunho vs. Publicação)
+#### Sugestão 4: Validação em Dois Níveis (Rascunho vs. Publicação) ✅
 
 * **Contexto & Problema:** Exigir todos os campos obrigatórios no momento do save impede o fluxo de "salvar rascunho e completar depois". Por outro lado, publicar receita incompleta prejudica a qualidade do catálogo público.
 * **Análise de Domínio:** O modelo rascunho → publicada separa **persistência tolerante** (salvar progresso) de **validação estrita** (entrar no catálogo). A invariante de conteúdo mínimo aplica-se apenas na transição para `PUBLISHED`.
@@ -203,7 +203,7 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 
 ---
 
-#### Sugestão 5: Exclusão e Arquivamento (Soft Delete)
+#### Sugestão 5: Exclusão e Arquivamento (Soft Delete) ✅
 
 * **Contexto & Problema:** Não há especificação de exclusão de receitas. Hard delete de receitas publicadas quebraria links externos, favoritos (Fase 2) e histórico de descoberta.
 * **Análise de Domínio:** Receitas publicadas geram URLs compartilháveis e serão referenciadas por outros usuários. Soft delete preserva integridade referencial e permite auditoria, enquanto remove o conteúdo da busca e listagens.
@@ -216,7 +216,7 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 
 ---
 
-#### Sugestão 6: Slug Estável e URL Canônica
+#### Sugestão 6: Slug Estável e URL Canônica ✅
 
 * **Contexto & Problema:** O `slug` é gerado na criação, mas não havia definição formal sobre imutabilidade, unicidade e estrutura de URL pública.
 * **Análise de Domínio:** O comportamento atual do código já mantém o slug imutável após rename (confirmado em e2e). A URL canônica `{id}-{slug}` usa o `id` como chave de roteamento e o `slug` apenas para legibilidade e SEO.
@@ -231,7 +231,7 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 
 ### Bloco C — Conteúdo da Receita
 
-#### Sugestão 7: Semântica de `null` em Tempos e Porções
+#### Sugestão 7: Semântica de `null` em Tempos e Porções ✅
 
 * **Contexto & Problema:** O domínio (`Recipe.create`) atribui defaults `prepTimeInMinutes=0`, `cookTimeInMinutes=0`, `servings=1` quando omitidos, enquanto o schema Prisma aceita `null`. Valor `0` para tempo sugere refeição instantânea e distorce filtros de busca.
 * **Análise de Domínio:** Diferenciar "não informado" de "ausência real de etapa" é essencial para filtros confiáveis. Uma salada com `cookTimeInMinutes=0` é informação válida; tempo omitido não deve aparecer em "receitas em menos de 15 minutos".
@@ -245,12 +245,12 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 
 ---
 
-#### Sugestão 8: Vocabulário Controlado de Unidades de Medida
+#### Sugestão 8: Vocabulário Controlado de Unidades de Medida ✅
 
 * **Contexto & Problema:** O campo `unit` em `RecipeIngredient` é string livre, permitindo inconsistências (`"g"`, `"gramas"`, `"colher"`, `"colheres de sopa"`). O domínio já possui comentário `// TODO fazer enum de unit`.
 * **Análise de Domínio:** Texto livre inviabiliza agregação futura, conversão automatizada e padronização visual. Um enum fechado com tradução no frontend resolve o problema sem perder flexibilidade de apresentação.
 * **Regras de Negócio Formalizadas:**
-  1. **Enum `MeasurementUnit`:** O campo `unit` restringe-se ao conjunto padronizado abaixo.
+  1. **Enum** `MeasurementUnit`**:** O campo `unit` restringe-se ao conjunto padronizado abaixo.
   2. **Valores permitidos:**
      - **Massa/peso:** `GRAM` (`g`), `KILOGRAM` (`kg`)
      - **Volume:** `MILLILITER` (`ml`), `LITER` (`l`), `GLASS` (`copo`), `BOWL` (`tigela`)
@@ -258,12 +258,12 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
      - **Unidades discretas:** `UNIT` (`unidade`), `CLOVE` (`dente`), `SLICE` (`fatia`), `PIECE` (`pedaço`), `CAN` (`lata`), `PACKAGE` (`pacote`), `JAR` (`pote`), `BOTTLE` (`garrafa`), `BOX` (`caixa`), `SACHET` (`sachê`)
      - **Partes de vegetais:** `BUNCH` (`maço`), `SPRIG` (`raminho`), `HEAD` (`cabeça`), `STALK` (`talo`)
      - **A gosto:** `TO_TASTE` (`a gosto`)
-  3. **`amount` e `TO_TASTE`:** Quando `unit = TO_TASTE`, `amount` deve ser `null`.
+  3. `amount` **e** `TO_TASTE`**:** Quando `unit = TO_TASTE`, `amount` deve ser `null`.
   4. **Apresentação:** O backend armazena o enum codificado (`gram`, `tablespoon`, …). Tradução e pluralização em português ficam em `src/infra/i18n/measurement-units/` (`MEASUREMENT_UNIT_LABELS_PT_BR`, `formatMeasurementUnitLabel`).
 
 ---
 
-#### Sugestão 9: `RecipeIngredient` como Entidade do Agregado, com Ordem e Observação
+#### Sugestão 9: `RecipeIngredient` como Entidade do Agregado, com Ordem e Observação ✅
 
 * **Contexto & Problema:** `RecipeIngredient` já é entidade filha do agregado `Recipe` (MF-02), com substituição de conjunto na edição (MF-09). Porém, a ordem dos ingredientes na lista e observações por linha (`"para polvilhar"`) não são modeladas, e a igualdade atual (`ingredientId + amount + unit`) impede o mesmo ingrediente em duas linhas legítimas.
 * **Análise de Domínio:** A ordem dos ingredientes é informação de receita (lista de compras, modo de preparo). Observações por linha são comuns na culinária. `position` desambigua linhas com o mesmo ingrediente.
@@ -278,31 +278,31 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 
 ---
 
-#### Sugestão 10: Instruções em Texto Livre na Fase 1
+#### Sugestão 10: Instruções em Texto Livre na Fase 1 ✅
 
 * **Contexto & Problema:** Não há decisão formal sobre o formato de `instructions`. Steps estruturados (array de passos) competem com simplicidade de cadastro. O Zod de `POST /recipes` exige `description`, enquanto o domínio a trata como opcional.
 * **Análise de Domínio:** Na Fase 1, texto livre com quebras de linha atende busca e exibição. Steps estruturados só se justificam se a UX de busca ou exibição passo a passo exigir. `description` é resumo opcional; `instructions` é obrigatório apenas na publicação.
 * **Regras de Negócio Formalizadas:**
   1. **Formato:** `instructions` permanece string de texto livre na Fase 1. Não criar entidade `RecipeStep` nem agregado separado.
   2. **Normalização:** O sistema normaliza quebras de linha (`\r\n` → `\n`) e aplica limite de tamanho (ex.: 10.000 caracteres).
-  3. **`description` opcional:** Campo de resumo/introdução; pode ser omitido no create e edit.
+  3. `description` **opcional:** Campo de resumo/introdução; pode ser omitido no create e edit.
   4. **Obrigatoriedade na publicação:** `instructions` não-vazio é requisito para transição `DRAFT` → `PUBLISHED` (Sugestão 4).
 
 ---
 
-#### Sugestão 11: Tags — Opcionais, N:N, sem Entidade `Category`
+#### Sugestão 11: Tags — Opcionais, N:N, sem Entidade `Category` ✅
 
 * **Contexto & Problema:** Discussão sobre criar entidade `Category` com taxonomia rígida. Em catálogo público, tags livres podem gerar poluição (grafias inconsistentes, tags ofensivas, explosão de sinônimos).
 * **Análise de Domínio:** Tags cumprem classificação flexível sem forçar escolha em eixos ortogonais (ocasião vs tipo de prato vs restrição). Categoria fixa exige migração e UI rígida. No entanto, catálogo público exige limites e curadoria mínima do vocabulário global.
 * **Regras de Negócio Formalizadas:**
-  1. **Sem `Category`:** Classificação exclusivamente via `Tag` (N:N flexível). Não criar entidade `Category` na Fase 1.
+  1. **Sem** `Category`**:** Classificação exclusivamente via `Tag` (N:N flexível). Não criar entidade `Category` na Fase 1.
   2. **Tags opcionais:** Uma receita pode ter zero ou mais tags. Tags não são obrigatórias.
   3. **Tags canônicas sugeridas:** O frontend oferece chips de sugestão (ex.: `cafe-da-manha`, `almoco`, `jantar`, `massa`, `sopa`, `sobremesa`, `rapida`, `vegetariana`) + campo livre.
   4. **Dedup por nome normalizado:** `"Café da Manhã"` e `"cafe da manha"` apontam para a mesma `Tag` (`normalizedName = "cafe-da-manha"`).
   5. **Limites:** Máximo de 10 tags por receita; cada tag com até 50 caracteres; rejeitar tags vazias ou só espaços.
-  6. **Curadoria do `name` de exibição:** O `name` global da tag é definido pelo primeiro cadastro. Alterações futuras de grafia exigem mecanismo de alias (fora de escopo Fase 1).
+  6. **Curadoria do** `name` **de exibição:** O `name` global da tag é definido pelo primeiro cadastro. Alterações futuras de grafia exigem mecanismo de alias (fora de escopo Fase 1).
   7. **Semântica de edição (MF-09):** Enviar lista de tags na edição substitui o conjunto. Omitir o campo mantém as tags atuais.
-  8. **Reavaliação de `Category`:** Só introduzir categoria fixa se a UX exigir navegação com **uma** dimensão obrigatória e exclusiva. Alternativa intermediária: no máximo um enum opcional em `Recipe` (ex.: `mealOccasion`), não taxonomia paralela completa.
+  8. **Reavaliação de** `Category`**:** Só introduzir categoria fixa se a UX exigir navegação com **uma** dimensão obrigatória e exclusiva. Alternativa intermediária: no máximo um enum opcional em `Recipe` (ex.: `mealOccasion`), não taxonomia paralela completa.
 
 ---
 
@@ -330,20 +330,20 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 
 ---
 
-##### Sugestão 12.a: Escopos de Consulta e Visibilidade
+##### Sugestão 12.a: Escopos de Consulta e Visibilidade ✅
 
 * **Contexto & Problema:** A mesma capacidade de busca serve a dois públicos com visibilidades opostas: qualquer visitante navegando no catálogo público e o autor gerenciando o próprio trabalho, inclusive rascunhos. Sem um escopo explícito, a alternativa seria inferir visibilidade a partir da presença de JWT — comportamento implícito e propenso a vazar rascunhos.
 * **Análise de Domínio:** Visibilidade é regra de domínio, não detalhe de transporte. Tornar o escopo um parâmetro nomeado deixa a intenção explícita no contrato e mantém uma única implementação de filtros para ambos os casos. O escopo `mine` é o único caminho de descoberta de rascunhos no produto (perfil público nunca os exibe — Sugestão 15).
 * **Regras de Negócio Formalizadas:**
   1. **Escopo padrão (global):** Na ausência de `scope`, a busca retorna receitas `PUBLISHED` e não excluídas de todos os chefs.
   2. **Acesso anônimo ao escopo global:** O escopo global não exige autenticação (`@Public()`). Estar autenticado não altera os resultados do escopo global.
-  3. **Escopo `mine`:** Retorna receitas cujo `authorId` é o do chef autenticado, incluindo `DRAFT` e `PUBLISHED`, e exige JWT.
-  4. **`mine` sem autenticação:** Requisição com `scope=mine` sem token válido retorna HTTP 401: o use case falha com `UnauthenticatedError` e a camada HTTP mapeia o erro (sem `actorId` derivado da sessão).
+  3. **Escopo** `mine`**:** Retorna receitas cujo `authorId` é o do chef autenticado, incluindo `DRAFT` e `PUBLISHED`, e exige JWT.
+  4. `mine` **sem autenticação:** Requisição com `scope=mine` sem token válido retorna HTTP 401: o use case falha com `UnauthenticatedError` e a camada HTTP mapeia o erro (sem `actorId` derivado da sessão).
   5. **Ator derivado da sessão:** O `actorId` usado no escopo `mine` vem sempre de `@CurrentUser().sub`; o payload nunca aceita `authorId` como parâmetro de escopo (Sugestão 2).
 
 ---
 
-##### Sugestão 12.b: Composição de Filtros, Contrato e Read Models
+##### Sugestão 12.b: Composição de Filtros, Contrato e Read Models ✅
 
 * **Contexto & Problema:** Filtros especificados isoladamente não definem o que acontece quando o usuário combina vários — nem o que acontece quando nenhum é informado, ou quando um filtro é informado vazio. Também falta definir qual shape de dados cada listagem expõe: o card do catálogo (foto, título, excerpt, tags) difere de “minhas receitas” (status de rascunho) e de resultados de busca filtrada (tempos, dificuldade, metadados de despensa).
 * **Análise de Domínio:** A busca é uma consulta declarativa: cada filtro estreita o conjunto de resultados. Composição por AND lógico é o modelo mental esperado pelo usuário ("massa, vegetariana, até 30 minutos"). O contrato único de parâmetros permite que o port de repositório seja honrado igualmente pelo Prisma e pelo in-memory (Liskov). Read models seguem o padrão do projeto de referência (`QuestionDetails` vs `CommentWithAuthor`): **um value object por contexto de exibição**, não um único payload genérico que antecipa todos os campos possíveis. O agregado `Recipe` e `RecipeDetails` (página da receita) permanecem separados das listas.
@@ -354,15 +354,15 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
   4. **Contrato único de entrada:** Todos os parâmetros de 12.a–12.l formam `SearchRecipesParams`, entrada única de `SearchRecipesUseCase` e do port `RecipesRepository.findMany` (Sugestão 13, regra 4).
   5. **Parâmetros inválidos:** Valores fora do contrato (enum desconhecido, `perPage` acima do máximo, número negativo) são rejeitados na validação de entrada (HTTP 400), sem chegar ao domínio.
   6. **Read models por contexto (não o agregado completo):** Listagens retornam value objects de consulta, nunca `Recipe` com todas as linhas de ingredientes. Detalhe de página continua em `RecipeDetails` (`GET /recipes/:id`).
-     - **`RecipeCatalogCard`** — catálogo público e grid da tela de receitas (`scope=global` sem filtros de catálogo pesados): `recipeId`, `slug`, `name`, excerpt de `description` (truncado na apresentação ou campo derivado), `tags`; `coverImageId` / URL quando mídia de receita existir (fora de escopo Fase 1). **Não** inclui autor, tempos, dificuldade, status nem datas no card padrão.
-     - **`RecipeAuthorWorkspaceItem`** — escopo `mine`: `recipeId`, `slug`, `name`, `status`, `tags` (opcional); excerpt opcional. Sem tempos/dificuldade no list item de gestão.
-     - **`RecipeSearchResultItem`** — quando há filtros de catálogo (12.c–12.l) ou modo despensa (14): estende o card com campos que a UI de resultados precisa para mostrar o match (`prepTimeInMinutes`, `cookTimeInMinutes`, `difficultyLevel`, `author`; e em 14, `coveragePercent`, `missingIngredients[]`).
+     - `RecipeCatalogCard` — catálogo público e grid da tela de receitas (`scope=global` sem filtros de catálogo pesados): `recipeId`, `slug`, `name`, excerpt de `description` (truncado na apresentação ou campo derivado), `tags`; `coverImageId` / URL quando mídia de receita existir (fora de escopo Fase 1). **Não** inclui autor, tempos, dificuldade, status nem datas no card padrão.
+     - `RecipeAuthorWorkspaceItem` — escopo `mine`: `recipeId`, `slug`, `name`, `status`, `tags` (opcional); excerpt opcional. Sem tempos/dificuldade no list item de gestão.
+     - `RecipeSearchResultItem` — quando há filtros de catálogo (12.c–12.l) ou modo despensa (14): estende o card com campos que a UI de resultados precisa para mostrar o match (`prepTimeInMinutes`, `cookTimeInMinutes`, `difficultyLevel`, `author`; e em 14, `coveragePercent`, `missingIngredients[]`).
   7. **Implementação transitória:** MF-25 introduziu `RecipeSummary` como read model único até os filtros e read models finais; evoluir para os shapes acima sem alterar o port `findMany` (mappers/presenters por contexto).
   8. **Apresentação de ingredientes na página de detalhe:** Quantidade e unidade (`amount`, `unit`) com nome do ingrediente e `note` opcional são formatados na camada de presenter/i18n (ex.: `formatMeasurementAmount` + label pt-BR), não fazem parte dos read models de listagem nem dos filtros de busca (12.d considera apenas presença do ingrediente).
 
 ---
 
-##### Sugestão 12.c: Busca Textual Livre (`query`)
+##### Sugestão 12.c: Busca Textual Livre (`query`) ✅
 
 * **Contexto & Problema:** O caminho de entrada mais comum na descoberta é digitar um termo ("bolo de cenoura"). Sem regra formal, ficam indefinidos os campos pesquisados, a sensibilidade a caixa e acentos e o tratamento de termos com espaços.
 * **Análise de Domínio:** Na Fase 1, busca por substring em `name` e `description` atende ao caso de uso sem introduzir infraestrutura de full-text search. `instructions` fica fora para evitar ruído (uma receita que apenas menciona "chocolate" no preparo não é uma receita de chocolate). Busca semântica e ranqueamento por relevância são evoluções posteriores.
@@ -376,15 +376,15 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 
 ---
 
-##### Sugestão 12.d: Filtro por Ingredientes Exigidos (`ingredients[]`)
+##### Sugestão 12.d: Filtro por Ingredientes Exigidos (`ingredients[]`) ✅
 
 * **Contexto & Problema:** "Tenho frango e batata, o que faço?" é a pergunta central do produto. Sem definir o modo de correspondência, não fica claro se o usuário quer receitas que usem **todos** os ingredientes informados ou **qualquer um** deles.
 * **Análise de Domínio:** Ambas as intenções são legítimas e correspondem a jornadas diferentes: `ALL` é filtro preciso ("receitas que levam frango **e** batata"); `ANY` é exploração ampla. O padrão `ALL` é mais previsível para quem informa vários ingredientes. A cobertura parcial com ranqueamento é jornada distinta e vive na Sugestão 14 (modo despensa).
 * **Regras de Negócio Formalizadas:**
   1. **Parâmetro:** `ingredients[]` aceita IDs de `Ingredient` ou nomes; nomes são resolvidos por `normalizedName` (Sugestão 16, regra 1).
   2. **Nome não cadastrado:** Nome que não corresponde a nenhum `Ingredient` do catálogo global **não** cria registro; no modo `ALL` o resultado é vazio, no modo `ANY` o termo é simplesmente ignorado.
-  3. **Modo `ALL` (padrão):** A receita só é retornada se contiver **todos** os ingredientes informados.
-  4. **Modo `ANY`:** A receita é retornada se contiver **pelo menos um** dos ingredientes informados.
+  3. **Modo** `ALL` **(padrão):** A receita só é retornada se contiver **todos** os ingredientes informados.
+  4. **Modo** `ANY`**:** A receita é retornada se contiver **pelo menos um** dos ingredientes informados.
   5. **Seleção do modo:** `ingredientMatch` aceita `ALL` ou `ANY`; omitido, assume `ALL`.
   6. **Dedup de entrada:** Ingredientes repetidos na lista (por ID ou por `normalizedName`) são deduplicados antes da consulta e não afetam o modo `ALL`.
   7. **Independente de quantidade:** O filtro considera apenas a presença do ingrediente na receita; `amount`, `unit`, `position` e `note` da linha não participam do critério.
@@ -411,8 +411,8 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 * **Análise de Domínio:** Tags são descritores facetados e frequentemente alternativos ("almoço **ou** jantar"), o oposto de ingredientes, que costumam ser cumulativos. Por isso o padrão de correspondência é `ANY` para tags e `ALL` para ingredientes — cada default reflete a intenção mais comum de cada eixo.
 * **Regras de Negócio Formalizadas:**
   1. **Parâmetro:** `tags[]` aceita IDs de `Tag` ou nomes; nomes são resolvidos por `normalizedName` (`"Café da Manhã"` e `"cafe da manha"` são o mesmo filtro).
-  2. **Modo `ANY` (padrão):** A receita é retornada se possuir **pelo menos uma** das tags informadas.
-  3. **Modo `ALL`:** A receita só é retornada se possuir **todas** as tags informadas.
+  2. **Modo** `ANY` **(padrão):** A receita é retornada se possuir **pelo menos uma** das tags informadas.
+  3. **Modo** `ALL`**:** A receita só é retornada se possuir **todas** as tags informadas.
   4. **Seleção do modo:** `tagMatch` aceita `ALL` ou `ANY`; omitido, assume `ANY`.
   5. **Tag inexistente:** Nome sem correspondência no catálogo global não cria `Tag` e é ignorado no modo `ANY`; no modo `ALL` o resultado é vazio.
   6. **Limite de entrada:** No máximo 10 tags por consulta, coerente com o limite por receita (Sugestão 11, regra 5).
@@ -439,10 +439,10 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 * **Regras de Negócio Formalizadas:**
   1. **Critério:** A receita satisfaz o filtro quando `prepTimeInMinutes + cookTimeInMinutes <= maxTotalTimeInMinutes`.
   2. **Tempo parcialmente informado:** Quando apenas um dos tempos é `null`, o outro é considerado o tempo total (o `null` não contribui com valor).
-  3. **Ambos `null`:** Receitas sem nenhum tempo declarado são excluídas do resultado quando o filtro é aplicado.
+  3. **Ambos** `null`**:** Receitas sem nenhum tempo declarado são excluídas do resultado quando o filtro é aplicado.
   4. **Escape explícito:** `includeUnspecifiedTime=true` inclui as receitas com ambos os tempos `null` no resultado (Sugestão 7, regra 4).
   5. **Validação:** `maxTotalTimeInMinutes`, quando informado, deve ser inteiro `>= 0`.
-  6. **`0` é valor válido:** Uma receita com `prepTimeInMinutes=0` e `cookTimeInMinutes=0` satisfaz qualquer limite, pois declara ausência real de etapas.
+  6. `0` **é valor válido:** Uma receita com `prepTimeInMinutes=0` e `cookTimeInMinutes=0` satisfaz qualquer limite, pois declara ausência real de etapas.
 
 ---
 
@@ -453,7 +453,7 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 * **Regras de Negócio Formalizadas:**
   1. **Parâmetro:** `authorUserName` filtra por um chef específico, identificado pelo `userName` (comparação *case-insensitive*, coerente com a Sugestão 1, regra 1).
   2. **Visibilidade preservada:** No escopo global, retorna apenas receitas `PUBLISHED` do autor; rascunhos nunca são expostos por este filtro.
-  3. **Combinação com `mine`:** `authorUserName` é ignorado quando `scope=mine`, cujo autor já é o chef autenticado (12.a, regra 3).
+  3. **Combinação com** `mine`**:** `authorUserName` é ignorado quando `scope=mine`, cujo autor já é o chef autenticado (12.a, regra 3).
   4. **Chef inexistente:** `userName` sem chef correspondente retorna página vazia (`items: []`), não `ResourceNotFoundError` — a busca é uma consulta de coleção, não de recurso.
   5. **Reuso pelo perfil público:** A listagem de receitas do autor (Sugestão 15, regra 2) usa este mesmo filtro e o mesmo contrato de paginação.
 
@@ -467,7 +467,7 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
   1. **Ordenação padrão:** `createdAt DESC` — conteúdo mais recente primeiro.
   2. **Alternativas suportadas:** `totalTime ASC` (soma de preparo e cocção) e `name ASC`.
   3. **Desempate estável:** Toda ordenação aplica `id` como critério secundário, garantindo paginação consistente.
-  4. **`totalTime` com valores nulos:** Na ordenação por `totalTime ASC`, receitas com ambos os tempos `null` aparecem por último, nunca no início (não são "mais rápidas").
+  4. `totalTime` **com valores nulos:** Na ordenação por `totalTime ASC`, receitas com ambos os tempos `null` aparecem por último, nunca no início (não são "mais rápidas").
   5. **Contrato de parâmetros:** `sortBy` aceita apenas os critérios acima; valor não suportado é rejeitado na validação de entrada (HTTP 400).
   6. **Independência dos filtros:** A ordenação nunca altera o conjunto de resultados, apenas sua sequência.
 
@@ -479,14 +479,14 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 * **Análise de Domínio:** Porções são atributo escalar da receita, combinável com os demais filtros por AND (12.b). Receitas sem `servings` declarado não devem aparecer em buscas por porções mínimas, salvo escape explícito futuro — análogo ao tempo não informado em 12.h.
 * **Regras de Negócio Formalizadas:**
   1. **Parâmetro:** `minServings` (inteiro `>= 1`) — a receita satisfaz o filtro quando `servings >= minServings`.
-  2. **`servings` null:** Receitas sem porções declaradas são excluídas do resultado quando o filtro é aplicado.
+  2. `servings` **null:** Receitas sem porções declaradas são excluídas do resultado quando o filtro é aplicado.
   3. **Validação:** Valor inválido (não inteiro, `< 1`) é rejeitado na validação de entrada (HTTP 400).
-  4. **Sem `maxServings` na Fase 1:** Faixa superior (ex.: “para 2 pessoas”) fica fora de escopo até demanda de produto; porções altas já são cobertas por `minServings` baixo.
+  4. **Sem** `maxServings` **na Fase 1:** Faixa superior (ex.: “para 2 pessoas”) fica fora de escopo até demanda de produto; porções altas já são cobertas por `minServings` baixo.
   5. **Independência:** O filtro não altera `servings` na entidade; apenas restringe o conjunto de resultados.
 
 ---
 
-##### Sugestão 12.k: Exclusão Implícita de Resultados
+##### Sugestão 12.k: Exclusão Implícita de Resultados ✅
 
 * **Contexto & Problema:** Rascunhos e receitas soft-deleted continuam existindo no banco. Se a exclusão desses registros depender de cada filtro lembrar de aplicá-la, uma consulta nova esquece a regra e vaza conteúdo privado ou removido.
 * **Análise de Domínio:** Visibilidade não é um filtro entre outros: é uma pré-condição aplicada antes de qualquer critério do usuário. Concentrá-la em uma regra única, aplicada pelo port de busca, evita que cada nova capacidade de descoberta precise reimplementá-la.
@@ -499,7 +499,7 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 
 ---
 
-#### Sugestão 13: Paginação Obrigatória
+#### Sugestão 13: Paginação Obrigatória ✅
 
 * **Contexto & Problema:** Nenhum dos documentos anteriores especificou paginação. `PaginationParams` existe em `src/core/repositories/pagination-params.ts` mas nunca foi utilizado. Listagens sem paginação não escalam.
 * **Análise de Domínio:** Busca global, listagem por autor e feed (Fase 2) retornam conjuntos potencialmente grandes. Paginação é requisito de contrato de API, não detalhe de implementação.
@@ -507,15 +507,15 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
   1. **Parâmetros:** `page` (inteiro, padrão 1, mínimo 1) e `perPage` (inteiro, padrão 20, máximo 50).
   2. **Contrato de resposta:**
      ```json
-     {
-       "items": [...],
-       "meta": {
-         "page": 1,
-         "perPage": 20,
-         "totalItems": 142,
-         "totalPages": 8
-       }
-     }
+      {
+        "items": [...],
+        "meta": {
+          "page": 1,
+          "perPage": 20,
+          "totalItems": 142,
+          "totalPages": 8
+        }
+      }
      ```
   3. **Escopo:** Paginação obrigatória em busca global, listagem por autor, listagem de rascunhos (`mine`) e feed (Fase 2).
   4. **Port de repositório:** `RecipesRepository.findMany(params: SearchRecipesParams)` retorna `PaginatedResult` do read model adequado ao contexto (12.b, regra 6): `RecipeCatalogCard`, `RecipeAuthorWorkspaceItem` ou `RecipeSearchResultItem`. MF-25 usa `RecipeSummary` como implementação transitória.
@@ -552,7 +552,7 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 
 ### Bloco E — Integridade do Catálogo Global
 
-#### Sugestão 16: Catálogo Global de `Ingredient` e `Tag`
+#### Sugestão 16: Catálogo Global de `Ingredient` e `Tag` ✅
 
 * **Contexto & Problema:** `Ingredient` e `Tag` são catálogos globais compartilhados entre receitas e chefs. Find-or-create já funciona via `RecipeCatalogResolver`, mas faltam regras de integridade e anti-poluição para catálogo público.
 * **Análise de Domínio:** `normalizedName` é a chave canônica de dedup e filtro. O catálogo acumula vocabulário do sistema e sobrevive à exclusão de receitas. Em escala, sinônimos e plurais exigirão mecanismo de alias (futuro).
@@ -563,7 +563,7 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
   4. **Anti-poluição:**
      - Rejeitar nomes vazios ou só espaços.
      - Limite de 100 caracteres para `name` de `Ingredient` e 50 para `Tag` (entrada trimada).
-     - **`CatalogDisplayName`:** formata o `name` persistido em composto PT-BR (partículas como `de`, `da`, `e`, `com` permanecem minúsculas no meio da expressão; ex.: `açúcar de confeiteiro` → `Açúcar de Confeiteiro`). A chave `normalizedName` continua independente e é derivada do texto trimado de entrada.
+     - `CatalogDisplayName`**:** formata o `name` persistido em composto PT-BR (partículas como `de`, `da`, `e`, `com` permanecem minúsculas no meio da expressão; ex.: `açúcar de confeiteiro` → `Açúcar de Confeiteiro`). A chave `normalizedName` continua independente e é derivada do texto trimado de entrada.
      - Normalização impede duplicatas por caixa/acentos, mas não por sinônimos (`"tomate"` vs `"tomates"` permanecem distintos na Fase 1).
   5. **Alias futuro:** Mecanismo de sinônimos/plurais (`IngredientAlias`) fica fora de escopo da Fase 1; documentar como evolução planejada.
 
@@ -623,26 +623,26 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 
 ## 5. Inconsistências do Código vs. Regras (Backlog)
 
-| Área | Estado atual | Regra desejada | Plano sugerido |
-| :--- | :--- | :--- | :--- |
-| `Recipe.create` defaults | ~~`prepTime=0`, `cookTime=0`, `servings=1`~~ `null` quando omitido | `null` quando omitido | **MF-13** ✅ |
-| `RecipeIngredient.amount/unit` | ~~Obrigatórios no domínio; nullable no Prisma~~ `amount` nullable; enum `MeasurementUnit` | Alinhar; `amount` nullable com `TO_TASTE` | **MF-21** ✅ |
-| `GET /recipes/:id` | ~~Exige JWT~~ Público para `PUBLISHED` | Público para `PUBLISHED` | **MF-11** ✅ |
-| `POST /recipes` Zod | ~~`description` obrigatório~~ | Opcional | **MF-19** ✅ |
-| `CreateRecipeUseCase` | `Either<null, …>` sem erros | Suportar `RecipeNotPublishableError` na publicação | **MF-11** ✅ (via `PublishRecipeUseCase`) |
-| `Recipe.status` | ~~Não existe~~ `DRAFT` / `PUBLISHED` | `DRAFT` / `PUBLISHED` | **MF-11** ✅ |
-| `Recipe.deletedAt` | ~~Não existe~~ Soft delete | Soft delete | **MF-16** ✅ |
-| `RecipeIngredient.position/note` | ~~Não existem~~ Ordem e observação por linha | Ordem e observação por linha | **MF-22** ✅ |
-| `unit` | ~~`string` livre~~ Enum `MeasurementUnit` | Enum `MeasurementUnit` | **MF-21** ✅ |
-| `Recipe.instructions` | ~~Sem normalização nem limite~~ `\r\n` → `\n` e máx. 10.000 caracteres | Normalizar quebras de linha e limitar tamanho | **MF-23** ✅ |
-| `description` na edição | ~~`description ?? atual` impedia limpar~~ `null` limpa; omitir preserva | Campo opcional também na edição | **MF-23** ✅ |
-| Tags (limites e semântica) | ~~Sem limites; dedup só entre requisições; omitir tags no edit apagava no Prisma~~ `RecipeTagNames` (máx. 10, 50 chars, dedup); omitir preserva | Limites, dedup no payload, omitir preserva | **MF-24** ✅ |
-| `PaginationParams` | ~~Existe, não usado~~ `page`/`perPage` em `GET /recipes` | Usar em busca e listagens | **MF-25** ✅ (base); restante em MF-14 derivados |
-| Busca escopos (`global` / `mine`) | ~~Não existe~~ `GET /recipes` com `scope` | Escopos 12.a + paginação base | **MF-25** ✅ |
-| Read models de listagem | ~~`RecipeSummary` (transitório MF-25)~~ `RecipeCatalogCard` / `RecipeAuthorWorkspaceItem` / `RecipeSearchResultItem` (12.b) | Três VOs por contexto; `RecipeSearchResultItem` quando há filtros de catálogo | **MF-26** ✅ |
-| Busca filtros (12.c–12.l) | ~~Não existe~~ `query` (12.c) + `ingredients[]`/`ingredientMatch` (12.d) em Prisma + in-memory + `GET /recipes` | Filtros 12.e–12.l restantes | **MF-27** ✅ (12.c); **MF-28** ✅ (12.d); MF-14 derivados |
-| Perfil público | Não existe | `GetChefProfileUseCase` | Novo MF ou plano derivado |
-| Autoria de receita | `EditRecipe` usava `authorId` como ator; Prisma `save` reescrevia `authorId` | `actorId` na edição; `authorId` omitido no update | **MF-18** ✅ |
+| Área                              | Estado atual                                                                                                                                    | Regra desejada                                                                | Plano sugerido                                          |
+| :-------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------- | :------------------------------------------------------ |
+| `Recipe.create` defaults          | `prepTime=0`~~,~~ `cookTime=0`~~,~~ `servings=1` `null` quando omitido                                                                          | `null` quando omitido                                                         | **MF-13** ✅                                             |
+| `RecipeIngredient.amount/unit`    | ~~Obrigatórios no domínio; nullable no Prisma~~ `amount` nullable; enum `MeasurementUnit`                                                       | Alinhar; `amount` nullable com `TO_TASTE`                                     | **MF-21** ✅                                             |
+| `GET /recipes/:id`                | ~~Exige JWT~~ Público para `PUBLISHED`                                                                                                          | Público para `PUBLISHED`                                                      | **MF-11** ✅                                             |
+| `POST /recipes` Zod               | `description` ~~obrigatório~~                                                                                                                   | Opcional                                                                      | **MF-19** ✅                                             |
+| `CreateRecipeUseCase`             | `Either<null, …>` sem erros                                                                                                                     | Suportar `RecipeNotPublishableError` na publicação                            | **MF-11** ✅ (via `PublishRecipeUseCase`)                |
+| `Recipe.status`                   | ~~Não existe~~ `DRAFT` / `PUBLISHED`                                                                                                            | `DRAFT` / `PUBLISHED`                                                         | **MF-11** ✅                                             |
+| `Recipe.deletedAt`                | ~~Não existe~~ Soft delete                                                                                                                      | Soft delete                                                                   | **MF-16** ✅                                             |
+| `RecipeIngredient.position/note`  | ~~Não existem~~ Ordem e observação por linha                                                                                                    | Ordem e observação por linha                                                  | **MF-22** ✅                                             |
+| `unit`                            | `string` ~~livre~~ Enum `MeasurementUnit`                                                                                                       | Enum `MeasurementUnit`                                                        | **MF-21** ✅                                             |
+| `Recipe.instructions`             | ~~Sem normalização nem limite~~ `\r\n` → `\n` e máx. 10.000 caracteres                                                                          | Normalizar quebras de linha e limitar tamanho                                 | **MF-23** ✅                                             |
+| `description` na edição           | `description ?? atual` ~~impedia limpar~~ `null` limpa; omitir preserva                                                                         | Campo opcional também na edição                                               | **MF-23** ✅                                             |
+| Tags (limites e semântica)        | ~~Sem limites; dedup só entre requisições; omitir tags no edit apagava no Prisma~~ `RecipeTagNames` (máx. 10, 50 chars, dedup); omitir preserva | Limites, dedup no payload, omitir preserva                                    | **MF-24** ✅                                             |
+| `PaginationParams`                | ~~Existe, não usado~~ `page`/`perPage` em `GET /recipes`                                                                                        | Usar em busca e listagens                                                     | **MF-25** ✅ (base); restante em MF-14 derivados         |
+| Busca escopos (`global` / `mine`) | ~~Não existe~~ `GET /recipes` com `scope`                                                                                                       | Escopos 12.a + paginação base                                                 | **MF-25** ✅                                             |
+| Read models de listagem           | `RecipeSummary` ~~(transitório MF-25)~~ `RecipeCatalogCard` / `RecipeAuthorWorkspaceItem` / `RecipeSearchResultItem` (12.b)                     | Três VOs por contexto; `RecipeSearchResultItem` quando há filtros de catálogo | **MF-26** ✅                                             |
+| Busca filtros (12.c–12.l)         | ~~Não existe~~ `query` (12.c) + `ingredients[]`/`ingredientMatch` (12.d) em Prisma + in-memory + `GET /recipes`                                 | Filtros 12.e–12.l restantes                                                   | **MF-27** ✅ (12.c); **MF-28** ✅ (12.d); MF-14 derivados |
+| Perfil público                    | Não existe                                                                                                                                      | `GetChefProfileUseCase`                                                       | Novo MF ou plano derivado                               |
+| Autoria de receita                | `EditRecipe` usava `authorId` como ator; Prisma `save` reescrevia `authorId`                                                                    | `actorId` na edição; `authorId` omitido no update                             | **MF-18** ✅                                             |
 
 ---
 
@@ -651,8 +651,7 @@ Cada sugestão detalha o contexto do problema, a análise conceitual de produto/
 Fundação (MF-01…MF-10), ciclo de vida da receita e a base da busca já estão no código: escopos (12.a), read models (12.b), `query` (12.c), `ingredients[]` (12.d) e paginação. Planos concluídos ficam em [`docs/plans/completed/`](plans/completed/) e no backlog da [§5](#5-inconsistências-do-código-vs-regras-backlog).
 
 **Ainda falta (Fase 1):**
-Rever orientações pra IA
-Fazer TODOS
+
 | Ordem | Plano | Escopo |
 | :---: | :--- | :--- |
 | 1 | **MF-14 — Filtros restantes da busca** | 12.e `excludeIngredients[]`; 12.f `tags[]`/`tagMatch`; 12.g `difficultyLevel`; 12.h `maxTotalTimeInMinutes`; 12.i `authorUserName`; 12.j `sortBy`; 12.l `minServings` |

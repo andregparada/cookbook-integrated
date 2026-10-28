@@ -1,19 +1,16 @@
 ---
 description: >-
-  SOLID and DDD constraints for Cookbook domain code. Use when editing files
-  under `src/domain/`.
+  DDD constraints for Cookbook domain code. Use when editing files under
+  `src/domain/`.
 globs: "src/domain/**"
 alwaysApply: false
 ---
 
 # Domain layer
 
-`src/domain` must not import from `src/infra`. Use cases return `Either` for expected failures; keep repository ports small and focused.
-
-## SOLID (applied here)
-
-- **Single responsibility:** one use case = one application action
-- **Open/closed:** extend via new use cases and ports, not by bending entities for infra
-- **Liskov:** Prisma and in-memory repositories honor the same port contract
-- **Interface segregation:** small ports (`RecipesRepository`, `HashComparer`)
-- **Dependency inversion:** domain depends on abstractions; bind implementations in `DatabaseModule` / `HttpModule`
+- Do not import from `src/infra`.
+- Expected failures return `Either` (`left` / `right`), not thrown exceptions.
+- One use case = one application action (`CreateRecipe`, `PublishRecipe`, …).
+- Keep repository ports small; Prisma and in-memory adapters must honor the same contract.
+- **`actorId`** is the authenticated chef (`user.sub`); **`authorId`** is the recipe owner. If they differ on a mutating action → `NotAllowedError`.
+- `@Injectable()` on use cases only — intentional (MF-07); see `AGENTS.md`. Unit tests use `new UseCase(...)` with in-memory repos, no Nest container.

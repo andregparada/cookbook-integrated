@@ -5,7 +5,9 @@ description: >-
   ChefFactory JWT auth, Prisma factory fixtures, makeXxxHttpBody request, status
   and database assertions. Use when adding or editing a controller, HTTP route,
   or e2e spec, or when the user asks for a controller test (cria o controller,
-  teste e2e, cria o e2e).
+  teste e2e, cria o e2e). Do not use when the work is a new application use case
+  and port (create-use-case) or when enabling a search catalog filter on GET
+  /recipes (add-search-filter).
 ---
 
 # Create controller + e2e

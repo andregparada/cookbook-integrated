@@ -1,0 +1,15 @@
+---
+description: >-
+  Prisma schema and migration conventions. Use when editing files under
+  `prisma/`.
+globs: "prisma/**"
+alwaysApply: false
+---
+
+# Prisma schema
+
+Vocabulary at the boundary: Prisma `User` / table `users` maps to domain `Chef` — see `AGENTS.md` (do not rename the model to `Chef` in the schema).
+
+- Prisma enums use PascalCase (`Easy`, `Draft`); domain enums use lowercase — convert only in `src/infra/database/prisma/mappers/enum-mappers.ts`, not in use cases.
+- New migration: edit `schema.prisma`, then `pnpm prisma migrate dev --name <descriptive_snake_case>`. Never edit a migration that was already applied in shared environments.
+- After schema edits, run `pnpm prisma format` on `prisma/schema.prisma`.

@@ -4,6 +4,8 @@
 
 NestJS 11, Prisma, PostgreSQL, Vitest, Zod, JWT, pnpm.
 
+**Language:** identifiers, file names, and code comments in **English**; product/business docs in **Portuguese**; user-facing copy in presenters/i18n may be pt-BR.
+
 ## Commands
 
 From `package.json` (run from repo root):
@@ -21,7 +23,7 @@ pnpm prisma migrate dev
 
 **Warnings:** `pnpm lint` and `pnpm format` both run `eslint --fix` and edit files — expect working-tree changes. Formatting lives in the ESLint `prettier/prettier` rule (`@rocketseat/eslint-config/node`); there is no `.prettierrc`, so `prettier --write` would reformat to the wrong style.
 
-Before finishing a change: `pnpm lint && pnpm typecheck && pnpm build && pnpm test` (+ `pnpm test:e2e` when HTTP, guards, pipes, or Prisma adapters changed).
+**Verification:** On agent stop, the project hook runs ESLint (no `--fix`) and `vitest related` on edited `.ts` files only — fast feedback, not the full gate. Before finishing a change, run the full gate once: `pnpm lint && pnpm typecheck && pnpm build && pnpm test` (+ `pnpm test:e2e` when HTTP, guards, pipes, or Prisma adapters changed).
 
 ## Layout
 

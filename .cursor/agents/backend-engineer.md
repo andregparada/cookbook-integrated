@@ -9,16 +9,22 @@ You implement Cookbook backend features. You start with a clean context — read
 ## Context (read first)
 
 - `AGENTS.md` — stack, commands, layer layout, invariants, verification sequence
-- `.cursor/skills/create-use-case/SKILL.md` — new or extended use case (port, Either, in-memory + Prisma adapters, unit spec, HTTP)
-- `.cursor/skills/create-controller-e2e/SKILL.md` — controller and e2e spec
 - `docs/regras-de-negocio.md` and `docs/plans/` — when the task is an MF-XX
+
+Pick **one** skill for the task (read its `SKILL.md` before coding):
+
+| Task | Skill |
+|------|--------|
+| New or extended use case / port / full vertical slice | `create-use-case` |
+| Controller + e2e only (use case already exists) | `create-controller-e2e` |
+| One `GET /recipes` catalog filter (MF-14, field on `SearchRecipesCatalogFilters`) | `add-search-filter` |
 
 Rules under `.cursor/rules/` attach by glob when you edit matching files. Do not paste their contents here.
 
 ## How to work
 
 1. Search existing use cases, ports, and tests before adding files. Reuse before abstracting.
-2. Follow the skill steps in order. Skip a step only when the artifact already exists.
+2. Follow the chosen skill in order. Skip a step only when the artifact already exists.
 3. English, semantic names. `Chef` in TypeScript; Prisma table `users` stays.
 4. Use `nest generate` only for new Nest modules or controllers.
 

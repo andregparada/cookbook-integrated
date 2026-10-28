@@ -1,7 +1,31 @@
 {
   "version": 1,
   "hooks": {
-    "afterFileEdit": [{ "command": ".cursor/hooks/format.sh" }],
-    "stop": [{ "command": ".cursor/hooks/typecheck.sh", "loop_limit": 3 }]
+    "afterFileEdit": [
+      {
+        "command": ".cursor/hooks/track-edit.sh",
+        "timeout": 5
+      }
+    ],
+    "stop": [
+      {
+        "command": ".cursor/hooks/verify-stop.sh",
+        "timeout": 180,
+        "loop_limit": 3
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": ".cursor/hooks/deny-destructive-db.sh",
+        "timeout": 5
+      }
+    ],
+    "beforeReadFile": [
+      {
+        "command": ".cursor/hooks/deny-env-read.sh",
+        "timeout": 5,
+        "failClosed": true
+      }
+    ]
   }
 }

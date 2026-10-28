@@ -5,7 +5,10 @@ description: >-
   use case, in-memory and Prisma adapters, unit spec, HTTP controller and e2e.
   Use when adding or extending a use case, application action, or repository
   port, or when the user asks to create a use case (cria o use case, novo caso
-  de uso) such as archive, publish, delete, or similar.
+  de uso) such as archive, publish, delete, or similar. Do not use when only
+  wiring a GET /recipes catalog filter already on SearchRecipesCatalogFilters
+  (add-search-filter) or when the use case and port exist and you only need
+  controller/e2e scaffolding (create-controller-e2e).
 ---
 
 # Create a use case

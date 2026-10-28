@@ -170,7 +170,7 @@ Duas perguntas distintas, dois utilitários:
 | “Tem bug ou regressão?” | `/review-bugbot` (embutido) |
 | “Tem risco de segurança?” | `/review-security` (embutido) |
 
-O `stop` hook já garante que o turno não termina com erro de tipo. Isso não substitui revisão: typecheck verde não diz nada sobre a regra estar certa.
+O `stop` hook roda ESLint (sem `--fix`) e `vitest related` nos `.ts` que o agente editou no turno — feedback rápido, não o gate completo. O gate (`lint`, `typecheck`, `build`, `test`, e2e quando cabe) continua no `AGENTS.md` e no `verifier`. Lint verde no hook não diz nada sobre a regra de produto estar certa.
 
 ### 1.6 Anti-receitas
 
@@ -322,7 +322,7 @@ Não cole comandos nem rules no corpo — aponte. Subagent que duplica o `AGENTS
 
 Único primitivo **determinístico**. O modelo não escolhe se roda, e não gasta raciocínio decidindo.
 
-Project hooks executam a partir da **raiz do repo**. Por isso o comando é `.cursor/hooks/format.sh`, não `./hooks/format.sh` (esse caminho é de hook de usuário em `~/.cursor/`).
+Project hooks executam a partir da **raiz do repo**. Por isso o comando é `.cursor/hooks/track-edit.sh`, não `./hooks/track-edit.sh` (esse caminho é de hook de usuário em `~/.cursor/`).
 
 Fail-open por padrão: exit ≠ 0 e ≠ 2 registra falha e **segue**. Exit 2 bloqueia (equivalente a `permission: "deny"`). A intenção nos hooks atuais é qualidade, não segurança — para bloquear leitura de arquivo sensível existe `failClosed: true` no `beforeReadFile`.
 
@@ -378,27 +378,19 @@ E o custo, que é o critério que as pessoas esquecem:
 | Subagent | a `description` é paga em todo turno; o corpo roda em janela separada |
 | `AGENTS.md` | tudo, sempre |
 
-Empatou entre dois primitivos? Escolha o mais barato. Formatação é hook, não rule — a IA nem precisa saber que existe.
+Empatou entre dois primitivos? Escolha o mais barato. O `afterFileEdit` **não** reescreve arquivo (só registra path para o `stop`); formatação continua sendo `pnpm lint` / `pnpm format` no gate final.
 
 ### 5.2 Candidatos reais no Cookbook
 
-Não hipóteses: cada um abaixo vem de uma lacuna que existe hoje no repositório.
+Itens já implementados saíram desta lista (`add-search-filter`, `prisma-schema.mdc`, hooks de banco destrutivo e leitura de `.env`). O que ainda vale considerar:
 
-**Skill — `add-search-filter`** (o mais forte). O MF-14 tem 7 filtros restantes (12.e `excludeIngredients`, 12.f `tags`/`tagMatch`, 12.g `difficultyLevel`, 12.h `maxTotalTimeInMinutes`, 12.i `authorUserName`, 12.j `sortBy`, 12.l `minServings`). O contrato já existe: `SearchRecipesCatalogFilters` em `search-recipes-params.ts` declara todos eles, e `normalizeCatalogFilters` / `hasCatalogFilters` já os tratam. O que repete por filtro é a ligação: `where` no `prisma-recipes-repository.ts`, filtragem espelhada em `test/repositories/in-memory-recipes-repository.ts`, query param Zod no `search-recipes.controller.ts`, spec unit e e2e. MF-27 (`query`) e MF-28 (`ingredients[]`) já percorreram esse caminho duas vezes. Passa nos três testes: repetição (7 pendentes), natureza (passos ordenados), e `create-use-case` não serve porque não há port nem use case novo. Auto-invocável, com gatilho “filtro de busca”.
+**Skill — `add-prisma-migration`**. Toda mudança de schema repete: editar `prisma/schema.prisma`, `pnpm prisma migrate dev` com nome descritivo, atualizar mapper e `enum-mappers.ts`, atualizar factory. Precedentes: `add_recipe_deleted_at`, `add_measurement_unit_enum`, `add_recipe_ingredient_position_and_note`. A rule `prisma-schema.mdc` cobre convenções; a skill cobre o passo a passo.
 
-**Skill — `add-prisma-migration`**. Toda mudança de schema repete: editar `prisma/schema.prisma`, `pnpm prisma migrate dev` com nome descritivo, atualizar mapper e `enum-mappers.ts`, atualizar factory. Precedentes: `add_recipe_deleted_at`, `add_measurement_unit_enum`, `add_recipe_ingredient_position_and_note`. Candidato sólido, embora menos frequente que filtros.
+**Skill — `complete-mf`** (discutível, de propósito). O passo de conclusão — atualizar §5/§6 das regras de negócio e `git mv` para `completed/` — está sendo esquecido: MF-16, MF-20 e MF-28 estão no código com o plano ainda em `docs/plans/`. O procedimento **já existe** na skill `write-mf-plan` (*Completing a plan*), então criar outra skill duplica um fato — viola o padrão “um fato, um arquivo”. Duas saídas honestas: (a) invocar `/write-mf-plan` na conclusão; (b) extrair a conclusão para `/complete-mf` manual, e `write-mf-plan` passa a **referenciar** em vez de descrever.
 
-**Skill — `complete-mf`** (discutível, de propósito). O passo de conclusão — atualizar §5/§6 das regras de negócio e `git mv` para `completed/` — está sendo esquecido: MF-16, MF-20 e MF-28 estão no código com o plano ainda em `docs/plans/`. O procedimento **já existe** na skill `write-mf-plan` (*Completing a plan*), então criar outra skill duplica um fato — viola o padrão “um fato, um arquivo”. Duas saídas honestas: (a) invocar `/write-mf-plan` na conclusão, que é o desenho atual e depende de você lembrar; (b) extrair a conclusão para `/complete-mf` manual, e `write-mf-plan` passa a **referenciar** em vez de descrever. Hook não resolve: decidir qual linha do backlog marcar exige julgamento.
+**Subagent — `backlog-auditor`, `readonly: true`**. Compara `docs/regras-de-negocio.md` §5/§6 com o código e com o que está em `docs/plans/` vs `completed/`, e relata divergência. Justificativa de subagent (não skill): lê um documento de ~660 linhas mais dezenas de arquivos — contexto pesado que não deve poluir o chat — e precisa ser incapaz de “consertar” o que audita.
 
-**Rule — `prisma-schema.mdc`, globs `prisma/**`**. Lacuna verificável: `infra-layer.mdc` tem `globs: "src/infra/**"`, e o schema mora em `prisma/schema.prisma`. Editar o schema hoje anexa **nenhuma** rule. As convenções de fronteira (model `User` / tabela `users` mapeados para `Chef`, enum `Easy`/`Medium`/`Hard` no Prisma vs `easy`/`medium`/`hard` no domínio, nullable de `deleted_at`, migration com nome descritivo) só chegam se o agente também abrir um arquivo de `src/infra`. Restrição escopada por caminho = rule com glob.
-
-**Hook — `beforeShellExecution` barrando comando destrutivo de banco**. `prisma migrate reset` e `db push --force-reset` derrubam o banco de desenvolvimento. Um agente que encontra drift de migration rodando e2e tem incentivo real de “resolver” resetando. Isso não pode depender de boa vontade do modelo: é `exit 2` (deny). Natureza de garantia = hook, e o único caso deste repo em que a intenção é segurança, não qualidade.
-
-**Hook — `beforeReadFile` com `failClosed: true` para `.env`**. O `.env` está na raiz (gitignored) com `JWT_PRIVATE_KEY`, `JWT_PUBLIC_KEY` e `DATABASE_URL`. Nada impede o agente de ler e ecoar isso num resumo. `failClosed: true` aqui é o oposto do resto: se o hook falhar, **bloqueie**.
-
-**Hook — estender `format.sh` para `prisma/schema.prisma`**. O script atual só age em `*.ts` / `*.mts` / `*.cts` / `*.js` / `*.mjs` / `*.cjs`; o schema fica sem formatação automática. Um branch chamando `pnpm prisma format` fecha a lacuna. Note que é **estender** um hook existente, não criar outro — dois hooks no mesmo evento fazendo a mesma coisa é duplicação.
-
-**Subagent — `backlog-auditor`, `readonly: true`**. Compara `docs/regras-de-negocio.md` §5/§6 com o código e com o que está em `docs/plans/` vs `completed/`, e relata divergência. Justificativa de subagent (não skill): lê um documento de ~660 linhas mais dezenas de arquivos — contexto pesado que não deve poluir o chat — e precisa ser incapaz de “consertar” o que audita. E a divergência é comprovada: os três MFs citados acima. Modelo barato (`composer-2.5`) resolve, como no `verifier`.
+**Rejeitado — `eslint --fix` ou `prisma format` no `afterFileEdit`**. Reescrever o arquivo enquanto o agente ainda edita dessincroniza o buffer com o disco (mesmo problema que o ventus-api corrigiu com `track-edit.sh`). Formatar schema: `pnpm prisma format` manualmente ou na skill de migration; formatação TS: gate `pnpm lint`.
 
 ### 5.3 Quando **não** criar
 
@@ -407,14 +399,14 @@ Casos concretos que parecem merecer utilitário e não merecem:
 | Situação | Por que não | O certo |
 |----------|-------------|---------|
 | “Nomes de código em inglês” | Uma linha, vale sempre | Linha no `AGENTS.md` (já está) |
-| “Rode os testes no fim” | Instrução em Markdown não garante nada | Já é hook (`stop`) + `verifier` |
+| “Rode os testes no fim” | Instrução em Markdown não garante o gate completo | `stop` roda só eslint + vitest related nos edits; gate completo no `AGENTS.md` + `verifier` |
 | Skill que reexplica a pirâmide de testes | Duplica `test-pyramid.mdc` e compete com ela | Referenciar a rule |
 | Subagent “test-runner” | O `verifier` já faz; duas descriptions concorrendo por turno | Usar o `verifier` |
 | Skill “escreve commit message” | Um passo, sem contexto isolado | Prompt, ou linha no `AGENTS.md` |
 | Rule de estilo (aspas, ponto e vírgula) | ESLint + `prettier/prettier` já garantem | Configurar o linter |
 | “Use async/await em vez de callback” | O modelo já sabe | Nada |
 | Tarefa que você fez uma vez | Utilitário custa manutenção e contexto para sempre | Prompt |
-| `pnpm test` no `stop` hook | Latência em todo turno | Fica no `verifier` |
+| `pnpm test` (suite inteira) no `stop` hook | Latência em todo turno | `vitest related` no `stop`; suite completa no `verifier` |
 
 Um utilitário que ninguém dispara é pior que a ausência dele: paga contexto e mente sobre o estado do repo.
 
@@ -447,13 +439,13 @@ Depois, sempre:
 
 - **`.md` em `.cursor/rules/`** — ignorado. Só `.mdc`.
 - **`name` da skill ≠ pasta** — a skill quebra ou não é descoberta. `create-use-case/SKILL.md` com `name: create-use-case`.
-- **cwd de hook de projeto** — raiz do repo. User hooks (`~/.cursor/hooks.json`) rodam a partir de `~/.cursor/`. Copiar um exemplo da doc com `./hooks/format.sh` neste repo não acha o script.
-- **Glob que não cobre o arquivo** — `infra-layer.mdc` usa `src/infra/**`, então editar `prisma/schema.prisma` não anexa rule nenhuma (§5.2).
-- **Prettier isolado** — não existe `.prettierrc`. As opções (`singleQuote: true`, `semi: false`) vivem na regra `prettier/prettier` do `@rocketseat/eslint-config/node`. `prettier --write` reformata no default e quebra o lint. Formatar é `eslint --fix` no arquivo (hook) ou `pnpm format` / `pnpm lint` (os dois scripts são o mesmo comando).
+- **cwd de hook de projeto** — raiz do repo. User hooks (`~/.cursor/hooks.json`) rodam a partir de `~/.cursor/`. Copiar um exemplo da doc com `./hooks/track-edit.sh` neste repo não acha o script.
+- **Glob que não cobre o arquivo** — `infra-layer.mdc` usa `src/infra/**`; schema Prisma usa `prisma-schema.mdc` com `prisma/**`.
+- **Prettier isolado** — não existe `.prettierrc`. As opções (`singleQuote: true`, `semi: false`) vivem na regra `prettier/prettier` do `@rocketseat/eslint-config/node`. `prettier --write` reformata no default e quebra o lint. Formatar TS: `pnpm format` / `pnpm lint` no gate (os dois scripts são o mesmo comando). O hook `afterFileEdit` não roda `--fix` — evita drift de buffer.
 - **`pnpm lint` e `pnpm format` modificam arquivos.** O verifier **não** pode rodá-los: usa `pnpm exec eslint "{src,apps,libs,test}/**/*.ts"` sem `--fix`.
 - **Rule always-on que resume uma skill** — o agente lê o resumo e nunca abre a skill. Foi a falha de `cookbook-engineering.mdc` + `cookbook-engineering/SKILL.md`.
 - **Colar tabela em três arquivos** — apodrece. Um fato, um arquivo; o resto referencia (`@caminho` ou link relativo). A tabela de factories mora só em `create-use-case/references/factories.md`.
-- **Instrução sem enforcement** — “rode lint e typecheck” em Markdown é pedido, não garantia. Typecheck no `stop` hook é garantia; testes ficam no verifier (o `stop` não roda `pnpm test` por latência).
+- **Instrução sem enforcement** — “rode lint e typecheck” em Markdown é pedido, não garantia. O `stop` hook garante eslint (sem fix) + vitest related nos arquivos editados; typecheck e suite completa ficam no gate do `AGENTS.md` e no `verifier`.
 - **Conteúdo de agente no README** — o agente não abre o README por orientação (nenhum arquivo de `.cursor/` manda lê-lo). Convenção no README é convenção invisível.
 - **Planos em `docs/plans/completed/`** ainda citam `.cursor/skills/cookbook-engineering/SKILL.md` e a rule monolítica. São log histórico; não atualize para “consertar” o passado. O template vigente está na skill `write-mf-plan`.
 - **Registro atrasado em relação ao código** — MF-16, MF-20 e MF-28 estão implementados com o plano ainda fora de `completed/`. Ao ler o backlog, confie no código.
@@ -467,10 +459,10 @@ O que o agente vê, do centro (sempre pago) para a borda (só quando puxado):
 ```
 sempre pago
   AGENTS.md
-  descriptions das 3 skills
+  descriptions das 4 skills
   descriptions dos 2 subagents
 anexa por glob (quando o arquivo casa)
-  domain-layer / infra-layer / test-pyramid
+  domain-layer / infra-layer / test-pyramid / prisma-schema
 puxa sob demanda
   SKILL.md da skill escolhida
   references/ linkadas por essa skill
@@ -480,16 +472,16 @@ nunca, a menos que alguém abra
   (regras de negócio entram se a tarefa é MF-XX — a skill/subagent aponta)
 ```
 
-**Custo fixo por turno:** `AGENTS.md` (~47 linhas) + 3 descriptions de skill + 2 de subagent. Não há rule `alwaysApply: true`.
+**Custo fixo por turno:** `AGENTS.md` (~50 linhas) + 4 descriptions de skill + 2 de subagent. Não há rule `alwaysApply: true`.
 
 Checklist de auditoria:
 
 1. `rg -l . .cursor/rules --glob '*.md'` — tem que ser vazio (só `.mdc`).
 2. Abrir um `.spec.ts` no Agent e conferir em Customize → Rules se `test-pyramid` anexou; abrir um `.env` e confirmar que nenhuma rule de camada anexou.
-3. Pedir “cria o use case de arquivar receita” sem citar a skill — deve carregar `create-use-case`.
+3. Pedir “cria o use case de arquivar receita” sem citar a skill — deve carregar `create-use-case`. Pedir “liga o filtro difficultyLevel na busca” — deve carregar `add-search-filter`.
 4. Pedir “implementa o MF-16” — o pai deve delegar a `backend-engineer` sem `/backend-engineer`.
 5. `write-mf-plan` **não** deve entrar sozinha (tem `disable-model-invocation`). Dispare com `/write-mf-plan`.
-6. Introduzir um erro de tipo de propósito e tentar encerrar o turno — o `stop` hook devolve `followup_message` com a saída do `tsc` (até `loop_limit: 3`).
+6. Introduzir um erro de lint de propósito num `.ts` editado e tentar encerrar o turno — o `stop` hook devolve `followup_message` com eslint ou vitest related (até `loop_limit: 3`).
 7. Um fato, um arquivo: `rg 'makePublishRecipeUseCaseRequest'` deve achar a definição da factory e a tabela em `factories.md`, não uma cópia numa rule.
 
 Se o custo fixo crescer de novo, alguma description ficou longa demais ou uma rule voltou para `alwaysApply: true`.
@@ -498,7 +490,7 @@ Se o custo fixo crescer de novo, alguma description ficou longa demais ou uma ru
 
 ## 8. Inventário do Cookbook
 
-Estado no repositório **depois** das etapas 1–5. Não é o desenho do plano; é o que está no disco.
+Estado no repositório após o ajuste do harness (track-edit + verify-stop, segurança, `prisma-schema`, `add-search-filter`).
 
 ```
 AGENTS.md
@@ -507,8 +499,10 @@ docs/guia-utilitarios-ia.md          ← este arquivo (humano)
   rules/
     domain-layer.mdc
     infra-layer.mdc
+    prisma-schema.mdc
     test-pyramid.mdc
   skills/
+    add-search-filter/SKILL.md
     create-use-case/
       SKILL.md
       references/factories.md
@@ -519,20 +513,23 @@ docs/guia-utilitarios-ia.md          ← este arquivo (humano)
     backend-engineer.md
     verifier.md
   hooks/
-    format.sh
-    typecheck.sh
+    track-edit.sh
+    verify-stop.sh
+    deny-destructive-db.sh
+    deny-env-read.sh
   hooks.json
 ```
 
 Não existem mais `.cursor/rules/cookbook-engineering.mdc` nem `.cursor/skills/cookbook-engineering/`.
 
-### 8.1 `AGENTS.md` (raiz, 47 linhas)
+### 8.1 `AGENTS.md` (raiz)
 
 Sempre on. Absorveu o que era invariante da rule monolítica e as convenções de camada que estavam no README:
 
 - Stack: NestJS 11, Prisma, PostgreSQL, Vitest, Zod, JWT, pnpm
+- **Language:** código em inglês; docs de negócio em português; copy de UI pode ser pt-BR
 - Comandos do `package.json`, com alerta de que `pnpm lint` **e** `pnpm format` rodam `eslint --fix` e editam arquivos. Formatação mora na regra ESLint `prettier/prettier`; não há `.prettierrc`
-- Sequência antes de terminar: `pnpm lint && pnpm typecheck && pnpm build && pnpm test` (+ `pnpm test:e2e` quando HTTP, guards, pipes ou adapters Prisma mudaram)
+- **Dois momentos de verificação:** hook `stop` = eslint (sem fix) + vitest related nos `.ts` editados; **gate completo** antes de terminar: `pnpm lint && pnpm typecheck && pnpm build && pnpm test` (+ `pnpm test:e2e` quando HTTP, guards, pipes ou adapters Prisma mudaram)
 - Layout `src/core` → `src/domain` → `src/infra`
 - Invariantes: `core`/`enterprise` sem Nest nem banco; `application` aceita só `@Injectable()`; `@Injectable()` em use case é MF-07 (reavaliar se o runtime sair do Nest); ports `Chef` / `ChefsRepository` / `PrismaChefsRepository` com `useClass` no `DatabaseModule`; Prisma `User` / `users` mapeado para `Chef`; `Either` no fluxo de erro esperado
 - Ponteiros: `docs/plans/completed/plano-melhorias-fundacao.md`, `docs/regras-de-negocio.md`, `docs/plans/`
@@ -545,16 +542,16 @@ Todas `alwaysApply: false`.
 
 | Arquivo | `globs` | Por quê |
 |---------|---------|---------|
-| `domain-layer.mdc` | `src/domain/**` | Domínio não importa `infra`; `Either`; ports pequenos; SOLID aplicado a use case/port. Só é acionável editando domínio. |
-| `infra-layer.mdc` | `src/infra/**` | Controller só HTTP; transação no repositório; Zod + presenters. Mais a fronteira que saiu do README: `DifficultyLevel` (`easy`/`medium`/`hard` no domínio, `Easy`/`Medium`/`Hard` no Prisma, conversão em `enum-mappers.ts`); rotas públicas `POST /accounts` e `PUT /user/me`; JWT via `CurrentUser` / `UserPayload`. |
+| `domain-layer.mdc` | `src/domain/**` | Domínio não importa `infra`; `Either`; um use case = uma ação; `actorId` vs `authorId`; `@Injectable` só no use case (MF-07). |
+| `infra-layer.mdc` | `src/infra/**` | Controller só HTTP; transação no repositório; Zod + presenters; `sub` do JWT nunca no body; rotas `@Public()` vs JWT; `DifficultyLevel` em `enum-mappers.ts`. |
+| `prisma-schema.mdc` | `prisma/**` | `User`/`users` → `Chef`; enums na fronteira; `migrate dev` com nome descritivo; `prisma format`. |
 | `test-pyramid.mdc` | `**/*.spec.ts, **/*.e2e-spec.ts` | Unit testa regra/`Either`; e2e testa happy path da rota. Três exceções para e2e negativo: guard, mapeamento HTTP de erro (pós MF-06), middleware/pipe fora do use case. |
-
-Nenhuma rule cobre `prisma/**` hoje — ver §5.2.
 
 ### 8.3 Skills
 
 | Skill | Auto? | Por quê |
 |-------|-------|---------|
+| `add-search-filter` | sim | Liga um filtro já em `SearchRecipesCatalogFilters`: Prisma `where`, in-memory, Zod em `GET /recipes`, specs. Um filtro por tarefa. |
 | `create-use-case` | sim | Caminho ordenado: port → use case `Either` → in-memory → spec (`new UseCase`, sem Nest) → Prisma → `DatabaseModule` → HTTP/e2e (delega à outra skill) → verificação. Canonical: `delete-recipe`. |
 | `create-controller-e2e` | sim | `Test.createTestingModule`, JWT via `ChefFactory`, fixture com Prisma factories (nunca `POST` em outra rota), `makeXxxHttpBody`, assert de status **e** linha no banco. |
 | `write-mf-plan` | **não** (`disable-model-invocation: true`) | Template dos planos MF-XX e a convenção `git mv` para `completed/`. Você dispara com `/write-mf-plan` para não poluir turns que só implementam código. |
@@ -567,7 +564,7 @@ Nenhuma rule cobre `prisma/**` hoje — ver §5.2.
 
 | Arquivo | Frontmatter relevante | Por quê |
 |---------|----------------------|---------|
-| `backend-engineer.md` | `model: inherit`; description de delegação proativa para feature multi-arquivo em `src/domain` ou `src/infra` | Implementa; contexto limpo; lê `AGENTS.md` e as duas skills de código. Sem caminho absoluto de máquina, sem bloco de comandos duplicado. |
+| `backend-engineer.md` | `model: inherit`; description de delegação proativa para feature multi-arquivo em `src/domain` ou `src/infra` | Implementa; contexto limpo; lê `AGENTS.md` e **uma** skill por tarefa (`create-use-case`, `create-controller-e2e`, `add-search-filter`). |
 | `verifier.md` | `model: composer-2.5`; `readonly: true`; description com gatilhos *verifique / valida / confere* | Roda a sequência **sem** `--fix` (eslint via `pnpm exec`), typecheck, build, test, e e2e quando cabe. Relata; não edita. `pnpm build` escreve `dist/` (output de compile, não source) — isso é permitido. |
 
 O `verifier` existe porque verificação independente em contexto limpo não cabe numa skill: skill não isola a janela e não impede o mesmo agente de “corrigir” enquanto valida.
@@ -580,18 +577,22 @@ O `verifier` existe porque verificação independente em contexto limpo não cab
 {
   "version": 1,
   "hooks": {
-    "afterFileEdit": [{ "command": ".cursor/hooks/format.sh" }],
-    "stop": [{ "command": ".cursor/hooks/typecheck.sh", "loop_limit": 3 }]
+    "afterFileEdit": [{ "command": ".cursor/hooks/track-edit.sh", "timeout": 5 }],
+    "stop": [{ "command": ".cursor/hooks/verify-stop.sh", "timeout": 180, "loop_limit": 3 }],
+    "beforeShellExecution": [{ "command": ".cursor/hooks/deny-destructive-db.sh", "timeout": 5 }],
+    "beforeReadFile": [{ "command": ".cursor/hooks/deny-env-read.sh", "timeout": 5, "failClosed": true }]
   }
 }
 ```
 
 | Script | Evento | Comportamento real |
 |--------|--------|-------------------|
-| `format.sh` | `afterFileEdit` | Lê `file_path` do JSON no stdin. Sai 0 se o parse falhar, o path for vazio ou o arquivo não existir. Só age em `*.ts` / `*.mts` / `*.cts` / `*.js` / `*.mjs` / `*.cjs`. Roda `pnpm exec eslint --fix -- "$file_path"` **naquele arquivo**. Markdown, JSON e Prisma não passam pelo ESLint aqui. |
-| `typecheck.sh` | `stop` (`loop_limit: 3`) | Lê `status` do stdin. Se não for `"completed"` (abort/erro), imprime `{}` e sai — não typechecka turno cancelado. Se for, roda `pnpm typecheck`. Sucesso → `{}`. Falha → `{"followup_message": "<saída do tsc>"}` e exit 0, para o agente ser obrigado a corrigir antes de encerrar. |
+| `track-edit.sh` | `afterFileEdit` | Grava `file_path` por conversa em `$XDG_RUNTIME_DIR/cursor-hooks/`. Não reescreve o arquivo. |
+| `verify-stop.sh` | `stop` (`loop_limit: 3`) | Se `status` = `completed`, roda `eslint --max-warnings 0` (sem `--fix`) e `vitest related --run` nos `.ts` gravados (exceto `*.e2e-spec.ts`). Sucesso apaga a lista; falha → `followup_message`. |
+| `deny-destructive-db.sh` | `beforeShellExecution` | `deny` em `prisma migrate reset` e `db push` com `--force-reset` / `--accept-data-loss`. |
+| `deny-env-read.sh` | `beforeReadFile` (`failClosed`) | `deny` em `.env` e `.env.*`; permite `.env.example`. |
 
-`pnpm test` **não** está no `stop`: latência. Testes são do `verifier` (e da sequência no `AGENTS.md` quando o implementador termina).
+Typecheck e `pnpm test` (suite inteira) **não** estão no `stop`: ficam no gate do `AGENTS.md` e no `verifier`. E2e idem (Postgres).
 
 ### 8.6 O que saiu do README
 
